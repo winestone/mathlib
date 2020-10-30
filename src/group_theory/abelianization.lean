@@ -10,13 +10,13 @@ of the forgetful functor Ab → Grp.
 import group_theory.quotient_group
 import tactic.group
 
+universes u v
+
 /--
 
 TODO: If `H K : subgroup G` then define `commutator H K : subgroup G`
 
--/
-
-universes u v
+--/
 
 -- let G be a group
 variables (G : Type u) [group G]
