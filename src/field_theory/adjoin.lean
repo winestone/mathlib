@@ -510,6 +510,13 @@ begin
   exact ih (adjoin F ↑t) a h
 end
 
+lemma induction_on_adjoin' (F : Type*) [field F] [algebra F E] (S : finset E)
+  (P : intermediate_field F E → Prop) (base : P ⊥)
+  (ih : ∀ (K : intermediate_field F E) (x ∈ S), P K → P ↑K⟮x⟯) : P ⊤ :=
+begin
+  sorry,
+end
+
 end induction
 
 end intermediate_field

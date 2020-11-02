@@ -242,4 +242,18 @@ end
 
 end galois_equivalent_definitions
 
+section splitting_field_galois
+variables (F E : Type*) [field F] [field E] [algebra F E] (p : polynomial F)
+
+lemma is_galois_of_is_separable_splitting_field [p.is_splitting_field F E] (hp : p.separable) :
+  is_galois F E :=
+begin
+  let p' := (p.map (algebra_map F E)),
+  let s := p'.roots.to_finset,
+  have := intermediate_field.induction_on_adjoin' F s (λ K, is_galois F K) sorry sorry,
+  sorry,
+end
+
+end splitting_field_galois
+
 end galois
