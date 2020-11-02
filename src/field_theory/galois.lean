@@ -240,6 +240,12 @@ begin
       { exact polynomial.map_ne_zero (minimal_polynomial.ne_zero h2) } } }
 end
 
+lemma is_galois_of_fixed_field_eq_bot (h : fixed_field (⊤ : subgroup (E ≃ₐ[F] E)) = ⊥) :
+  is_galois F E :=
+begin
+  sorry,
+end
+
 lemma is_galois_of_card_aut_eq_findim [finite_dimensional F E]
   (h : fintype.card (E ≃ₐ[F] E) = findim F E) : is_galois F E :=
 begin
@@ -251,8 +257,8 @@ begin
     ... = findim F E : h,
   have : (findim F K)*(findim K E) = findim F E := findim_mul_findim F K E,
   have : findim F K = 1 := by nlinarith [show findim F E > 0, from findim_pos],
-  have : K = ⊥ := sorry,
-  sorry,
+  have : K = ⊥ := intermediate_field.findim_eq_one_iff.mp this,
+  exact is_galois_of_fixed_field_eq_bot F E this,
 end
 
 end galois_equivalent_definitions
