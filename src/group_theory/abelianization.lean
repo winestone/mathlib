@@ -27,11 +27,14 @@ variables (G : Type u) [group G]
 def commutator : subgroup G :=
 subgroup.normal_closure {x | ∃ p q, p * q * p⁻¹ * q⁻¹ = x}
 
-def general_commutator (H₁ : subgroup G)(H₂  : subgroup G):subgroup G:=subgroup.closure{x|∃ p q,p∈ H₁ ∧ q∈ H₂ ∧  p * q * p⁻¹ * q⁻¹ = x}
+def general_commutator (H₁ : subgroup G)(H₂  : subgroup G):subgroup G:=
+subgroup.closure{x|∃ p q,p∈ H₁ ∧ q∈ H₂ ∧  p * q * p⁻¹ * q⁻¹ = x}
 
-lemma normality  (H₁ : subgroup G)(H₂  : subgroup G)[subgroup.normal H₁ ] [subgroup.normal H₂] :subgroup.normal(general_commutator G H₁ H₂):=
+lemma normality  (H₁ : subgroup G)(H₂  : subgroup G)[subgroup.normal H₁ ] [subgroup.normal H₂] :
+subgroup.normal(general_commutator G H₁ H₂):=
 begin
-  have zeta: ∀ (h:G), (h∈ (general_commutator G H₁ H₂))→ ∀ g:G,(g*h)*g⁻¹∈ (general_commutator G H₁ H₂),
+  have zeta: ∀ (h:G),
+  (h∈ (general_commutator G H₁ H₂))→ ∀ g:G,(g*h)*g⁻¹∈ (general_commutator G H₁ H₂),
   {intros h mem g,
   sorry},
   sorry,
