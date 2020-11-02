@@ -40,8 +40,13 @@ end
 
 def nth_commutator (n:ℕ):subgroup G:=
 begin
-  sorry,
+  induction n,
+  exact (⊤:subgroup G),
+  exact general_commutator G n_ih n_ih,
+
 end
+
+def is_solvable:Prop:=∃ n:ℕ, nth_commutator G n=(⊥:subgroup G)
 
 
 
