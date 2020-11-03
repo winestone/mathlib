@@ -308,22 +308,21 @@ adjoin_simple_eq_bot_iff.mpr (coe_int_mem ⊥ n)
 
 section adjoin_dim
 open finite_dimensional vector_space
+variables {K L : intermediate_field F E}
 
-@[simp] lemma dim_intermediate_field_eq_dim_subalgebra (K : intermediate_field F E) :
-  dim F K.to_subalgebra = dim F K := rfl
+@[simp] lemma dim_intermediate_field_eq_dim_subalgebra : dim F K.to_subalgebra = dim F K := rfl
 
-@[simp] lemma findim_intermediate_field_eq_findim_subalgebra (K : intermediate_field F E) :
+@[simp] lemma findim_intermediate_field_eq_findim_subalgebra :
   findim F K.to_subalgebra = findim F K := rfl
 
-@[simp] lemma to_subalgebra_eq_iff {K L : intermediate_field F E} :
-  K.to_subalgebra = L.to_subalgebra ↔ K = L :=
+@[simp] lemma to_subalgebra_eq_iff : K.to_subalgebra = L.to_subalgebra ↔ K = L :=
 by { rw [subalgebra.ext_iff, intermediate_field.ext'_iff, set.ext_iff], refl }
 
-@[simp] lemma dim_eq_one_iff {K : intermediate_field F E} : dim F K = 1 ↔ K = ⊥ :=
+@[simp] lemma dim_eq_one_iff : dim F K = 1 ↔ K = ⊥ :=
 by rw [← to_subalgebra_eq_iff, ← dim_intermediate_field_eq_dim_subalgebra,
   subalgebra.dim_eq_one_iff, bot_to_subalgebra]
 
-@[simp] lemma findim_eq_one_iff {K : intermediate_field F E} : findim F K = 1 ↔ K = ⊥ :=
+@[simp] lemma findim_eq_one_iff : findim F K = 1 ↔ K = ⊥ :=
 by rw [← to_subalgebra_eq_iff, ← findim_intermediate_field_eq_findim_subalgebra,
   subalgebra.findim_eq_one_iff, bot_to_subalgebra]
 
