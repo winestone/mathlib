@@ -519,7 +519,7 @@ end
 
 lemma induction_on_adjoin' (F : Type*) [field F] [algebra F E] (S : finset E)
   (P : intermediate_field F E → Prop) (base : P ⊥)
-  (ih : ∀ (K : intermediate_field F E) (x ∈ S), P K → P ↑K⟮x⟯) : P ⊤ :=
+  (ih : ∀ (K : intermediate_field F E) (x ∈ S), P K → P ↑K⟮x⟯) : P (adjoin F ↑S) :=
 begin
   sorry,
 end
