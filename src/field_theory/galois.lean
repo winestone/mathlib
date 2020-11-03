@@ -281,12 +281,3 @@ end
 end splitting_field_galois
 
 end galois
-
--- example (G : Type*) [group G] [fintype G] : fintype.card G = fintype.card (⊤ : subgroup G) :=
--- begin
---   have : G ≃ (⊤ : subgroup G) := sorry,
---   -- symmetry,
---   have := fintype.of_equiv_card this,
---   symmetry,
-
--- end
