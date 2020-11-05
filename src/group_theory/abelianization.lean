@@ -30,14 +30,70 @@ subgroup.normal_closure {x | ∃ p q, p * q * p⁻¹ * q⁻¹ = x}
 def general_commutator (H₁ : subgroup G) (H₂ : subgroup G) : subgroup G :=
 subgroup.closure {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x}
 
+lemma closure_leq_normal_closure (S:set G):subgroup.closure S≤ subgroup.normal_closure S:=
+begin
+  have alpha: S ⊆  (subgroup.normal_closure S:set G),
+  exact subgroup.subset_normal_closure,
+
+end
+
 lemma general_commutator_is_normal (H₁ : subgroup G) (H₂ : subgroup G) [subgroup.normal H₁]
   [subgroup.normal H₂] : subgroup.normal (general_commutator G H₁ H₂) :=
 begin
-  have zeta: ∀ (h:G),
-  (h∈ (general_commutator G H₁ H₂))→ ∀ g:G,(g*h)*g⁻¹∈ (general_commutator G H₁ H₂),
-  {intros h mem g,
-  sorry},
+  let base:set G:={x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x},
+  have conj_closure: base=group.conjugates_of_set base,
+  have bi_inclusion:base ⊆ group.conjugates_of_set base ∧ group.conjugates_of_set base ⊆ base,
+  split,
+  exact group.subset_conjugates_of_set,
+  unfold group.conjugates_of_set,
+  unfold group.conjugates,
+  intros a s,
+  dsimp,
+  have t:∃ (ξ  : G) (L : ξ ∈ base), a∈ {b : G | is_conj ξ b}:=set.mem_bUnion_iff.mp s,
+  cases t with ξ ρ,
+  cases ρ with τ μ,
+  dsimp at μ,
+  dsimp at τ,
+  unfold is_conj at μ,
+  cases τ with olympia washington,
+  cases washington with augusta maine,
+  cases maine with juneau alaska,
+  cases alaska with honolulu hawaii,
+  cases μ with c conjugator,
   sorry,
+  sorry,
+  sorry,
+
+
+
+
+  --have ∀ (t:G), ∀ (ζ:(t ∈ base)), ( {b : G | is_conj a b}⊆ base),
+  --have u:general_commutator G H₁ H₂=
+  --subgroup.normal_closure base,
+  --apply subgroup.ext,
+  --intro x,
+  --split,
+  --{have beta:subgroup.closure base ≤  subgroup.normal_closure base:=
+  --closure_leq_normal_closure G base,
+  --have gamma: general_commutator G H₁ H₂ =subgroup.closure base:=by refl,
+  --rw gamma,
+  --exact λ  membership, beta membership},
+
+
+
+
+  --intro alpha,
+
+  --apply group.subset_conjugates_of_set,
+  --have v:base=group.conjugates_of_set base,
+
+
+
+  --have zeta: ∀ (h:G),
+  --(h∈ (general_commutator G H₁ H₂))→ ∀ g:G,(g*h)*g⁻¹∈ (general_commutator G H₁ H₂),
+  --{intros h mem g,
+  --sorry},
+  --sorry,
 
 end
 
