@@ -28,10 +28,10 @@ def commutator : subgroup G :=
 subgroup.normal_closure {x | ∃ p q, p * q * p⁻¹ * q⁻¹ = x}
 
 def general_commutator (H₁ : subgroup G) (H₂ : subgroup G) : subgroup G :=
-subgroup.closure {x | ∃ p q, p ∈ H₁ ∧ q ∈ H₂ ∧ p * q * p⁻¹ * q⁻¹ = x}
+subgroup.closure {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x}
 
-lemma normality (H₁ : subgroup G) (H₂ : subgroup G) [subgroup.normal H₁] [subgroup.normal H₂] :
-subgroup.normal (general_commutator G H₁ H₂) :=
+lemma general_commutator_is_normal (H₁ : subgroup G) (H₂ : subgroup G) [subgroup.normal H₁]
+  [subgroup.normal H₂] : subgroup.normal (general_commutator G H₁ H₂) :=
 begin
   have zeta: ∀ (h:G),
   (h∈ (general_commutator G H₁ H₂))→ ∀ g:G,(g*h)*g⁻¹∈ (general_commutator G H₁ H₂),
@@ -42,18 +42,22 @@ begin
 end
 
 def nth_commutator (n : ℕ) : subgroup G :=
-begin
-  induction n,
-  exact (⊤ : subgroup G),
-  exact general_commutator G n_ih n_ih,
-end
+nat.rec_on n (⊤ : subgroup G) (λ _ H, general_commutator G H H)
+-- I've heard it's typically better to give definitions in term mode because it makes
+-- them more amenable to refl. I'm not sure it makes a big difference here, but I think
+-- what I've written above is a term mode version of the tactic mode definition commented out below
+-- begin
+--   induction n,
+--   exact (⊤ : subgroup G),
+--   exact general_commutator G n_ih n_ih,
+-- end
 
 def is_solvable : Prop := ∃ n : ℕ, nth_commutator G n = (⊥ : subgroup G)
 
 
+lemma commutator_eq_general_commutator_top_top :
+  commutator G = general_commutator G (⊤ : subgroup G) (⊤ : subgroup G) := sorry
 
-
---lemma equivalence : commutator = general_commutator ((subgroup G).has_top)(⊤: subgroup G ) :=sorry
 
 
 

@@ -528,3 +528,45 @@ begin
 end
 
 end is_separable_tower
+
+section algebra_equiv
+variables {F E E' : Type*} [field F] [field E] [field E'] [algebra F E] [algebra F E']
+
+-- One way to prove that if E'/F is Galois, separable, etc then so is E/F where E ≃ₐ[F] E' is to
+-- show that F ⊆ E ⊆ E' forms a scalar_tower. But for some reason I can't get Lean's type inference
+-- engine to work right
+
+instance algebra_of_ring_hom (ϕ : E →+* E') : algebra E E' :=
+{ to_fun := ϕ.to_fun,
+  map_one' := ϕ.map_one',
+  map_add' := ϕ.map_add',
+  map_zero' := ϕ.map_zero',
+  map_mul' := ϕ.map_mul',
+  smul := λ x y, ϕ x * y,
+  commutes' := λ x y, by simp [mul_comm],
+  smul_def' := λ x y, rfl, }
+
+-- instance algebra_of_alg_hom (ϕ : E →ₐ[F] E') : algebra E E' := sorry
+
+-- Lean doesn't recognize the algebra F E' instance for some reason
+-- instance is_scalar_tower_of_alg_hom (ϕ : E →ₐ[F] E') : is_scalar_tower F E E' :=
+-- { smul_assoc :=
+--   begin
+--     sorry,
+--   end,
+-- }
+
+theorem is_separable_of_equiv_is_separable (f : E →ₐ[F] E') (h : is_separable F E') :
+  is_separable F E :=
+begin
+  -- intro x,
+  -- let y := f.inv_fun x,
+  -- cases h y with hy hy_sep,
+  -- have hx := is_integral_alg_hom f.to_alg_hom hy,
+  -- have fy_eq_x : f y = x := by simp *,
+  -- erw fy_eq_x at hx,
+  -- use hx,
+  sorry,
+end
+
+end algebra_equiv
