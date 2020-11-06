@@ -12,12 +12,6 @@ import tactic.group
 
 universes u v
 
-/--
-
-TODO: If `H K : subgroup G` then define `commutator H K : subgroup G`
-
---/
-
 -- let G be a group
 variables (G : Type u) [group G]
 
@@ -30,75 +24,26 @@ subgroup.normal_closure {x | ∃ p q, p * q * p⁻¹ * q⁻¹ = x}
 def general_commutator (H₁ : subgroup G) (H₂ : subgroup G) : subgroup G :=
 subgroup.closure {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x}
 
-
 lemma general_commutator_is_normal (H₁ : subgroup G) (H₂ : subgroup G) [subgroup.normal H₁]
   [subgroup.normal H₂] : subgroup.normal (general_commutator G H₁ H₂) :=
 begin
-  let base:set G:={x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x},
-  have conj_closure: base=group.conjugates_of_set base,
-  {have bi_inclusion:base ⊆ group.conjugates_of_set base ∧ group.conjugates_of_set base ⊆ base,
-  split,
-  exact group.subset_conjugates_of_set,
-  unfold group.conjugates_of_set,
-  unfold group.conjugates,
-  intros a s,
-  dsimp,
-  have t:∃ (ξ  : G) (L : ξ ∈ base), a∈ {b : G | is_conj ξ b}:=set.mem_bUnion_iff.mp s,
-  cases t with ξ ρ,
-  cases ρ with τ μ,
-  dsimp at μ,
-  dsimp at τ,
-  unfold is_conj at μ,
-  cases τ with olympia washington,
-  cases washington with augusta maine,
-  cases maine with juneau alaska,
-  cases alaska with honolulu hawaii,
-  cases μ with c conjugator,
-  use c *olympia * c⁻¹ ,
-  split,
-  {exact _inst_2.conj_mem olympia augusta c},
-  use c *juneau * c⁻¹ ,
-  split,
-  exact _inst_3.conj_mem juneau honolulu c,
-  {rw[← conjugator,← hawaii],
-  simp only [conj_mul, conj_inv]},
-  exact set.subset.antisymm_iff.mpr bi_inclusion},
-  have closure_collapse:subgroup.closure base=subgroup.normal_closure base,
-  {unfold subgroup.normal_closure,
-  rwa ← conj_closure},
-  unfold general_commutator,
-  rw closure_collapse,
-  exact subgroup.normal_closure_normal,
-
-
-  --have ∀ (t:G), ∀ (ζ:(t ∈ base)), ( {b : G | is_conj a b}⊆ base),
-  --have u:general_commutator G H₁ H₂=
-  --subgroup.normal_closure base,
-  --apply subgroup.ext,
-  --intro x,
-  --split,
-  --{have beta:subgroup.closure base ≤  subgroup.normal_closure base:=
-  --closure_leq_normal_closure G base,
-  --have gamma: general_commutator G H₁ H₂ =subgroup.closure base:=by refl,
-  --rw gamma,
-  --exact λ  membership, beta membership},
-
-
-
-
-  --intro alpha,
-
-  --apply group.subset_conjugates_of_set,
-  --have v:base=group.conjugates_of_set base,
-
-
-
-  --have zeta: ∀ (h:G),
-  --(h∈ (general_commutator G H₁ H₂))→ ∀ g:G,(g*h)*g⁻¹∈ (general_commutator G H₁ H₂),
-  --{intros h mem g,
-  --sorry},
-  --sorry,
-
+  let base : set G := {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x},
+  suffices : base = group.conjugates_of_set base,
+  { dsimp only [general_commutator, ←base],
+    rw this,
+    exact subgroup.normal_closure_normal },
+  apply set.subset.antisymm group.subset_conjugates_of_set,
+  intros a h,
+  rw group.mem_conjugates_of_set_iff at h,
+  cases h with b ha,
+  cases ha with hb ha,
+  cases ha with d ha,
+  cases hb with c hb,
+  cases hb with hc hb,
+  cases hb with e hb,
+  cases hb with he hb,
+  rw [←ha, ←hb],
+  exact ⟨d * c * d⁻¹, ⟨_inst_2.conj_mem c hc d, ⟨d * e * d⁻¹, ⟨_inst_3.conj_mem e he d, by group⟩⟩⟩⟩,
 end
 
 def nth_commutator (n : ℕ) : subgroup G :=
