@@ -30,19 +30,13 @@ subgroup.normal_closure {x | ∃ p q, p * q * p⁻¹ * q⁻¹ = x}
 def general_commutator (H₁ : subgroup G) (H₂ : subgroup G) : subgroup G :=
 subgroup.closure {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x}
 
-lemma closure_leq_normal_closure (S:set G):subgroup.closure S≤ subgroup.normal_closure S:=
-begin
-  have alpha: S ⊆  (subgroup.normal_closure S:set G),
-  exact subgroup.subset_normal_closure,
-
-end
 
 lemma general_commutator_is_normal (H₁ : subgroup G) (H₂ : subgroup G) [subgroup.normal H₁]
   [subgroup.normal H₂] : subgroup.normal (general_commutator G H₁ H₂) :=
 begin
   let base:set G:={x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x},
   have conj_closure: base=group.conjugates_of_set base,
-  have bi_inclusion:base ⊆ group.conjugates_of_set base ∧ group.conjugates_of_set base ⊆ base,
+  {have bi_inclusion:base ⊆ group.conjugates_of_set base ∧ group.conjugates_of_set base ⊆ base,
   split,
   exact group.subset_conjugates_of_set,
   unfold group.conjugates_of_set,
@@ -60,11 +54,21 @@ begin
   cases maine with juneau alaska,
   cases alaska with honolulu hawaii,
   cases μ with c conjugator,
-  sorry,
-  sorry,
-  sorry,
-
-
+  use c *olympia * c⁻¹ ,
+  split,
+  {exact _inst_2.conj_mem olympia augusta c},
+  use c *juneau * c⁻¹ ,
+  split,
+  exact _inst_3.conj_mem juneau honolulu c,
+  {rw[← conjugator,← hawaii],
+  simp only [conj_mul, conj_inv]},
+  exact set.subset.antisymm_iff.mpr bi_inclusion},
+  have closure_collapse:subgroup.closure base=subgroup.normal_closure base,
+  {unfold subgroup.normal_closure,
+  rwa ← conj_closure},
+  unfold general_commutator,
+  rw closure_collapse,
+  exact subgroup.normal_closure_normal,
 
 
   --have ∀ (t:G), ∀ (ζ:(t ∈ base)), ( {b : G | is_conj a b}⊆ base),
@@ -107,6 +111,14 @@ nat.rec_on n (⊤ : subgroup G) (λ _ H, general_commutator G H H)
 --   exact (⊤ : subgroup G),
 --   exact general_commutator G n_ih n_ih,
 -- end
+
+--lemma nth_commutator_normal (n:ℕ):(nth_commutator G n).normal:=
+--begin
+  --induction n,
+  --change (⊤:subgroup G).normal,
+  --sorry,
+  --sorry,
+--end
 
 def is_solvable : Prop := ∃ n : ℕ, nth_commutator G n = (⊥ : subgroup G)
 
