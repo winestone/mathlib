@@ -96,6 +96,42 @@ end
 section galois_correspondence
 
 variables {F : Type*} [field F] {E : Type*} [field E] [algebra F E]
+variables {E' : Type*} [field E'] [algebra F E']
+
+lemma is_galois_of_alg_equiv_aux (h : E ≃ₐ[F] E') : is_galois F E → is_galois F E' :=
+begin
+  intro h_gal,
+  split,
+  { intro x,
+    cases h_gal.1 (h.symm x) with hx hhx,
+    have H := is_integral_alg_hom h.to_alg_hom hx,
+    simp only [alg_equiv.coe_alg_hom, alg_equiv.to_alg_hom_eq_coe, alg_equiv.apply_symm_apply] at H,
+    use H,
+    apply polynomial.separable.of_dvd hhx,
+    apply minimal_polynomial.dvd H,
+    apply ring_hom.injective h.symm.to_alg_hom.to_ring_hom,
+    rw ring_hom.map_zero,
+    exact eq.trans (polynomial.aeval_alg_hom_apply h.symm.to_alg_hom x
+      (minimal_polynomial hx)).symm (minimal_polynomial.aeval hx), },
+  { intro x,
+    cases h_gal.2 (h.symm x) with hx hhx,
+    have H := is_integral_alg_hom h.to_alg_hom hx,
+    simp only [alg_equiv.coe_alg_hom, alg_equiv.to_alg_hom_eq_coe, alg_equiv.apply_symm_apply] at H,
+    use H,
+    apply polynomial.splits_of_splits_of_dvd (algebra_map F E') (minimal_polynomial.ne_zero hx),
+    { rw (show (algebra_map F E') = h.to_alg_hom.to_ring_hom.comp (algebra_map F E),
+          by exact (alg_hom.comp_algebra_map h.to_alg_hom).symm),
+      exact polynomial.splits_comp_of_splits (algebra_map F E) h.to_alg_hom.to_ring_hom hhx },
+    { apply minimal_polynomial.dvd H,
+      apply ring_hom.injective h.symm.to_alg_hom.to_ring_hom,
+      rw ring_hom.map_zero,
+      exact eq.trans (polynomial.aeval_alg_hom_apply h.symm.to_alg_hom x
+        (minimal_polynomial hx)).symm (minimal_polynomial.aeval hx) } }
+end
+
+lemma is_galois_of_alg_equiv (h : E ≃ₐ[F] E') : is_galois F E ↔ is_galois F E' :=
+⟨is_galois_of_alg_equiv_aux h, is_galois_of_alg_equiv_aux h.symm⟩
+
 variables (H : subgroup (E ≃ₐ[F] E)) (K : intermediate_field F E)
 
 instance is_galois_of_tower_top [h : is_galois F E] : is_galois K E :=
@@ -110,6 +146,21 @@ begin
     ((polynomial.splits_map_iff (algebra_map F K) (algebra_map K E)).mpr hhx)
     (minimal_polynomial.dvd_map_of_is_scalar_tower K hx)⟩,
 end
+
+lemma is_galois_iff_is_galois_bot : is_galois (⊥ : intermediate_field F E) E ↔ is_galois F E :=
+begin
+  split,
+  { intro h_gal,
+    split,
+    { intro x,
+      cases h_gal.1 x with hx hhx, },
+    {}, },
+  { intro h,
+    exactI galois.is_galois_of_tower_top ⊥, },
+end
+
+lemma is_galois_iff_is_galois_top : is_galois F (⊤ : intermediate_field F E) ↔ is_galois F E :=
+is_galois_of_alg_equiv (intermediate_field.top_equiv)
 
 instance subgroup_action : faithful_mul_semiring_action H E := {
   smul := λ h x, h x,
@@ -243,9 +294,8 @@ end
 lemma is_galois_of_fixed_field_eq_bot [finite_dimensional F E]
   (h : fixed_field (⊤ : subgroup (E ≃ₐ[F] E)) = ⊥) : is_galois F E :=
 begin
-  let G := (⊤ : subgroup (E ≃ₐ[F] E)),
-  have := galois.is_galois_of_fixed_field E G,
-  sorry,
+  rw [←is_galois_iff_is_galois_bot, ←h],
+  exact galois.is_galois_of_fixed_field E (⊤ : subgroup (E ≃ₐ[F] E)),
 end
 
 lemma is_galois_of_card_aut_eq_findim [finite_dimensional F E]
@@ -253,15 +303,11 @@ lemma is_galois_of_card_aut_eq_findim [finite_dimensional F E]
 begin
   apply is_galois_of_fixed_field_eq_bot,
   rw ← intermediate_field.findim_eq_one_iff,
-  let G := (⊤ : subgroup (E ≃ₐ[F] E)),
-  let K := fixed_field G,
-  have : findim K E = findim F E :=
-    calc findim K E = fintype.card G : findim_fixed_field_eq_card G
-    ... = fintype.card (E ≃ₐ[F] E) : sorry
-    ... = findim F E : h,
-  have : (findim F K) * (findim K E) = findim F E := findim_mul_findim F K E,
-  have : findim F E > 0 := findim_pos,
-  nlinarith,
+  have ne : findim (fixed_field (⊤ : subgroup (E ≃ₐ[F] E))) E ≠ 0 := (ne_of_lt findim_pos).symm,
+  rw [←mul_left_inj' ne, findim_mul_findim, ←h, one_mul, findim_fixed_field_eq_card],
+  apply fintype.card_congr,
+  exact { to_fun := λ g, ⟨g, subgroup.mem_top g⟩, inv_fun := coe,
+          left_inv := λ g, rfl, right_inv := λ _, by { ext, refl } },
 end
 
 end galois_equivalent_definitions

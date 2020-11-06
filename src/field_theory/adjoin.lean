@@ -81,6 +81,13 @@ by { ext, rw [mem_to_subalgebra, algebra.mem_bot, mem_bot] }
 @[simp] lemma top_to_subalgebra : (⊤ : intermediate_field F E).to_subalgebra = ⊤ :=
 by { ext, rw [mem_to_subalgebra, iff_true_right algebra.mem_top], exact mem_top }
 
+noncomputable def top_equiv : (⊤ : intermediate_field F E) ≃ₐ[F] E :=
+begin
+  have key := algebra.top_equiv,
+  rw ← top_to_subalgebra at key,
+  exact key,
+end
+
 @[simp] lemma coe_bot_eq_self (K : intermediate_field F E) : ↑(⊥ : intermediate_field K E) = K :=
 by { ext, rw [mem_lift2, mem_bot], exact set.ext_iff.mp subtype.range_coe x }
 
