@@ -137,16 +137,53 @@ variables (H : subgroup (E ≃ₐ[F] E)) (K : intermediate_field F E)
 instance tower_top_of_galois [h : is_galois F E] : is_galois K E :=
 ⟨is_separable_tower_top_of_is_separable K h.1, normal.tower_top_of_normal F K E h.2⟩
 
+instance algebra_over_intermediate_field_bot : algebra (⊥ : intermediate_field F E) F :=
+{ to_fun := λ x, classical.some (intermediate_field.mem_bot.mp (subtype.mem x)),
+  map_zero' := begin
+    apply (algebra_map F E).injective,
+    rw ring_hom.map_zero,
+    exact classical.some_spec (intermediate_field.mem_bot.mp
+      (subtype.mem (0 : (⊥ : intermediate_field F E)))) end,
+  map_one' := begin
+    apply (algebra_map F E).injective,
+    rw ring_hom.map_one,
+    exact classical.some_spec (intermediate_field.mem_bot.mp
+      (subtype.mem (1 : (⊥ : intermediate_field F E)))) end,
+  map_add' := begin
+    intros x y,
+    apply (algebra_map F E).injective,
+    rw ring_hom.map_add,
+    rw classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem x)),
+    rw classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem y)),
+    exact classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem (x + y))) end,
+  map_mul' := begin
+    intros x y,
+    apply (algebra_map F E).injective,
+    rw ring_hom.map_mul,
+    rw classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem x)),
+    rw classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem y)),
+    exact classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem (x * y))) end,
+  smul := λ x y, classical.some (intermediate_field.mem_bot.mp (subtype.mem x)) * y,
+  smul_def' := λ _ _, rfl,
+  commutes' := λ _ _, mul_comm _ _ }
+
+instance is_scalar_tower_over_intermediate_field_bot :
+  is_scalar_tower (⊥ : intermediate_field F E) F E :=
+⟨begin
+  intros x y z,
+  have key : (algebra_map F E) (algebra_map (⊥ : intermediate_field F E) F x) = ↑x :=
+    classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem x)),
+  simp only [algebra.smul_def, ring_hom.map_mul, key, mul_assoc],
+  refl,
+end⟩
+
 lemma is_galois_iff_is_galois_bot : is_galois (⊥ : intermediate_field F E) E ↔ is_galois F E :=
 begin
   split,
-  { intro h_gal,
-    split,
-    { intro x,
-      cases h_gal.1 x with hx hhx, },
-    {}, },
   { intro h,
-    exactI galois.is_galois_of_tower_top ⊥, },
+    exact ⟨is_separable_tower_top_of_is_separable _ h.1, normal.tower_top_of_normal _ F E h.2⟩ },
+  { intro h,
+    exactI galois.tower_top_of_galois ⊥ },
 end
 
 lemma is_galois_iff_is_galois_top : is_galois F (⊤ : intermediate_field F E) ↔ is_galois F E :=
@@ -280,7 +317,7 @@ lemma is_galois_of_fixed_field_eq_bot [finite_dimensional F E]
   (h : fixed_field (⊤ : subgroup (E ≃ₐ[F] E)) = ⊥) : is_galois F E :=
 begin
   rw [←is_galois_iff_is_galois_bot, ←h],
-  exact galois.is_galois_of_fixed_field E (⊤ : subgroup (E ≃ₐ[F] E)),
+  exact galois.of_fixed_field E (⊤ : subgroup (E ≃ₐ[F] E)),
 end
 
 lemma is_galois_of_card_aut_eq_findim [finite_dimensional F E]
