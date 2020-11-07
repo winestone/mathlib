@@ -138,32 +138,12 @@ instance tower_top_of_galois [h : is_galois F E] : is_galois K E :=
 ⟨is_separable_tower_top_of_is_separable K h.1, normal.tower_top_of_normal F K E h.2⟩
 
 instance algebra_over_intermediate_field_bot : algebra (⊥ : intermediate_field F E) F :=
-{ to_fun := λ x, classical.some (intermediate_field.mem_bot.mp (subtype.mem x)),
-  map_zero' := begin
-    apply (algebra_map F E).injective,
-    rw ring_hom.map_zero,
-    exact classical.some_spec (intermediate_field.mem_bot.mp
-      (subtype.mem (0 : (⊥ : intermediate_field F E)))) end,
-  map_one' := begin
-    apply (algebra_map F E).injective,
-    rw ring_hom.map_one,
-    exact classical.some_spec (intermediate_field.mem_bot.mp
-      (subtype.mem (1 : (⊥ : intermediate_field F E)))) end,
-  map_add' := begin
-    intros x y,
-    apply (algebra_map F E).injective,
-    rw ring_hom.map_add,
-    rw classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem x)),
-    rw classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem y)),
-    exact classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem (x + y))) end,
-  map_mul' := begin
-    intros x y,
-    apply (algebra_map F E).injective,
-    rw ring_hom.map_mul,
-    rw classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem x)),
-    rw classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem y)),
-    exact classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem (x * y))) end,
-  smul := λ x y, classical.some (intermediate_field.mem_bot.mp (subtype.mem x)) * y,
+{ to_fun := intermediate_field.bot_equiv,
+  map_zero' := alg_equiv.map_zero _,
+  map_one' := alg_equiv.map_one _,
+  map_add' := alg_equiv.map_add _,
+  map_mul' := alg_equiv.map_mul _,
+  smul := λ x y, (intermediate_field.bot_equiv x) * y,
   smul_def' := λ _ _, rfl,
   commutes' := λ _ _, mul_comm _ _ }
 
@@ -171,9 +151,12 @@ instance is_scalar_tower_over_intermediate_field_bot :
   is_scalar_tower (⊥ : intermediate_field F E) F E :=
 ⟨begin
   intros x y z,
-  have key : (algebra_map F E) (algebra_map (⊥ : intermediate_field F E) F x) = ↑x :=
-    classical.some_spec (intermediate_field.mem_bot.mp (subtype.mem x)),
-  simp only [algebra.smul_def, ring_hom.map_mul, key, mul_assoc],
+  suffices : (algebra_map F E) (algebra_map (⊥ : intermediate_field F E) F x) = ↑x,
+  { simp only [algebra.smul_def, ring_hom.map_mul, this, mul_assoc], refl },
+  let ϕ := algebra.of_id F (⊥ : subalgebra F E),
+  let ψ := alg_equiv.of_bijective ϕ ((algebra.bot_equiv F E).symm.bijective),
+  change ↑(ψ (ψ.symm ⟨x, _⟩)) = (↑x : E),
+  rw alg_equiv.apply_symm_apply,
   refl,
 end⟩
 
