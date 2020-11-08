@@ -63,6 +63,20 @@ iff.rfl
 
 lemma coe_subset : ↑I ⊆ s := I.Icc_subset
 
+lemma mem_set_of_mem {x} (hx : x ∈ I) : x ∈ s := I.coe_subset hx
+
+@[simp] lemma left_mem : I.left ∈ I := left_mem_Icc.2 I.nontrivial
+
+@[simp] lemma right_mem : I.right ∈ I := right_mem_Icc.2 I.nontrivial
+
+@[simp] lemma left_mem_set : I.left ∈ s := I.Icc_subset I.left_mem
+
+@[simp] lemma right_mem_set : I.right ∈ s := I.Icc_subset I.right_mem
+
+@[simp] lemma mem_mk {l r x : α} {h₁ : l ≤ r} {h₂ : Icc l r ⊆ s} :
+  x ∈ mk l r h₁ h₂ ↔ x ∈ Icc l r :=
+iff.rfl
+
 lemma coe_nonempty : (I : set α).nonempty := nonempty_Icc.2 I.nontrivial
 
 instance : nonempty (I : set α) := I.coe_nonempty.to_subtype
@@ -159,6 +173,17 @@ lemma piecewise_mem {I : subinterval s} {f g : ι → α}
   t.piecewise f g ∈ I :=
 t.piecewise_mem_Icc_of_mem_of_mem hf hg
 
+def pi_Ioc (I : subinterval s) : set (ι → α) := pi univ (λ i, Ioc (I.left i) (I.right i))
+
+lemma pi_Ioc_mono : monotone (pi_Ioc : subinterval s → set (ι → α)) :=
+λ I₁ I₂ hI x hx i hi, Ioc_subset_Ioc (hI.1 i) (hI.2 i) (hx i hi)
+
+lemma pi_Ioc_subset (I : subinterval s) : I.pi_Ioc ⊆ I :=
+λ x hx, ⟨λ i, (hx i trivial).1.le, λ i, (hx i trivial).2⟩
+
+lemma pi_Ioc_subset_set (I : subinterval s) : I.pi_Ioc ⊆ s :=
+subset.trans I.pi_Ioc_subset I.coe_subset
+
 variables [decidable_eq ι]
 
 /-- Let `I` be a subinterval of `s : set (ι → α)`; let `m` be a point in `I`.  Let `l` and `r` be
@@ -190,6 +215,19 @@ lemma pi_subbox_left (l r : finset ι) : (I.pi_subbox m hm l r).left = l.piecewi
 lemma pi_subbox_right (l r : finset ι) :
   (I.pi_subbox m hm l r).right = r.piecewise m I.right := rfl
 
+lemma disjoint_pi_subbox_Ioc (l₁ r₁ l₂ r₂) (h : (l₁ ∩ r₂ ∪ l₂ ∩ r₁ : finset ι).nonempty) :
+  disjoint (I.pi_subbox m hm l₁ r₁).pi_Ioc (I.pi_subbox m hm l₂ r₂).pi_Ioc :=
+begin
+  rcases h with ⟨i, hi⟩,
+  simp only [finset.mem_union, finset.mem_inter] at hi,
+  wlog : i ∈ l₁ ∧ i ∈ r₂ := hi using [l₁ r₁ l₂ r₂, l₂ r₂ l₁ r₁] tactic.skip,
+  { intros x hx,
+    have := and.intro (hx.1 i trivial).1 (hx.2 i trivial).2,
+    have : m i < x i ∧ x i ≤ m i, by simpa [pi_subbox_left, pi_subbox_right, hi.1, hi.2],
+    exact this.1.not_le this.2 },
+  { exact this.symm }
+end
+
 @[simp] lemma pi_subbox_empty_left (t : finset ι) : (I.pi_subbox m hm ∅ t).left = I.left :=
 finset.piecewise_empty _ _
 
@@ -217,6 +255,28 @@ by ext; simp [pi_subbox, finset.piecewise_insert, finset.piecewise_singleton]
 by ext; simp [pi_subbox, finset.piecewise_insert, finset.piecewise_singleton]
 
 end pi_preorder
+
+section pi_linear_order
+
+variables [decidable_eq ι] [linear_order α] {s : set (ι → α)}
+  (I : subinterval s) (m : ι → α) (hm : m ∈ I) (i : ι)
+
+lemma union_pi_subbox_Ioc₁ :
+  (I.pi_subbox m hm ∅ {i}).pi_Ioc ∪ (I.pi_subbox m hm {i} ∅).pi_Ioc = I.pi_Ioc :=
+begin
+  refine subset.antisymm (union_subset _ _) _;
+    try { apply_rules [pi_Ioc_mono, pi_subbox_le] },
+  intros x hx,
+  cases le_or_lt (x i) (m i) with hi hi,
+  { left,
+    intros j hj,
+    by_cases hij : j = i; simp [(hx j hj).1, (hx j hj).2, (hx i trivial).1, hi, hij] },
+  { right,
+    intros j hj,
+    by_cases hij : j = i; simp [(hx j hj).1, (hx j hj).2, (hx i trivial).2, hi, hij] }
+end
+
+end pi_linear_order
 
 end subinterval
 

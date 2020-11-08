@@ -5,6 +5,8 @@ Authors: Johannes Hölzl, Yury Kudryashov
 -/
 import measure_theory.measure_space
 import analysis.normed_space.finite_dimension
+import data.set.intervals.subinterval
+
 /-!
 # Borel (measurable) space
 
@@ -221,6 +223,24 @@ instance opens_measurable_space.to_measurable_singleton_class [t1_space α] :
   measurable_singleton_class α :=
 ⟨λ x, is_closed_singleton.is_measurable⟩
 
+instance pi.opens_measurable_space {ι : Type*} {π : ι → Type*} [fintype ι]
+  [t' : Π i, topological_space (π i)]
+  [Π i, measurable_space (π i)] [∀ i, second_countable_topology (π i)]
+  [∀ i, opens_measurable_space (π i)] :
+  opens_measurable_space (Π i, π i) :=
+begin
+  refine ⟨_⟩,
+  choose g hc he ho hu hinst using λ i, is_open_generated_countable_inter (π i),
+  have : Pi.topological_space =
+    generate_from {t | ∃(s:Πa, set (π a)) (i : finset ι), (∀a∈i, s a ∈ g a) ∧ t = pi ↑i s},
+  { rw [funext hinst, pi_generate_from_eq] },
+  rw [borel_eq_generate_from_of_subbasis this],
+  apply generate_from_le,
+  rintros _ ⟨s, i, hi, rfl⟩,
+  refine is_measurable_pi i.countable_to_set (λ a ha, is_open.is_measurable _),
+  rw [hinst], exact generate_open.basic _ (hi a ha)
+end
+
 instance prod.opens_measurable_space [second_countable_topology α] [second_countable_topology β] :
   opens_measurable_space (α × β) :=
 begin
@@ -240,9 +260,9 @@ end
 section preorder
 variables [preorder α] [order_closed_topology α] {a b : α}
 
-lemma is_measurable_Ici : is_measurable (Ici a) := is_closed_Ici.is_measurable
-lemma is_measurable_Iic : is_measurable (Iic a) := is_closed_Iic.is_measurable
-lemma is_measurable_Icc : is_measurable (Icc a b) := is_closed_Icc.is_measurable
+@[simp] lemma is_measurable_Ici : is_measurable (Ici a) := is_closed_Ici.is_measurable
+@[simp] lemma is_measurable_Iic : is_measurable (Iic a) := is_closed_Iic.is_measurable
+@[simp] lemma is_measurable_Icc : is_measurable (Icc a b) := is_closed_Icc.is_measurable
 
 instance nhds_within_Ici_is_measurably_generated :
   (𝓝[Ici b] a).is_measurably_generated :=
@@ -278,11 +298,19 @@ end partial_order
 section linear_order
 variables [linear_order α] [order_closed_topology α] {a b : α}
 
-lemma is_measurable_Iio : is_measurable (Iio a) := is_open_Iio.is_measurable
-lemma is_measurable_Ioi : is_measurable (Ioi a) := is_open_Ioi.is_measurable
-lemma is_measurable_Ioo : is_measurable (Ioo a b) := is_open_Ioo.is_measurable
-lemma is_measurable_Ioc : is_measurable (Ioc a b) := is_measurable_Ioi.inter is_measurable_Iic
-lemma is_measurable_Ico : is_measurable (Ico a b) := is_measurable_Ici.inter is_measurable_Iio
+@[simp] lemma is_measurable_Iio : is_measurable (Iio a) := is_open_Iio.is_measurable
+@[simp] lemma is_measurable_Ioi : is_measurable (Ioi a) := is_open_Ioi.is_measurable
+@[simp] lemma is_measurable_Ioo : is_measurable (Ioo a b) := is_open_Ioo.is_measurable
+
+@[simp] lemma is_measurable_Ioc : is_measurable (Ioc a b) :=
+is_measurable_Ioi.inter is_measurable_Iic
+
+@[simp] lemma is_measurable_Ico : is_measurable (Ico a b) :=
+is_measurable_Ici.inter is_measurable_Iio
+
+@[simp] lemma set.subinterval.is_measurable_pi_Ioc {ι} [encodable ι] {s : set (ι → α)}
+  (I : s.subinterval) : is_measurable I.pi_Ioc :=
+is_measurable_pi (countable_encodable _) (λ i hi, is_measurable_Ioc)
 
 instance nhds_within_Ioi_is_measurably_generated :
   (𝓝[Ioi b] a).is_measurably_generated :=
@@ -392,6 +420,16 @@ variables [topological_space α] [measurable_space α] [borel_space α]
   [topological_space γ] [measurable_space γ] [borel_space γ]
   [measurable_space δ]
 
+lemma pi_le_borel_pi {ι : Type*} {π : ι → Type*} [Π i, topological_space (π i)]
+  [Π i, measurable_space (π i)] [∀ i, borel_space (π i)] :
+  measurable_space.pi ≤ borel (Π i, π i) :=
+begin
+  have : ‹Π i, measurable_space (π i)› = λ i, borel (π i) :=
+    funext (λ i, borel_space.measurable_eq),
+  rw [this],
+  exact supr_le (λ i, comap_le_iff_le_map.2 $ (continuous_apply i).borel_measurable)
+end
+
 lemma prod_le_borel_prod : prod.measurable_space ≤ borel (α × β) :=
 begin
   rw [‹borel_space α›.measurable_eq, ‹borel_space β›.measurable_eq],
@@ -399,6 +437,13 @@ begin
   { exact comap_le_iff_le_map.mpr continuous_fst.borel_measurable },
   { exact comap_le_iff_le_map.mpr continuous_snd.borel_measurable }
 end
+
+instance pi.borel_space {ι : Type*} {π : ι → Type*} [fintype ι]
+  [t' : Π i, topological_space (π i)]
+  [Π i, measurable_space (π i)] [∀ i, second_countable_topology (π i)]
+  [∀ i, borel_space (π i)] :
+  borel_space (Π i, π i) :=
+⟨le_antisymm pi_le_borel_pi opens_measurable_space.borel_le⟩
 
 instance prod.borel_space [second_countable_topology α] [second_countable_topology β] :
   borel_space (α × β) :=
