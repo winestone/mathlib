@@ -1,5 +1,18 @@
+/-
+Copyright (c) 2020 Yury Kudryashov. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Author: Yury Kudryashov
+-/
 import data.set.intervals.basic
 import data.set.lattice
+
+/-!
+# Intervals in `pi`-space
+
+In this we prove various simple lemmas about intervals in `Π i, α i`. Closed intervals (`Ici x`,
+`Iic x`, `Icc x y`) are equal to products of their projections to `α i`, while (semi-)open intervals
+usually include the corresponding products as proper subsets.
+-/
 
 variables {ι : Type*} {α : ι → Type*}
 
