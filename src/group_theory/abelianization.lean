@@ -57,13 +57,20 @@ nat.rec_on n (⊤ : subgroup G) (λ _ H, general_commutator G H H)
 --   exact general_commutator G n_ih n_ih,
 -- end
 
---lemma nth_commutator_normal (n:ℕ):(nth_commutator G n).normal:=
---begin
-  --induction n,
-  --change (⊤:subgroup G).normal,
-  --sorry,
-  --sorry,
---end
+instance top_normal: (⊤: subgroup G).normal :=
+{
+  conj_mem :=  λ  n mem g, subgroup.mem_top (g*n *g⁻¹ ),
+}
+
+lemma nth_commutator_normal (n:ℕ):(nth_commutator G n).normal:=
+begin
+  induction n,
+  change (⊤:subgroup G).normal,
+  exact top_normal G,
+  change (general_commutator G (nth_commutator G n_n) (nth_commutator G n_n)).normal,
+  exact @general_commutator_is_normal G _inst_1 (nth_commutator G n_n)
+  (nth_commutator G n_n) n_ih n_ih,
+end
 
 def is_solvable : Prop := ∃ n : ℕ, nth_commutator G n = (⊥ : subgroup G)
 
