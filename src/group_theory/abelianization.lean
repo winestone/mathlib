@@ -21,11 +21,13 @@ variables (G : Type u) [group G]
 def commutator : subgroup G :=
 subgroup.normal_closure {x | ∃ p q, p * q * p⁻¹ * q⁻¹ = x}
 
+variables {G}
+
 def general_commutator (H₁ : subgroup G) (H₂ : subgroup G) : subgroup G :=
 subgroup.closure {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x}
 
 lemma general_commutator_is_normal (H₁ : subgroup G) (H₂ : subgroup G) [subgroup.normal H₁]
-  [subgroup.normal H₂] : subgroup.normal (general_commutator G H₁ H₂) :=
+  [subgroup.normal H₂] : subgroup.normal (general_commutator H₁ H₂) :=
 begin
   let base : set G := {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x},
   suffices : base = group.conjugates_of_set base,
@@ -35,19 +37,21 @@ begin
   apply set.subset.antisymm group.subset_conjugates_of_set,
   intros a h,
   rw group.mem_conjugates_of_set_iff at h,
-  cases h with b ha,
-  cases ha with hb ha,
-  cases ha with d ha,
-  cases hb with c hb,
-  cases hb with hc hb,
-  cases hb with e hb,
-  cases hb with he hb,
+  rcases h with ⟨b, ⟨c, hc, e, he, hb⟩, d, ha⟩,
+  -- cases ha with hb ha,
+  -- cases ha with d ha,
+  -- cases hb with c hb,
+  -- cases hb with hc hb,
+  -- cases hb with e hb,
+  -- cases hb with he hb,
   rw [←ha, ←hb],
   exact ⟨d * c * d⁻¹, ⟨_inst_2.conj_mem c hc d, ⟨d * e * d⁻¹, ⟨_inst_3.conj_mem e he d, by group⟩⟩⟩⟩,
 end
 
+variables (G)
+
 def nth_commutator (n : ℕ) : subgroup G :=
-nat.rec_on n (⊤ : subgroup G) (λ _ H, general_commutator G H H)
+nat.rec_on n (⊤ : subgroup G) (λ _ H, general_commutator H H)
 -- I've heard it's typically better to give definitions in term mode because it makes
 -- them more amenable to refl. I'm not sure it makes a big difference here, but I think
 -- what I've written above is a term mode version of the tactic mode definition commented out below
@@ -72,13 +76,19 @@ begin
   (nth_commutator G n_n) n_ih n_ih,
 end
 
+-- TODO:
+-- (1) Abelian groups solvable
+-- (2) Quotients of solvable groups solvable
+-- (3) Subgroups of solvable groups solvable
+-- (4) If G is in the middle of a short exact sequence with everything else solvable
+--     then G is solvable
+-- (5) S_5 is not solvable (A_5 is simple)
+
 def is_solvable : Prop := ∃ n : ℕ, nth_commutator G n = (⊥ : subgroup G)
 
 
 lemma commutator_eq_general_commutator_top_top :
-  commutator G = general_commutator G (⊤ : subgroup G) (⊤ : subgroup G) := sorry
-
-
+  commutator G = general_commutator (⊤ : subgroup G) (⊤ : subgroup G) := sorry
 
 
 /-- The abelianization of G is the quotient of G by its commutator subgroup -/
