@@ -61,7 +61,10 @@ begin
   { sorry,
     -- show that a subgroup is le its normal closure
   },
-  { sorry,
+  { rw ← general_commutator,
+    refine normal_closure_le_normal _,
+    simp only [coe_subset_coe],
+    tauto,
     -- show that the normal_closure of a normal subgroup is the subgroup
   }
 end
