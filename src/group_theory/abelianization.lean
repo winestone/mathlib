@@ -37,7 +37,7 @@ variables {G}
 def general_commutator (H₁ : subgroup G) (H₂ : subgroup G) : subgroup G :=
 subgroup.closure {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x}
 
-instance general_commutator_is_normal (H₁ : subgroup G) (H₂ : subgroup G) [h₁ : subgroup.normal H₁]
+instance general_commutator_normal (H₁ : subgroup G) (H₂ : subgroup G) [h₁ : subgroup.normal H₁]
   [h₂ : subgroup.normal H₂] : subgroup.normal (general_commutator H₁ H₂) :=
 begin
   let base : set G := {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x},
@@ -92,7 +92,7 @@ begin
     exact top_normal G, },
   { haveI : (nth_commutator G n).normal := ih,
     change (general_commutator (nth_commutator G n) (nth_commutator G n)).normal,
-    exact general_commutator_is_normal (nth_commutator G n) (nth_commutator G n), }
+    exact general_commutator_normal (nth_commutator G n) (nth_commutator G n), }
 end
 
 def is_solvable : Prop := ∃ n : ℕ, nth_commutator G n = (⊥ : subgroup G)
