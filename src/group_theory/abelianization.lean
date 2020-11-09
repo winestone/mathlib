@@ -7,6 +7,17 @@ The functor Grp → Ab which is the left adjoint
 of the forgetful functor Ab → Grp.
 -/
 
+-- TODO:
+-- (1) Abelian groups solvable
+-- (2) Quotients of solvable groups solvable
+-- (3) Subgroups of solvable groups solvable
+-- (4) If G is in the middle of a short exact sequence with everything else solvable
+--     then G is solvable
+-- (5) S_5 is not solvable (A_5 is simple)
+
+-- Small todos:
+-- (1) Show that the set of commutators is already a subgroup without needing to take subgroup closure
+
 import group_theory.quotient_group
 import tactic.group
 
@@ -26,70 +37,75 @@ variables {G}
 def general_commutator (H₁ : subgroup G) (H₂ : subgroup G) : subgroup G :=
 subgroup.closure {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x}
 
-lemma general_commutator_is_normal (H₁ : subgroup G) (H₂ : subgroup G) [subgroup.normal H₁]
-  [subgroup.normal H₂] : subgroup.normal (general_commutator H₁ H₂) :=
+instance general_commutator_is_normal (H₁ : subgroup G) (H₂ : subgroup G) [h₁ : subgroup.normal H₁]
+  [h₂ : subgroup.normal H₂] : subgroup.normal (general_commutator H₁ H₂) :=
 begin
   let base : set G := {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x},
-  suffices : base = group.conjugates_of_set base,
+  suffices h_base : base = group.conjugates_of_set base,
   { dsimp only [general_commutator, ←base],
-    rw this,
+    rw h_base,
     exact subgroup.normal_closure_normal },
   apply set.subset.antisymm group.subset_conjugates_of_set,
   intros a h,
   rw group.mem_conjugates_of_set_iff at h,
-  rcases h with ⟨b, ⟨c, hc, e, he, hb⟩, d, ha⟩,
-  -- cases ha with hb ha,
-  -- cases ha with d ha,
-  -- cases hb with c hb,
-  -- cases hb with hc hb,
-  -- cases hb with e hb,
-  -- cases hb with he hb,
-  rw [←ha, ←hb],
-  exact ⟨d * c * d⁻¹, ⟨_inst_2.conj_mem c hc d, ⟨d * e * d⁻¹, ⟨_inst_3.conj_mem e he d, by group⟩⟩⟩⟩,
+  rcases h with ⟨b, ⟨c, hc, e, he, rfl⟩, d, rfl⟩,
+  exact ⟨d * c * d⁻¹, h₁.conj_mem c hc d, d * e * d⁻¹, h₂.conj_mem e he d, by group⟩,
+end
+
+lemma general_commutator_eq_normal_closure (H₁ : subgroup G) (H₂ : subgroup G) [H₁.normal] [H₂.normal] :
+  general_commutator H₁ H₂ = subgroup.normal_closure (general_commutator H₁ H₂) :=
+begin
+  rw general_commutator,
+  apply le_antisymm,
+  { sorry,
+    -- show that a subgroup is le its normal closure
+  },
+  { sorry,
+    -- show that the normal_closure of a normal subgroup is the subgroup
+  }
+end
+
+lemma general_commutator_eq_normal_closure' (H₁ : subgroup G) (H₂ : subgroup G) [H₁.normal] [H₂.normal] :
+  general_commutator H₁ H₂ = subgroup.normal_closure {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x} :=
+begin
+  rw general_commutator_eq_normal_closure,
+  rw general_commutator,
+  -- a lemma should be added to mathlib saying that the normal closure of the subgroup closure is
+  -- equal to the normal closure
+  -- Also there should be a lemma saying that the normal closure contains the subgroup closure
+  -- and a lemma saying that the normal closure is idempotent
+  sorry,
 end
 
 variables (G)
 
 def nth_commutator (n : ℕ) : subgroup G :=
 nat.rec_on n (⊤ : subgroup G) (λ _ H, general_commutator H H)
--- I've heard it's typically better to give definitions in term mode because it makes
--- them more amenable to refl. I'm not sure it makes a big difference here, but I think
--- what I've written above is a term mode version of the tactic mode definition commented out below
--- begin
---   induction n,
---   exact (⊤ : subgroup G),
---   exact general_commutator G n_ih n_ih,
--- end
 
 instance top_normal: (⊤: subgroup G).normal :=
-{
-  conj_mem :=  λ  n mem g, subgroup.mem_top (g*n *g⁻¹ ),
-}
+{ conj_mem :=  λ  n mem g, subgroup.mem_top (g*n *g⁻¹ ), }
 
-lemma nth_commutator_normal (n:ℕ):(nth_commutator G n).normal:=
+lemma nth_commutator_normal (n : ℕ) : (nth_commutator G n).normal :=
 begin
-  induction n,
-  change (⊤:subgroup G).normal,
-  exact top_normal G,
-  change (general_commutator G (nth_commutator G n_n) (nth_commutator G n_n)).normal,
-  exact @general_commutator_is_normal G _inst_1 (nth_commutator G n_n)
-  (nth_commutator G n_n) n_ih n_ih,
+  induction n with n ih,
+  { change (⊤ : subgroup G).normal,
+    exact top_normal G, },
+  { haveI : (nth_commutator G n).normal := ih,
+    change (general_commutator (nth_commutator G n) (nth_commutator G n)).normal,
+    exact general_commutator_is_normal (nth_commutator G n) (nth_commutator G n), }
 end
-
--- TODO:
--- (1) Abelian groups solvable
--- (2) Quotients of solvable groups solvable
--- (3) Subgroups of solvable groups solvable
--- (4) If G is in the middle of a short exact sequence with everything else solvable
---     then G is solvable
--- (5) S_5 is not solvable (A_5 is simple)
 
 def is_solvable : Prop := ∃ n : ℕ, nth_commutator G n = (⊥ : subgroup G)
 
-
 lemma commutator_eq_general_commutator_top_top :
-  commutator G = general_commutator (⊤ : subgroup G) (⊤ : subgroup G) := sorry
-
+  commutator G = general_commutator (⊤ : subgroup G) (⊤ : subgroup G) :=
+begin
+  rw commutator,
+  rw general_commutator_eq_normal_closure',
+  apply le_antisymm; apply subgroup.normal_closure_mono,
+  { exact λ x ⟨p, q, h⟩, ⟨p, subgroup.mem_top p, q, subgroup.mem_top q, h⟩, },
+  { exact λ x ⟨p, _, q, _, h⟩, ⟨p, q, h⟩, }
+end
 
 /-- The abelianization of G is the quotient of G by its commutator subgroup -/
 def abelianization : Type u :=
