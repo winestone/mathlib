@@ -55,31 +55,12 @@ end
 
 lemma general_commutator_eq_normal_closure (H₁ : subgroup G) (H₂ : subgroup G) [H₁.normal]
   [H₂.normal] : general_commutator H₁ H₂ = normal_closure (general_commutator H₁ H₂) :=
-begin
-  rw general_commutator,
-  apply le_antisymm,
-  { sorry,
-    -- show that a subgroup is le its normal closure
-  },
-  { rw ← general_commutator,
-    refine normal_closure_le_normal _,
-    simp only [coe_subset_coe],
-    tauto,
-    -- show that the normal_closure of a normal subgroup is the subgroup
-  }
-end
+eq.symm normal_closure_eq_self_of_normal
 
 lemma general_commutator_eq_normal_closure' (H₁ H₂ : subgroup G) [H₁.normal] [H₂.normal] :
   general_commutator H₁ H₂ = normal_closure {x | ∃ (p ∈ H₁) (q ∈ H₂), p * q * p⁻¹ * q⁻¹ = x} :=
-begin
-  rw general_commutator_eq_normal_closure,
-  rw general_commutator,
-  -- a lemma should be added to mathlib saying that the normal closure of the subgroup closure is
-  -- equal to the normal closure
-  -- Also there should be a lemma saying that the normal closure contains the subgroup closure
-  -- and a lemma saying that the normal closure is idempotent
-  sorry,
-end
+by rw [general_commutator_eq_normal_closure, general_commutator,
+  normal_closure_closure_eq_normal_closure]
 
 variables (G)
 
