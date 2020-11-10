@@ -331,7 +331,8 @@ lemma is_galois_of_is_separable_splitting_field [p.is_splitting_field F E] (hp :
 begin
   let p' := (p.map (algebra_map F E)),
   let s := p'.roots.to_finset,
-  have := intermediate_field.induction_on_adjoin' F s (λ K, is_galois F K) galois.is_galois_bot sorry,
+  have := intermediate_field.induction_on_adjoin' F s (λ K, is_galois F K) galois.is_galois_bot
+    sorry,
   sorry,
 end
 
