@@ -80,8 +80,6 @@ begin
     exact general_commutator_normal (nth_commutator G n) (nth_commutator G n), }
 end
 
-def is_solvable : Prop := ∃ n : ℕ, nth_commutator G n = (⊥ : subgroup G)
-
 lemma commutator_eq_general_commutator_top_top :
   commutator G = general_commutator (⊤ : subgroup G) (⊤ : subgroup G) :=
 begin
@@ -91,6 +89,9 @@ begin
   { exact λ x ⟨p, q, h⟩, ⟨p, mem_top p, q, mem_top q, h⟩, },
   { exact λ x ⟨p, _, q, _, h⟩, ⟨p, q, h⟩, }
 end
+
+lemma nth_commutator_one : nth_commutator G 1 = commutator G :=
+eq.symm $ commutator_eq_general_commutator_top_top G
 
 /-- The abelianization of G is the quotient of G by its commutator subgroup -/
 def abelianization : Type u :=
@@ -166,3 +167,17 @@ begin
 end
 
 end abelianization
+
+section solvable
+
+def is_solvable : Prop := ∃ n : ℕ, nth_commutator G n = (⊥ : subgroup G)
+
+lemma is_solvable_of_comm {G : Type*} [comm_group G] : is_solvable G :=
+begin
+  use 1,
+  rw [eq_bot_iff, nth_commutator_one],
+  calc commutator G ≤ (monoid_hom.id G).ker : abelianization.commutator_subset_ker (monoid_hom.id G)
+  ... = ⊥ : rfl,
+end
+
+end solvable
