@@ -47,6 +47,9 @@ instance of_fixed_field (G : Type*) [group G] [fintype G] [mul_semiring_action G
   is_galois (mul_action.fixed_points G E) E :=
 ⟨fixed_points.separable G E, fixed_points.normal G E⟩
 
+instance self : is_galois F F :=
+⟨is_separable_self F, normal.self F⟩
+
 instance aut : group (E ≃ₐ[F] E) :=
 { mul := λ ϕ ψ, ψ.trans ϕ,
   mul_assoc := λ ϕ ψ χ, rfl,
@@ -171,6 +174,9 @@ end
 
 lemma is_galois_iff_is_galois_top : is_galois F (⊤ : intermediate_field F E) ↔ is_galois F E :=
 is_galois_of_alg_equiv (intermediate_field.top_equiv)
+
+instance is_galois_bot : is_galois F (⊥ : intermediate_field F E) :=
+(is_galois_of_alg_equiv intermediate_field.bot_equiv).mpr (galois.self F)
 
 instance subgroup_action : faithful_mul_semiring_action H E :=
 { smul := λ h x, h x,
@@ -325,7 +331,7 @@ lemma is_galois_of_is_separable_splitting_field [p.is_splitting_field F E] (hp :
 begin
   let p' := (p.map (algebra_map F E)),
   let s := p'.roots.to_finset,
-  have := intermediate_field.induction_on_adjoin' F s (λ K, is_galois F K) sorry sorry,
+  have := intermediate_field.induction_on_adjoin' F s (λ K, is_galois F K) galois.is_galois_bot sorry,
   sorry,
 end
 
