@@ -53,6 +53,7 @@ We define the following operations:
 * `init` : the beginning of an `n+1` tuple, i.e., its first `n` entries;
 * `snoc` : adding an element at the end of an `n`-tuple, to get an `n+1`-tuple. The name `snoc`
   comes from `cons` (i.e., adding an element to the left of a tuple) read in reverse order.
+* `insert_nth` : insert an element to a tuple at a given position.
 * `find p` : returns the first index `n` where `p n` is satisfied, and `none` if it is never
   satisfied.
 
@@ -1008,6 +1009,8 @@ section insert_nth
 
 variables {α : fin (n+1) → Type u} {β : Type v}
 
+/-- Insert an element into a tuple at a given position. For `i = 0` see `fin.cons`,
+for `i = fin.last n` see `fin.snoc`. -/
 def insert_nth (i : fin (n + 1)) (x : α i) (p : Π j : fin n, α (i.succ_above j))
   (j : fin (n + 1)) : α j :=
 if h : j = i
@@ -1047,9 +1050,26 @@ begin
   convert (cons_succ _ _ _).symm
 end
 
-@[simp] lemma insert_nth_zero' {α : Type*} (x : α) (p : fin n → α) :
-  @insert_nth _ (λ _, α) 0 x p = cons x p :=
+@[simp] lemma insert_nth_zero' (x : β) (p : fin n → β) :
+  @insert_nth _ (λ _, β) 0 x p = cons x p :=
 by simp [insert_nth_zero]
+
+lemma insert_nth_last (x : α (last n)) (p : Π j : fin n, α ((last n).succ_above j)) :
+  insert_nth (last n) x p =
+    snoc (λ j, _root_.cast (congr_arg α (congr_fun succ_above_last j)) (p j)) x :=
+begin
+  refine insert_nth_eq_iff.2 ⟨by simp, _⟩,
+  ext j,
+  apply eq_of_heq,
+  transitivity snoc (λ j, _root_.cast (congr_arg α (congr_fun succ_above_last j)) (p j)) x j.cast_succ,
+  { rw [snoc_cast_succ], exact (cast_heq _ _).symm },
+  { apply congr_arg_heq,
+    rw [succ_above_last] }
+end
+
+@[simp] lemma insert_nth_last' (x : β) (p : fin n → β) :
+  @insert_nth _ (λ _, β) (last n) x p = snoc p x :=
+by simp [insert_nth_last]
 
 end insert_nth
 

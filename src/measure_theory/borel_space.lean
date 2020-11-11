@@ -240,7 +240,7 @@ instance pi.opens_measurable_space {ι : Type*} {π : ι → Type*} [fintype ι]
   [∀ i, opens_measurable_space (π i)] :
   opens_measurable_space (Π i, π i) :=
 begin
-  refine ⟨_⟩,
+  constructor,
   choose g hc he ho hu hinst using λ i, is_open_generated_countable_inter (π i),
   have : Pi.topological_space =
     generate_from {t | ∃(s:Πa, set (π a)) (i : finset ι), (∀a∈i, s a ∈ g a) ∧ t = pi ↑i s},
@@ -249,13 +249,14 @@ begin
   apply generate_from_le,
   rintros _ ⟨s, i, hi, rfl⟩,
   refine is_measurable_pi i.countable_to_set (λ a ha, is_open.is_measurable _),
-  rw [hinst], exact generate_open.basic _ (hi a ha)
+  rw [hinst], 
+  exact generate_open.basic _ (hi a ha)
 end
 
 instance prod.opens_measurable_space [second_countable_topology α] [second_countable_topology β] :
   opens_measurable_space (α × β) :=
 begin
-  refine ⟨_⟩,
+  constructor,
   rcases is_open_generated_countable_inter α with ⟨a, ha₁, ha₂, ha₃, ha₄, ha₅⟩,
   rcases is_open_generated_countable_inter β with ⟨b, hb₁, hb₂, hb₃, hb₄, hb₅⟩,
   have : prod.topological_space = generate_from {g | ∃u∈a, ∃v∈b, g = set.prod u v},
