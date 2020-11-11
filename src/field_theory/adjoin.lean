@@ -476,7 +476,7 @@ def alg_hom_restrict (f : E →ₐ[F] K) (L : subalgebra F E) : L →ₐ[F] K :=
 
 def alg_hom_extend_base (f : E →ₐ[F] K) (L : subalgebra F E) :
   @alg_hom L E K _ _ _ _ (ring_hom.to_algebra (alg_hom_restrict F f L)) :=
-{ to_fun := λ x, f x,
+{ to_fun := f,
   map_one' := by simp only [alg_hom.map_one],
   map_zero' := by simp only [alg_hom.map_zero],
   map_mul' := by simp only [forall_const, eq_self_iff_true, alg_hom.map_mul],
@@ -501,12 +501,14 @@ def alg_hom_compose (L : subalgebra F E) (f : L →ₐ[F] K)
 
 def alg_hom_equiv_sigma_adjoin_integral :
   (E →ₐ[F] K) ≃ Σ (f : F⟮α⟯ →ₐ[F] K), @alg_hom F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) :=
-{ to_fun := λ f, ⟨alg_hom_restrict F f F⟮α⟯.to_subalgebra, alg_hom_extend_base F f F⟮α⟯.to_subalgebra⟩,
+{ to_fun := λ f, ⟨alg_hom_restrict F f F⟮α⟯.to_subalgebra,
+    alg_hom_extend_base F f F⟮α⟯.to_subalgebra⟩,
   inv_fun := λ ⟨f, g⟩, alg_hom_compose F F⟮α⟯.to_subalgebra f g,
-  left_inv := λ f, by {dsimp only at *, ext, refl},
+  left_inv := λ f, by {dsimp only, ext, refl},
   right_inv :=
   begin
     rintros ⟨f, g⟩,
+    dsimp * at *,
     -- for some reason this seems really hard to prove
     sorry,
   end,
