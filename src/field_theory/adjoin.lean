@@ -469,12 +469,22 @@ noncomputable def alg_hom_equiv_pi_adjoin_integral :
 { to_fun :=
   begin
     intro f,
+    -- mathlib doesn't currently seem to have restriction of algebra homomorphisms?
+    exact ⟨sorry, sorry⟩,
+  end,
+  inv_fun :=
+  begin
+    rintros ⟨f, g⟩,
+    -- Need to provide a special instance of alg_hom here. I doubt it's already in mathlib
     sorry,
   end,
-  inv_fun := sorry,
   left_inv := sorry,
   right_inv := sorry,
 }
+
+-- TODO: show that if `α` is integral and `E →ₐ[F⟮α⟯] K` always has fintype and constant size then
+-- the size of `E →ₐ[F] K` is equal to degree of minimal polynomial of `α` over `F` times the
+-- size of `E →ₐ[F⟮α⟯] K`. Uses `fintype.card_sigma`
 
 end adjoin_integral_element
 
