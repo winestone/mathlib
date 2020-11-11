@@ -465,7 +465,16 @@ begin
 end
 
 noncomputable def alg_hom_equiv_pi_adjoin_integral :
-  (E →ₐ[F] K) ≃ Π (f : F⟮α⟯ →ₐ[F] K), @alg_hom F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) := sorry
+  (E →ₐ[F] K) ≃ Σ (f : F⟮α⟯ →ₐ[F] K), @alg_hom F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) :=
+{ to_fun :=
+  begin
+    intro f,
+    sorry,
+  end,
+  inv_fun := sorry,
+  left_inv := sorry,
+  right_inv := sorry,
+}
 
 end adjoin_integral_element
 
