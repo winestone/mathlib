@@ -499,7 +499,7 @@ def alg_hom_compose (L : subalgebra F E) (f : L →ₐ[F] K)
   end,
 }
 
-noncomputable def alg_hom_equiv_pi_adjoin_integral :
+def alg_hom_equiv_sigma_adjoin_integral :
   (E →ₐ[F] K) ≃ Σ (f : F⟮α⟯ →ₐ[F] K), @alg_hom F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) :=
 { to_fun := λ f, ⟨alg_hom_restrict F f F⟮α⟯.to_subalgebra, alg_hom_extend_base F f F⟮α⟯.to_subalgebra⟩,
   inv_fun := λ ⟨f, g⟩, alg_hom_compose F F⟮α⟯.to_subalgebra f g,
