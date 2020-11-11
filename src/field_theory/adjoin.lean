@@ -464,6 +464,15 @@ begin
   exact polynomial.nodup_roots ((polynomial.separable_map (algebra_map F K)).mpr h_sep),
 end
 
+lemma alg_equiv_adjoin_integral (h_sep : (minimal_polynomial h).separable)
+  (h_splits : (minimal_polynomial h).splits (algebra_map F F⟮α⟯)) :
+  fintype.card (F⟮α⟯ ≃ₐ[F] F⟮α⟯) = (minimal_polynomial h).nat_degree :=
+eq.trans (fintype.card_congr (alg_equiv_equiv_alg_hom F F⟮α⟯))
+  (@alg_hom_adjoin_integral F _ _ _ _ α h _ _ _ h_sep h_splits)
+
+noncomputable def alg_hom_equiv_pi_adjoin_integral :
+  (E →ₐ[F] K) ≃ Π (f : F⟮α⟯ →ₐ[F] K), @alg_hom F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) := sorry
+
 end adjoin_integral_element
 
 section induction
