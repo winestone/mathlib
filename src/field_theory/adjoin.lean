@@ -464,13 +464,23 @@ begin
   exact polynomial.nodup_roots ((polynomial.separable_map (algebra_map F K)).mpr h_sep),
 end
 
+def alg_hom_restrict (f : E →ₐ[F] K) (L : subalgebra F E) : L →ₐ[F] K :=
+{ to_fun := λ x, f x,
+  map_one' := by simp only [alg_hom.map_one, subsemiring.coe_one],
+  map_zero' := by simp only [submodule.coe_zero, alg_hom.map_zero],
+  map_mul' := by simp only [subsemiring.coe_mul, forall_const, eq_self_iff_true, alg_hom.map_mul],
+  map_add' := by simp only [alg_hom.map_add, forall_const, submodule.coe_add, eq_self_iff_true],
+  commutes' := λ r, by { change f (algebra_map F E r) = algebra_map F K r,
+    simp only [alg_hom.commutes] } }
+
 noncomputable def alg_hom_equiv_pi_adjoin_integral :
   (E →ₐ[F] K) ≃ Σ (f : F⟮α⟯ →ₐ[F] K), @alg_hom F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) :=
 { to_fun :=
   begin
     intro f,
     -- mathlib doesn't currently seem to have restriction of algebra homomorphisms?
-    exact ⟨sorry, sorry⟩,
+    refine ⟨alg_hom_restrict F f F⟮α⟯.to_subalgebra, _⟩,
+    sorry,
   end,
   inv_fun :=
   begin
