@@ -464,6 +464,7 @@ begin
   exact polynomial.nodup_roots ((polynomial.separable_map (algebra_map F K)).mpr h_sep),
 end
 
+-- Not sure if this is the right way to do things
 def alg_hom_restrict (f : E →ₐ[F] K) (L : subalgebra F E) : L →ₐ[F] K :=
 { to_fun := λ x, f x,
   map_one' := by simp only [alg_hom.map_one, subsemiring.coe_one],
@@ -473,23 +474,42 @@ def alg_hom_restrict (f : E →ₐ[F] K) (L : subalgebra F E) : L →ₐ[F] K :=
   commutes' := λ r, by { change f (algebra_map F E r) = algebra_map F K r,
     simp only [alg_hom.commutes] } }
 
+def alg_hom_extend_base (f : E →ₐ[F] K) (L : subalgebra F E) :
+  @alg_hom L E K _ _ _ _ (ring_hom.to_algebra (alg_hom_restrict F f L)) :=
+{ to_fun := λ x, f x,
+  map_one' := by simp only [alg_hom.map_one],
+  map_zero' := by simp only [alg_hom.map_zero],
+  map_mul' := by simp only [forall_const, eq_self_iff_true, alg_hom.map_mul],
+  map_add' := by simp only [alg_hom.map_add, forall_const, eq_self_iff_true],
+  commutes' := λ r, rfl, }
+
+def alg_hom_compose (L : subalgebra F E) (f : L →ₐ[F] K)
+  (g : @alg_hom L E K _ _ _ _ (ring_hom.to_algebra f)) : E →ₐ[F] K :=
+{ to_fun := g,
+  map_one' := by simp only [alg_hom.map_one],
+  map_zero' := by simp only [alg_hom.map_zero],
+  map_mul' := by simp only [forall_const, eq_self_iff_true, alg_hom.map_mul],
+  map_add' := by simp only [alg_hom.map_add, forall_const, eq_self_iff_true],
+  commutes' :=
+  begin
+    haveI : algebra L K := ring_hom.to_algebra f,
+    intros r,
+    rw ← f.commutes' r,
+    exact @alg_hom.commutes' L E K _ _ _ _ (ring_hom.to_algebra f) g (algebra_map F L r),
+  end,
+}
+
 noncomputable def alg_hom_equiv_pi_adjoin_integral :
   (E →ₐ[F] K) ≃ Σ (f : F⟮α⟯ →ₐ[F] K), @alg_hom F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) :=
-{ to_fun :=
-  begin
-    intro f,
-    -- mathlib doesn't currently seem to have restriction of algebra homomorphisms?
-    refine ⟨alg_hom_restrict F f F⟮α⟯.to_subalgebra, _⟩,
-    sorry,
-  end,
-  inv_fun :=
+{ to_fun := λ f, ⟨alg_hom_restrict F f F⟮α⟯.to_subalgebra, alg_hom_extend_base F f F⟮α⟯.to_subalgebra⟩,
+  inv_fun := λ ⟨f, g⟩, alg_hom_compose F F⟮α⟯.to_subalgebra f g,
+  left_inv := λ f, by {dsimp only at *, ext, refl},
+  right_inv :=
   begin
     rintros ⟨f, g⟩,
-    -- Need to provide a special instance of alg_hom here. I doubt it's already in mathlib
+    -- for some reason this seems really hard to prove
     sorry,
   end,
-  left_inv := sorry,
-  right_inv := sorry,
 }
 
 -- TODO: show that if `α` is integral and `E →ₐ[F⟮α⟯] K` always has fintype and constant size then
