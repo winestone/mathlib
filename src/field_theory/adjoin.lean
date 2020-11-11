@@ -492,7 +492,6 @@ def alg_hom_compose (L : subalgebra F E) (f : L →ₐ[F] K)
   map_add' := by simp only [alg_hom.map_add, forall_const, eq_self_iff_true],
   commutes' :=
   begin
-    haveI : algebra L K := ring_hom.to_algebra f,
     intros r,
     rw ← f.commutes' r,
     exact @alg_hom.commutes' L E K _ _ _ _ (ring_hom.to_algebra f) g (algebra_map F L r),
@@ -508,9 +507,11 @@ def alg_hom_equiv_sigma_adjoin_integral :
   right_inv :=
   begin
     rintros ⟨f, g⟩,
-    dsimp * at *,
+    -- dsimp * at *,
+    ext,
+    { exact @alg_hom.commutes' F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) g x, },
     -- for some reason this seems really hard to prove
-    sorry,
+    { sorry, },
   end,
 }
 
