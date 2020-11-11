@@ -1,5 +1,5 @@
 import measure_theory.ext_is_o
-import analysis.calculus.fderiv
+import analysis.calculus.measurable_deriv
 
 open measure_theory set function topological_space asymptotics
 open_locale big_operators topological_space filter
@@ -44,13 +44,8 @@ begin
   apply box_subadditive_on.eq_zero_of_forall_is_o_prod' hxy,
   { refine ((box_additive_on_set_integral_Icc' hν _).sub _).norm_subadditive_on,
     { refine hdiv.integrable_on_compact compact_pi_Icc (finset.measurable_sum _ $ λ i, _),
-      letI : measurable_space ((fin (n + 1) → ℝ) →L[ℝ] (fin (n + 1) → E)) := borel _,
-      haveI : borel_space ((fin (n + 1) → ℝ) →L[ℝ] (fin (n + 1) → E)) := ⟨rfl⟩,
-      suffices : measurable (fderiv ℝ f),
-      { have := (continuous_linear_map.apply ℝ _ (update 0 i 1)).continuous.measurable.comp this,
-        have := (measurable_pi_apply i).comp this,
-        simpa [(∘)] },
-      sorry },
+      have := measurable_fderiv_apply_const ℝ f (update 0 i 1),
+      simpa only using (measurable_pi_apply i).comp this },
     { refine box_additive_on_sum_faces_fin (Icc x y) (λ (i : fin (n + 1)) c (l r : fin n → ℝ),
         ∫ z in Icc l r, f (i.insert_nth c z) i ∂μ) (λ i c, box_additive_on_set_integral_Icc' hμ _),
       apply continuous_on.integrable_on_compact,

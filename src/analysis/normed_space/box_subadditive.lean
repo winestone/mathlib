@@ -270,7 +270,7 @@ end
 
 lemma box_additive_on_sum_faces_fin {G n} [add_comm_group G] [preorder α]
   (s : set (fin (n + 1) → α)) (f : fin (n + 1) → α → (fin n → α) → (fin n → α) → G)
-  (hf : ∀ i m, box_additive_on (f i m) {x | fin.insert_nth i m x ∈ s}) :
+  (hf : ∀ i m, box_additive_on (f i m) ((fin.insert_nth i m) ⁻¹' s)) :
   box_additive_on (λ (l r : fin (n + 1) → α),
     ∑ i, (f i (r i) (l ∘ i.succ_above) (r ∘ i.succ_above) -
       f i (l i) (l ∘ i.succ_above) (r ∘ i.succ_above))) s :=

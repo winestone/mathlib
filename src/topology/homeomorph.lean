@@ -52,6 +52,16 @@ rfl
 @[continuity]
 protected lemma continuous (h : α ≃ₜ β) : continuous h := h.continuous_to_fun
 
+@[simp] lemma apply_symm_apply (h : α ≃ₜ β) (x : β) : h (h.symm x) = x :=
+h.to_equiv.apply_symm_apply x
+
+@[simp] lemma symm_apply_apply (h : α ≃ₜ β) (x : α) : h.symm (h x) = x :=
+h.to_equiv.symm_apply_apply x
+
+protected lemma bijective (h : α ≃ₜ β) : function.bijective h := h.to_equiv.bijective
+protected lemma injective (h : α ≃ₜ β) : function.injective h := h.to_equiv.injective
+protected lemma surjective (h : α ≃ₜ β) : function.surjective h := h.to_equiv.surjective
+
 /-- Change the homeomorphism `f` to make the inverse function definitionally equal to `g`. -/
 def change_inv (f : α ≃ₜ β) (g : β → α) (hg : function.right_inverse g f) : α ≃ₜ β :=
 have g = f.symm, from funext (λ x, calc g x = f.symm (f (g x)) : (f.left_inv (g x)).symm
@@ -63,14 +73,14 @@ have g = f.symm, from funext (λ x, calc g x = f.symm (f (g x)) : (f.left_inv (g
   continuous_to_fun := f.continuous,
   continuous_inv_fun := by convert f.symm.continuous }
 
-lemma symm_comp_self (h : α ≃ₜ β) : ⇑h.symm ∘ ⇑h = id :=
-funext $ assume a, h.to_equiv.left_inv a
+@[simp] lemma symm_comp_self (h : α ≃ₜ β) : ⇑h.symm ∘ ⇑h = id :=
+funext h.symm_apply_apply
 
-lemma self_comp_symm (h : α ≃ₜ β) : ⇑h ∘ ⇑h.symm = id :=
-funext $ assume a, h.to_equiv.right_inv a
+@[simp] lemma self_comp_symm (h : α ≃ₜ β) : ⇑h ∘ ⇑h.symm = id :=
+funext h.apply_symm_apply
 
-lemma range_coe (h : α ≃ₜ β) : range h = univ :=
-eq_univ_of_forall $ assume b, ⟨h.symm b, congr_fun h.self_comp_symm b⟩
+@[simp] lemma range_coe (h : α ≃ₜ β) : range h = univ :=
+h.surjective.range_eq
 
 lemma image_symm (h : α ≃ₜ β) : image h.symm = preimage h :=
 funext h.symm.to_equiv.image_eq_preimage
@@ -146,18 +156,17 @@ def homeomorph_of_continuous_open (e : α ≃ β) (h₁ : continuous e) (h₂ : 
 
 lemma comp_continuous_on_iff (h : α ≃ₜ β) (f : γ → α) (s : set γ) :
   continuous_on (h ∘ f) s ↔ continuous_on f s :=
-begin
-  split,
-  { assume H,
-    have : continuous_on (h.symm ∘ (h ∘ f)) s :=
-      h.symm.continuous.comp_continuous_on H,
-    rwa [← function.comp.assoc h.symm h f, symm_comp_self h] at this },
-  { exact λ H, h.continuous.comp_continuous_on H }
-end
+⟨λ H, by simpa only [(∘), h.symm_apply_apply] using h.symm.continuous.comp_continuous_on H,
+  λ H, h.continuous.comp_continuous_on H⟩
 
-lemma comp_continuous_iff (h : α ≃ₜ β) (f : γ → α) :
+lemma comp_continuous_iff (h : α ≃ₜ β) {f : γ → α} :
   continuous (h ∘ f) ↔ continuous f :=
 by simp [continuous_iff_continuous_on_univ, comp_continuous_on_iff]
+
+lemma comp_continuous_iff' (h : α ≃ₜ β) {f : β → γ} :
+  continuous (f ∘ h) ↔ continuous f :=
+⟨λ H, by simpa only [(∘), h.apply_symm_apply] using H.comp h.symm.continuous,
+  λ H, H.comp h.continuous⟩
 
 protected lemma quotient_map (h : α ≃ₜ β) : quotient_map h :=
 ⟨h.to_equiv.surjective, h.coinduced_eq.symm⟩
