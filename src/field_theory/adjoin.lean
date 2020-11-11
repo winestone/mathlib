@@ -467,21 +467,19 @@ end
 -- Not sure if this is the right way to do things
 def alg_hom_restrict (f : E →ₐ[F] K) (L : subalgebra F E) : L →ₐ[F] K :=
 { to_fun := λ x, f x.val,
-  map_one' := by simp only [alg_hom.map_one, subsemiring.coe_one, subtype.val_eq_coe],
-  map_zero' := by simp only [submodule.coe_zero, alg_hom.map_zero, subtype.val_eq_coe],
-  map_mul' := by simp only [subsemiring.coe_mul, forall_const, eq_self_iff_true, alg_hom.map_mul,
-    subtype.val_eq_coe],
-  map_add' := by simp only [alg_hom.map_add, forall_const, submodule.coe_add, eq_self_iff_true, subtype.val_eq_coe],
-  commutes' := λ r, by { change f (algebra_map F E r) = algebra_map F K r,
-    simp only [alg_hom.commutes] } }
+  map_one' := f.map_one',
+  map_zero' := f.map_zero',
+  map_mul' := λ x y, f.map_mul' x y,
+  map_add' := λ x y, f.map_add' x y,
+  commutes' := λ r, f.commutes' r }
 
 def alg_hom_extend_base (f : E →ₐ[F] K) (L : subalgebra F E) :
   @alg_hom L E K _ _ _ _ (ring_hom.to_algebra (alg_hom_restrict F f L)) :=
 { to_fun := f,
-  map_one' := by simp only [alg_hom.map_one],
-  map_zero' := by simp only [alg_hom.map_zero],
-  map_mul' := by simp only [forall_const, eq_self_iff_true, alg_hom.map_mul],
-  map_add' := by simp only [alg_hom.map_add, forall_const, eq_self_iff_true],
+  map_one' := f.map_one',
+  map_zero' := f.map_zero',
+  map_mul' := λ x y, f.map_mul' x y,
+  map_add' := λ x y, f.map_add' x y,
   commutes' := λ r, rfl, }
 
 def alg_hom_compose (L : subalgebra F E) (f : L →ₐ[F] K)
