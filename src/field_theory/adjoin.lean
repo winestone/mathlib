@@ -466,11 +466,12 @@ end
 
 -- Not sure if this is the right way to do things
 def alg_hom_restrict (f : E →ₐ[F] K) (L : subalgebra F E) : L →ₐ[F] K :=
-{ to_fun := λ x, f x,
-  map_one' := by simp only [alg_hom.map_one, subsemiring.coe_one],
-  map_zero' := by simp only [submodule.coe_zero, alg_hom.map_zero],
-  map_mul' := by simp only [subsemiring.coe_mul, forall_const, eq_self_iff_true, alg_hom.map_mul],
-  map_add' := by simp only [alg_hom.map_add, forall_const, submodule.coe_add, eq_self_iff_true],
+{ to_fun := λ x, f x.val,
+  map_one' := by simp only [alg_hom.map_one, subsemiring.coe_one, subtype.val_eq_coe],
+  map_zero' := by simp only [submodule.coe_zero, alg_hom.map_zero, subtype.val_eq_coe],
+  map_mul' := by simp only [subsemiring.coe_mul, forall_const, eq_self_iff_true, alg_hom.map_mul,
+    subtype.val_eq_coe],
+  map_add' := by simp only [alg_hom.map_add, forall_const, submodule.coe_add, eq_self_iff_true, subtype.val_eq_coe],
   commutes' := λ r, by { change f (algebra_map F E r) = algebra_map F K r,
     simp only [alg_hom.commutes] } }
 
@@ -495,24 +496,20 @@ def alg_hom_compose (L : subalgebra F E) (f : L →ₐ[F] K)
     intros r,
     rw ← f.commutes' r,
     exact @alg_hom.commutes' L E K _ _ _ _ (ring_hom.to_algebra f) g (algebra_map F L r),
-  end,
-}
+  end }
 
-def alg_hom_equiv_sigma_subalgebra (L : subalgebra F E):
+def alg_hom_equiv_sigma_subalgebra (L : subalgebra F E) :
   (E →ₐ[F] K) ≃ Σ (f : L →ₐ[F] K), @alg_hom L E K _ _ _ _ (ring_hom.to_algebra f) :=
 { to_fun := λ f, ⟨alg_hom_restrict F f L, alg_hom_extend_base F f L⟩,
-  inv_fun := λ ⟨f, g⟩, alg_hom_compose F L f g,
+  inv_fun := λ fg, alg_hom_compose F L fg.1 fg.2,
   left_inv := λ f, by {dsimp only, ext, refl},
   right_inv :=
   begin
-    rintros ⟨f, g⟩,
-    -- dsimp * at *,
-    ext,
-    { exact @alg_hom.commutes' L E K _ _ _ _ (ring_hom.to_algebra f) g x, },
-    -- for some reason this seems really hard to prove
-    { sorry, },
-  end,
-}
+    rintros ⟨⟨f, _, _, _, _, _⟩, g, _, _, _, _, hg⟩,
+    have : f = λ x, g x.val := by {ext, exact (hg x).symm},
+    subst this,
+    refl,
+  end }
 
 -- TODO: show that if `α` is integral and `E →ₐ[F⟮α⟯] K` always has fintype and constant size then
 -- the size of `E →ₐ[F] K` is equal to degree of minimal polynomial of `α` over `F` times the
