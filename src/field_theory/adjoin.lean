@@ -498,18 +498,17 @@ def alg_hom_compose (L : subalgebra F E) (f : L →ₐ[F] K)
   end,
 }
 
-def alg_hom_equiv_sigma_adjoin_integral :
-  (E →ₐ[F] K) ≃ Σ (f : F⟮α⟯ →ₐ[F] K), @alg_hom F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) :=
-{ to_fun := λ f, ⟨alg_hom_restrict F f F⟮α⟯.to_subalgebra,
-    alg_hom_extend_base F f F⟮α⟯.to_subalgebra⟩,
-  inv_fun := λ ⟨f, g⟩, alg_hom_compose F F⟮α⟯.to_subalgebra f g,
+def alg_hom_equiv_sigma_subalgebra (L : subalgebra F E):
+  (E →ₐ[F] K) ≃ Σ (f : L →ₐ[F] K), @alg_hom L E K _ _ _ _ (ring_hom.to_algebra f) :=
+{ to_fun := λ f, ⟨alg_hom_restrict F f L, alg_hom_extend_base F f L⟩,
+  inv_fun := λ ⟨f, g⟩, alg_hom_compose F L f g,
   left_inv := λ f, by {dsimp only, ext, refl},
   right_inv :=
   begin
     rintros ⟨f, g⟩,
     -- dsimp * at *,
     ext,
-    { exact @alg_hom.commutes' F⟮α⟯ E K _ _ _ _ (ring_hom.to_algebra f) g x, },
+    { exact @alg_hom.commutes' L E K _ _ _ _ (ring_hom.to_algebra f) g x, },
     -- for some reason this seems really hard to prove
     { sorry, },
   end,
