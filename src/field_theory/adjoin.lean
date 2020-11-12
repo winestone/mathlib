@@ -522,12 +522,18 @@ begin
 end
 
 -- this is really ugly :/
-lemma quux [fintype (E →ₐ[F] K)] (hα : is_integral F α) (n : ℕ)
+lemma quux [fintype (E →ₐ[F] K)] [finite_dimensional F E] (hα : is_integral F α) (n : ℕ)
   (hα_sep : (minimal_polynomial hα).separable)
   (hα_splits : (minimal_polynomial hα).splits (algebra_map F K))
   (hn : ∀ f : F⟮α⟯.to_subalgebra →ₐ[F] K,
     fintype.card (@alg_hom F⟮α⟯.to_subalgebra E K _ _ _ _ (ring_hom.to_algebra f)) = n) :
-  fintype.card (E →ₐ[F] K) = (minimal_polynomial hα).nat_degree * n  := sorry
+  fintype.card (E →ₐ[F] K) = (minimal_polynomial hα).nat_degree * n  :=
+begin
+  convert @bar F _ E _ _ K _ _ F⟮α⟯.to_subalgebra (fintype_of_alg_hom_adjoin_integral F hα) _,
+  rw finset.sum_const_nat (λ f _, hn f),
+  rw ← alg_hom_adjoin_integral F hα hα_sep hα_splits,
+  refl,
+end
 
 -- ###########
 
