@@ -521,6 +521,14 @@ begin
   congr,
 end
 
+-- this is really ugly :/
+lemma quux [fintype (E →ₐ[F] K)] (hα : is_integral F α) (n : ℕ)
+  (hα_sep : (minimal_polynomial hα).separable)
+  (hα_splits : (minimal_polynomial hα).splits (algebra_map F K))
+  (hn : ∀ f : F⟮α⟯.to_subalgebra →ₐ[F] K,
+    fintype.card (@alg_hom F⟮α⟯.to_subalgebra E K _ _ _ _ (ring_hom.to_algebra f)) = n) :
+  fintype.card (E →ₐ[F] K) = (minimal_polynomial hα).nat_degree * n  := sorry
+
 -- ###########
 
 end adjoin_integral_element
