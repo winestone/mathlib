@@ -465,13 +465,7 @@ begin
 end
 
 -- Not sure if this is the right way to do things
-def alg_hom_restrict (f : E →ₐ[F] K) (L : subalgebra F E) : L →ₐ[F] K :=
-{ to_fun := λ x, f x.val,
-  map_one' := f.map_one',
-  map_zero' := f.map_zero',
-  map_mul' := λ x y, f.map_mul' x y,
-  map_add' := λ x y, f.map_add' x y,
-  commutes' := λ r, f.commutes' r }
+def alg_hom_restrict (f : E →ₐ[F] K) (L : subalgebra F E) : L →ₐ[F] K := f.comp (L.val)
 
 def alg_hom_extend_base (f : E →ₐ[F] K) (L : subalgebra F E) :
   @alg_hom L E K _ _ _ _ (ring_hom.to_algebra (alg_hom_restrict F f L)) :=
