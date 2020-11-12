@@ -502,6 +502,27 @@ def alg_hom_equiv_sigma_subalgebra (L : subalgebra F E) :
 -- the size of `E →ₐ[F] K` is equal to degree of minimal polynomial of `α` over `F` times the
 -- size of `E →ₐ[F⟮α⟯] K`. Uses `fintype.card_sigma`
 
+-- ############
+-- Just trying some stuff out
+
+open_locale big_operators
+
+instance foo (L : subalgebra F E) [fintype (L →ₐ[F] K)] [finite_dimensional F E] :
+  fintype (E →ₐ[F] K) := sorry
+
+instance baz (L : subalgebra F E) (f : L →ₐ[F] K) [fintype (E →ₐ[F] K)] :
+  fintype (@alg_hom L E K _ _ _ _ (ring_hom.to_algebra f)) := sorry
+
+lemma bar (L : subalgebra F E) [fintype (L →ₐ[F] K)] [finite_dimensional F E] :
+  fintype.card (E →ₐ[F] K) =
+  ∑ (f : L →ₐ[F] K), fintype.card (@alg_hom L E K _ _ _ _ (ring_hom.to_algebra f)) :=
+begin
+  rw [← fintype.of_equiv_card (alg_hom_equiv_sigma_subalgebra F L), ← fintype.card_sigma],
+  congr,
+end
+
+-- ###########
+
 end adjoin_integral_element
 
 section induction
