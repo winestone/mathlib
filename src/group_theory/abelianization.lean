@@ -200,12 +200,41 @@ section subgroup_solvable
 
 variables {G} (H : subgroup G)
 
+def subgroup.lift (K : subgroup H) : subgroup G :=
+{ carrier := coe '' (K : set H),
+  one_mem' :=
+  begin
+    rw set.mem_image,
+    exact ⟨1, ⟨K.one_mem', by simp⟩⟩,
+  end,
+  mul_mem' :=
+  begin
+    rintros _ _ ⟨x, hx, rfl⟩ ⟨y, hy, rfl⟩,
+    rw set.mem_image,
+    refine ⟨x * y, ⟨K.mul_mem' hx hy, by simp⟩⟩,
+  end,
+  inv_mem' :=
+  begin
+    rintros _ ⟨x, hx, rfl⟩,
+    rw set.mem_image,
+    refine ⟨x⁻¹, ⟨K.inv_mem' hx, by simp⟩⟩,
+  end
+}
+
+lemma lift_commutes_with_commutator (K₁ K₂ : subgroup H) :
+  H.lift (general_commutator K₁ K₂) = general_commutator (H.lift K₁) (H.lift K₂) := sorry
+
+lemma stupid_lift_lemma (K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ H.lift K := sorry
+
+lemma commutator_mono {H₁ H₂ K₁ K₂ : subgroup G} (h₁ : H₁ ≤ K₁) (h₂ : H₂ ≤ K₂) :
+  general_commutator H₁ H₂ ≤ general_commutator K₁ K₂ := sorry
+
 lemma nth_commutator_sub_of_subgroup (n : ℕ) :
-  (coe '' (nth_commutator H n : set H) : set G) ⊆ nth_commutator G n :=
+  subgroup.lift H (nth_commutator H n) ≤ nth_commutator G n :=
 begin
   induction n with n ih,
-  { simp only [nth_commutator_zero, set.subset_univ, coe_top], },
-  { sorry, },
+  { simp only [nth_commutator_zero, le_top], },
+  { simp [nth_commutator_succ, lift_commutes_with_commutator, commutator_mono, *], },
 end
 
 theorem subgroup_solvable_of_solvable (h : is_solvable G) : is_solvable H :=
@@ -218,11 +247,9 @@ begin
   ext,
   rw [coe_one, coe_mk],
   rw eq_bot_iff at h,
-  have x_in_coe : x ∈ (coe '' (nth_commutator H n : set H) : set G),
-  { simp only [set.mem_image, mem_coe],
-    use ⟨x, x_in_H⟩,
-    exact ⟨hx, rfl⟩, },
-  exact h (nth_commutator_sub_of_subgroup H n x_in_coe),
+  refine h (nth_commutator_sub_of_subgroup H n _),
+  rw stupid_lift_lemma at hx,
+  convert hx,
 end
 
 
