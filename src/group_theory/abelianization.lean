@@ -224,16 +224,19 @@ def subgroup.lift (K : subgroup H) : subgroup G :=
 lemma lift_commutes_with_commutator (K₁ K₂ : subgroup H) :
   H.lift (general_commutator K₁ K₂) = general_commutator (H.lift K₁) (H.lift K₂) :=
 begin
-  rw general_commutator,
-  rw general_commutator,
   apply le_antisymm,
   { intros x hx,
     rcases hx with ⟨x, hx, rfl⟩,
-    sorry,
-  },
-  {
-    sorry,
-  }
+    refine closure_induction hx _ (one_mem _) (λ x y hx hy, mul_mem _ hx hy) (λ x hx, inv_mem _ hx),
+    rintros ⟨y, _⟩ ⟨p, hp, q, hq, hy⟩,
+    rw general_commutator,
+    apply subset_closure,
+    exact ⟨p, ⟨p, hp, rfl⟩, q, ⟨q, hq, rfl⟩, by simp only [← coe_mul, ← coe_inv, *]⟩, },
+  { rw [general_commutator, closure_le, general_commutator],
+    rintros _ ⟨_, ⟨p, hp, rfl⟩, _, ⟨q, hq, rfl⟩, rfl⟩,
+    refine ⟨p * q * p⁻¹ * q⁻¹, _, rfl⟩,
+    apply subset_closure,
+    exact ⟨p, hp, q, hq, rfl⟩, }
 end
 
 lemma stupid_lift_lemma (K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ H.lift K :=
