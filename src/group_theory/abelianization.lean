@@ -276,5 +276,40 @@ begin
   convert hx,
 end
 
-
 end subgroup_solvable
+
+section quotient_solvable
+
+lemma commutator_onto_of_onto (G' : Type*) [group G'] {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'}
+  (f : G →* G') (h₁ : ∀ y ∈ K₁, ∃ x ∈ H₁, f x = y) (h₂ : ∀ y ∈ K₂, ∃ x ∈ H₂, f x = y) :
+  ∀ y ∈ general_commutator K₁ K₂, ∃ x ∈ general_commutator H₁ H₂, f x = y :=
+begin
+  sorry,
+end
+
+lemma nth_commutator_of_onto (G' : Type*) [group G'] (n : ℕ) (f : G →* G')
+  (hf : ∀ y, ∃ x, f x = y) : ∀ y ∈ nth_commutator G' n, ∃ x ∈ nth_commutator G n, f x = y :=
+begin
+  induction n with n ih,
+  { intros y hy,
+    obtain ⟨x, rfl⟩ := hf y,
+    use x,
+    rw nth_commutator_zero,
+    exact ⟨mem_top x, rfl⟩, },
+  { rw nth_commutator_succ,
+    rw nth_commutator_succ,
+    exact commutator_onto_of_onto G G' f ih ih, },
+end
+
+lemma solvable_image_of_solvable (G' : Type*) [group G'] (f : G →* G') (hf : ∀ y, ∃ x, f x = y)
+  (h : is_solvable G) : is_solvable G' :=
+begin
+  cases h with n hn,
+  use n,
+  rw eq_bot_iff_forall at *,
+  intros y hy,
+  obtain ⟨x, hx, rfl⟩ := nth_commutator_of_onto G G' n f hf y hy,
+  rw [hn x hx, monoid_hom.map_one],
+end
+
+end quotient_solvable
