@@ -535,6 +535,9 @@ begin
   refl,
 end
 
+-- Does mathlib already know that if E/F is finite dimensional then (E →ₐ[F] K) is finite?
+-- Probably not. It's something special about fields
+
 -- ###########
 
 end adjoin_integral_element

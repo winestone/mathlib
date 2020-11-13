@@ -8,7 +8,7 @@ of the forgetful functor Ab → Grp.
 -/
 
 -- TODO:
--- (1) Abelian groups solvable
+-- (1) Abelian groups solvable ✓
 -- (2) Quotients of solvable groups solvable
 -- (3) Subgroups of solvable groups solvable
 -- (4) If G is in the middle of a short exact sequence with everything else solvable
@@ -90,8 +90,22 @@ begin
   { exact λ x ⟨p, _, q, _, h⟩, ⟨p, q, h⟩, }
 end
 
+lemma commutator_def' : commutator G = subgroup.closure {x : G | ∃ p q, p * q * p⁻¹ * q⁻¹ = x} :=
+begin
+  rw commutator_eq_general_commutator_top_top,
+  rw general_commutator,
+  apply le_antisymm; apply closure_mono,
+  { exact λ x ⟨p, _, q, _, h⟩, ⟨p, q, h⟩ },
+  { exact λ x ⟨p, q, h⟩, ⟨p, mem_top p, q, mem_top q, h⟩ }
+end
+
+lemma nth_commutator_zero : nth_commutator G 0 = ⊤ := rfl
+
 lemma nth_commutator_one : nth_commutator G 1 = commutator G :=
 eq.symm $ commutator_eq_general_commutator_top_top G
+
+lemma nth_commutator_succ (n : ℕ) :
+  nth_commutator G (n + 1) = general_commutator (nth_commutator G n) (nth_commutator G n) := rfl
 
 /-- The abelianization of G is the quotient of G by its commutator subgroup -/
 def abelianization : Type u :=
@@ -181,3 +195,35 @@ begin
 end
 
 end solvable
+
+section subgroup_solvable
+
+variables {G} (H : subgroup G)
+
+lemma nth_commutator_sub_of_subgroup (n : ℕ) :
+  (coe '' (nth_commutator H n : set H) : set G) ⊆ nth_commutator G n :=
+begin
+  induction n with n ih,
+  { simp only [nth_commutator_zero, set.subset_univ, coe_top], },
+  { sorry, },
+end
+
+theorem subgroup_solvable_of_solvable (h : is_solvable G) : is_solvable H :=
+begin
+  cases h with n h,
+  use n,
+  rw eq_bot_iff,
+  rintros ⟨x, x_in_H⟩ hx,
+  rw mem_bot,
+  ext,
+  rw [coe_one, coe_mk],
+  rw eq_bot_iff at h,
+  have x_in_coe : x ∈ (coe '' (nth_commutator H n : set H) : set G),
+  { simp only [set.mem_image, mem_coe],
+    use ⟨x, x_in_H⟩,
+    exact ⟨hx, rfl⟩, },
+  exact h (nth_commutator_sub_of_subgroup H n x_in_coe),
+end
+
+
+end subgroup_solvable
