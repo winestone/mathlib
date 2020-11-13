@@ -211,23 +211,44 @@ def subgroup.lift (K : subgroup H) : subgroup G :=
   begin
     rintros _ _ ⟨x, hx, rfl⟩ ⟨y, hy, rfl⟩,
     rw set.mem_image,
-    refine ⟨x * y, ⟨K.mul_mem' hx hy, by simp⟩⟩,
+    exact ⟨x * y, ⟨K.mul_mem' hx hy, by simp⟩⟩,
   end,
   inv_mem' :=
   begin
     rintros _ ⟨x, hx, rfl⟩,
     rw set.mem_image,
-    refine ⟨x⁻¹, ⟨K.inv_mem' hx, by simp⟩⟩,
+    exact ⟨x⁻¹, ⟨K.inv_mem' hx, by simp⟩⟩,
   end
 }
 
 lemma lift_commutes_with_commutator (K₁ K₂ : subgroup H) :
-  H.lift (general_commutator K₁ K₂) = general_commutator (H.lift K₁) (H.lift K₂) := sorry
+  H.lift (general_commutator K₁ K₂) = general_commutator (H.lift K₁) (H.lift K₂) :=
+begin
+  rw general_commutator,
+  rw general_commutator,
+  apply le_antisymm,
+  { intros x hx,
+    rcases hx with ⟨x, hx, rfl⟩,
+    sorry,
+  },
+  {
+    sorry,
+  }
+end
 
-lemma stupid_lift_lemma (K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ H.lift K := sorry
+lemma stupid_lift_lemma (K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ H.lift K :=
+begin
+  rcases x with ⟨x, hx⟩,
+  exact ⟨λ h, ⟨⟨x, hx⟩, h, rfl⟩, λ _, by tidy⟩,
+end
 
 lemma commutator_mono {H₁ H₂ K₁ K₂ : subgroup G} (h₁ : H₁ ≤ K₁) (h₂ : H₂ ≤ K₂) :
-  general_commutator H₁ H₂ ≤ general_commutator K₁ K₂ := sorry
+  general_commutator H₁ H₂ ≤ general_commutator K₁ K₂ :=
+begin
+  apply closure_mono,
+  rintros x ⟨p, hp, q, hq, rfl⟩,
+  exact ⟨p, h₁ hp, q, h₂ hq, rfl⟩,
+end
 
 lemma nth_commutator_sub_of_subgroup (n : ℕ) :
   subgroup.lift H (nth_commutator H n) ≤ nth_commutator G n :=
