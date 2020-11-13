@@ -312,4 +312,8 @@ begin
   rw [hn x hx, monoid_hom.map_one],
 end
 
+lemma solvable_quotient_of_solvable (H : subgroup G) [H.normal] (h : is_solvable G) :
+  is_solvable (quotient_group.quotient H) :=
+solvable_image_of_solvable G (quotient_group.quotient H) (quotient_group.mk' H) (by tidy) h
+
 end quotient_solvable
