@@ -524,7 +524,7 @@ lemma quux [fintype (E →ₐ[F] K)] [finite_dimensional F E] (hα : is_integral
 begin
   convert @bar F _ E _ _ K _ _ F⟮α⟯.to_subalgebra (fintype_of_alg_hom_adjoin_integral F hα) _,
   rw finset.sum_const_nat (λ f _, hn f),
-  rw ← alg_hom_adjoin_integral F hα hα_sep hα_splits,
+  rw ← card_alg_hom_adjoin_integral F hα hα_sep hα_splits,
   refl,
 end
 
