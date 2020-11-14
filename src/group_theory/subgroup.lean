@@ -712,6 +712,39 @@ structure normal : Prop :=
 
 attribute [class] normal
 
+section subgroup_lift
+
+variables {H}
+
+@[to_additive]
+def lift (K : subgroup H) : subgroup G :=
+K.map (subtype H)
+
+@[to_additive]
+lemma mem_lift (K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ K.lift :=
+begin
+  rcases x with ⟨x, hx⟩,
+  exact ⟨λ h, ⟨⟨x, hx⟩, h, rfl⟩, λ _, by tidy⟩,
+end
+
+@[to_additive]
+lemma eq_bot_iff_lift_eq_bot (K : subgroup H) : K = ⊥ ↔ K.lift = ⊥ :=
+begin
+  split,
+  { intro h,
+    rw h,
+    exact map_bot _, },
+  { intro h,
+    rw eq_bot_iff_forall at *,
+    rintros ⟨x, _⟩ hx,
+    rw mem_lift at hx,
+    ext,
+    rw [coe_one, coe_mk],
+    exact h x hx, },
+end
+
+end subgroup_lift
+
 end subgroup
 
 namespace add_subgroup
