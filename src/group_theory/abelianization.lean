@@ -198,9 +198,11 @@ end solvable
 
 section subgroup_solvable
 
-variables {G} (H : subgroup G)
+variables {G} {H : subgroup G}
 
-def subgroup.lift (K : subgroup H) : subgroup G :=
+namespace subgroup
+
+def lift (K : subgroup H) : subgroup G :=
 { carrier := coe '' (K : set H),
   one_mem' :=
   begin
@@ -221,8 +223,16 @@ def subgroup.lift (K : subgroup H) : subgroup G :=
   end
 }
 
-lemma lift_commutes_with_commutator (K₁ K₂ : subgroup H) :
-  H.lift (general_commutator K₁ K₂) = general_commutator (H.lift K₁) (H.lift K₂) :=
+lemma mem_lift (K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ K.lift :=
+begin
+  rcases x with ⟨x, hx⟩,
+  exact ⟨λ h, ⟨⟨x, hx⟩, h, rfl⟩, λ _, by tidy⟩,
+end
+
+end subgroup
+
+lemma lift_commutator_eq_commutator_lift_lift (K₁ K₂ : subgroup H) :
+  (general_commutator K₁ K₂).lift = general_commutator (K₁.lift) (K₂.lift) :=
 begin
   apply le_antisymm,
   { intros x hx,
@@ -239,12 +249,6 @@ begin
     exact ⟨p, hp, q, hq, rfl⟩, }
 end
 
-lemma stupid_lift_lemma (K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ H.lift K :=
-begin
-  rcases x with ⟨x, hx⟩,
-  exact ⟨λ h, ⟨⟨x, hx⟩, h, rfl⟩, λ _, by tidy⟩,
-end
-
 lemma commutator_mono {H₁ H₂ K₁ K₂ : subgroup G} (h₁ : H₁ ≤ K₁) (h₂ : H₂ ≤ K₂) :
   general_commutator H₁ H₂ ≤ general_commutator K₁ K₂ :=
 begin
@@ -253,12 +257,14 @@ begin
   exact ⟨p, h₁ hp, q, h₂ hq, rfl⟩,
 end
 
-lemma nth_commutator_sub_of_subgroup (n : ℕ) :
-  subgroup.lift H (nth_commutator H n) ≤ nth_commutator G n :=
+variables (H)
+
+lemma nth_commutator_lift_le_nth_commutator (n : ℕ) :
+  (nth_commutator H n).lift ≤ nth_commutator G n :=
 begin
   induction n with n ih,
   { simp only [nth_commutator_zero, le_top], },
-  { simp [nth_commutator_succ, lift_commutes_with_commutator, commutator_mono, *], },
+  { simp [nth_commutator_succ, lift_commutator_eq_commutator_lift_lift, commutator_mono, *], },
 end
 
 theorem subgroup_solvable_of_solvable (h : is_solvable G) : is_solvable H :=
@@ -271,8 +277,8 @@ begin
   ext,
   rw [coe_one, coe_mk],
   rw eq_bot_iff at h,
-  refine h (nth_commutator_sub_of_subgroup H n _),
-  rw stupid_lift_lemma at hx,
+  refine h (nth_commutator_lift_le_nth_commutator H n _),
+  rw subgroup.mem_lift at hx,
   convert hx,
 end
 
@@ -280,9 +286,10 @@ end subgroup_solvable
 
 section quotient_solvable
 
-lemma commutator_onto_of_onto' (G' : Type*) [group G'] {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'}
-  (f : G →* G') (h₁ : K₁ ≤ H₁.map f) (h₂ : K₂ ≤ H₂.map f) :
-  general_commutator K₁ K₂ ≤ (general_commutator H₁ H₂).map f :=
+variables {G} {G' : Type*} [group G'] {f : G →* G'}
+
+lemma commutator_le_commutator_map {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'} (h₁ : K₁ ≤ H₁.map f)
+  (h₂ : K₂ ≤ H₂.map f) : general_commutator K₁ K₂ ≤ (general_commutator H₁ H₂).map f :=
 begin
   rw general_commutator,
   apply (closure_le _).mpr,
@@ -295,60 +302,30 @@ begin
   exact ⟨p, hp', q, hq', rfl⟩,
 end
 
--- lemma commutator_onto_of_onto (G' : Type*) [group G'] {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'}
---   (f : G →* G') (h₁ : ∀ y ∈ K₁, ∃ x ∈ H₁, f x = y) (h₂ : ∀ y ∈ K₂, ∃ x ∈ H₂, f x = y) :
---   ∀ y ∈ general_commutator K₁ K₂, ∃ x ∈ general_commutator H₁ H₂, f x = y :=
--- begin
---   sorry,
--- end
-
-lemma nth_commutator_of_onto' (G' : Type*) [group G'] (n : ℕ) (f : G →* G')
-  (hf : function.surjective f) : nth_commutator G' n ≤ (nth_commutator G n).map f :=
+lemma nth_commutator_le_nth_commutator_map (hf : function.surjective f) (n : ℕ) :
+  nth_commutator G' n ≤ (nth_commutator G n).map f :=
 begin
   induction n with n ih,
   { rwa [nth_commutator_zero, nth_commutator_zero, top_le_iff, ← monoid_hom.range_eq_map,
     ← monoid_hom.range_top_iff_surjective.mpr], },
-  { simp only [*, nth_commutator_succ, commutator_onto_of_onto'], }
+  { simp only [*, nth_commutator_succ, commutator_le_commutator_map], }
 end
 
--- lemma nth_commutator_of_onto (G' : Type*) [group G'] (n : ℕ) (f : G →* G')
---   (hf : ∀ y, ∃ x, f x = y) : ∀ y ∈ nth_commutator G' n, ∃ x ∈ nth_commutator G n, f x = y :=
--- begin
---   induction n with n ih,
---   { intros y hy,
---     obtain ⟨x, rfl⟩ := hf y,
---     use x,
---     rw nth_commutator_zero,
---     exact ⟨mem_top x, rfl⟩, },
---   { rw nth_commutator_succ,
---     rw nth_commutator_succ,
---     exact commutator_onto_of_onto G G' f ih ih, },
--- end
+variables (f)
 
-lemma solvable_image_of_solvable' (G' : Type*) [group G'] (f : G →* G') (hf : function.surjective f)
-  (h : is_solvable G) : is_solvable G' :=
+lemma solvable_image_of_solvable (hf : function.surjective f) (h : is_solvable G) :
+  is_solvable G' :=
 begin
   cases h with n hn,
   use n,
   rw eq_bot_iff,
-  calc nth_commutator G' n ≤ (nth_commutator G n).map f : nth_commutator_of_onto' G G' n f hf
+  calc nth_commutator G' n ≤ (nth_commutator G n).map f : nth_commutator_le_nth_commutator_map hf n
     ... = (⊥ : subgroup G).map f : by rw hn
     ... = ⊥ : map_bot f,
 end
 
--- lemma solvable_image_of_solvable (G' : Type*) [group G'] (f : G →* G') (hf : ∀ y, ∃ x, f x = y)
---   (h : is_solvable G) : is_solvable G' :=
--- begin
---   cases h with n hn,
---   use n,
---   rw eq_bot_iff_forall at *,
---   intros y hy,
---   obtain ⟨x, hx, rfl⟩ := nth_commutator_of_onto G G' n f hf y hy,
---   rw [hn x hx, monoid_hom.map_one],
--- end
-
 lemma solvable_quotient_of_solvable (H : subgroup G) [H.normal] (h : is_solvable G) :
   is_solvable (quotient_group.quotient H) :=
-solvable_image_of_solvable' G (quotient_group.quotient H) (quotient_group.mk' H) (by tidy) h
+solvable_image_of_solvable (quotient_group.mk' H) (by tidy) h
 
 end quotient_solvable
