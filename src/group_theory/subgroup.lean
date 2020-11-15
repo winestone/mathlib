@@ -493,6 +493,36 @@ lemma closure_induction {p : G → Prop} {x} (h : x ∈ closure k)
 
 attribute [elab_as_eliminator] subgroup.closure_induction add_subgroup.closure_induction
 
+/-- An induction principle on elements of the subtype `subgroup.closure`.
+If `p` holds for `1` and all elements of `k`, and is preserved under multiplication and inverse,
+then `p` holds for all elements `x : closure k`.
+
+The difference with `subgroup.closure_induction` is that this acts on the subtype.
+-/
+@[to_additive "An induction principle on elements of the subtype `add_subgroup.closure`.
+If `p` holds for `0` and all elements of `k`, and is preserved under addition and negation,
+then `p` holds for all elements `x : closure k`.
+
+The difference with `add_subgroup.closure_induction` is that this acts on the subtype."]
+lemma closure_induction' (k : set G) {p : closure k → Prop}
+  (Hk : ∀ x (h : x ∈ k), p ⟨x, subset_closure h⟩)
+  (H1 : p 1)
+  (Hmul : ∀ x y, p x → p y → p (x * y))
+  (Hinv : ∀ x, p x → p x⁻¹)
+  (x : closure k) :
+  p x :=
+subtype.rec_on x $ λ x hx, begin
+  refine exists.elim _ (λ (hx : x ∈ closure k) (hc : p ⟨x, hx⟩), hc),
+  exact closure_induction hx
+    (λ x hx, ⟨subset_closure hx, Hk x hx⟩)
+    ⟨one_mem _, H1⟩
+    (λ x y hx hy, exists.elim hx $ λ hx' hx, exists.elim hy $ λ hy' hy,
+      ⟨mul_mem _ hx' hy', Hmul _ _ hx hy⟩)
+    (λ x hx, exists.elim hx $ λ hx' hx, ⟨inv_mem _ hx', Hinv _ hx⟩),
+end
+
+attribute [elab_as_eliminator] subgroup.closure_induction' add_subgroup.closure_induction'
+
 variable (G)
 
 /-- `closure` forms a Galois insertion with the coercion to set. -/
@@ -712,6 +742,39 @@ structure normal : Prop :=
 
 attribute [class] normal
 
+section subgroup_lift
+
+variables {H}
+
+@[to_additive]
+def lift (K : subgroup H) : subgroup G :=
+K.map (subtype H)
+
+@[to_additive]
+lemma mem_lift (K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ K.lift :=
+begin
+  rcases x with ⟨x, hx⟩,
+  exact ⟨λ h, ⟨⟨x, hx⟩, h, rfl⟩, λ _, by tidy⟩,
+end
+
+@[to_additive]
+lemma eq_bot_iff_lift_eq_bot (K : subgroup H) : K = ⊥ ↔ K.lift = ⊥ :=
+begin
+  split,
+  { intro h,
+    rw h,
+    exact map_bot _, },
+  { intro h,
+    rw eq_bot_iff_forall at *,
+    rintros ⟨x, _⟩ hx,
+    rw mem_lift at hx,
+    ext,
+    rw [coe_one, coe_mk],
+    exact h x hx, },
+end
+
+end subgroup_lift
+
 end subgroup
 
 namespace add_subgroup
@@ -746,6 +809,9 @@ end normal
 
 @[priority 100, to_additive]
 instance bot_normal : normal (⊥ : subgroup G) := ⟨by simp⟩
+
+@[priority 100, to_additive]
+instance top_normal : normal (⊤ : subgroup G) := ⟨λ _ _, mem_top⟩
 
 variable (G)
 /-- The center of a group `G` is the set of elements that commute with everything in `G` -/
