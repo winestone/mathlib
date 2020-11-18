@@ -327,14 +327,98 @@ end
 end galois_equivalent_definitions
 
 section splitting_field_galois
-variables (F E : Type*) [field F] [field E] [algebra F E] (p : polynomial F)
+variables {F : Type*} {E : Type*} [field F] [field E] [algebra F E] {p : polynomial F}
 
-lemma is_galois_of_separable_splitting_field [sp : p.is_splitting_field F E] (hp : p.separable) :
+lemma is_galois_of_separable_splitting_field_aux [hFE : finite_dimensional F E]
+  (sp : p.is_splitting_field F E) (hp : p.separable) (K : intermediate_field F E) {x : E}
+  (hx : x ∈ (p.map (algebra_map F E)).roots) :
+fintype.card ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) = fintype.card (K →ₐ[F] E) * findim K K⟮x⟯ :=
+begin
+  have h : is_integral K x := is_integral_of_is_scalar_tower x (is_integral_of_noetherian hFE x),
+  rw intermediate_field.adjoin.findim h,
+  have p_ne_zero : p ≠ 0,
+  { intro p_eq_zero,
+    rw [p_eq_zero, polynomial.map_zero, polynomial.roots_zero] at hx,
+    exact multiset.not_mem_zero x hx },
+  have p_aeval : polynomial.aeval x (p.map (algebra_map F K)) = 0,
+  { rw [polynomial.aeval_def, polynomial.eval₂_map, ←is_scalar_tower.algebra_map_eq F K E,
+        ←polynomial.eval_map, ←polynomial.is_root,
+        ←polynomial.mem_roots (polynomial.map_ne_zero p_ne_zero)],
+    exact hx,
+    exact field.to_nontrivial E },
+  have h_dvd : (minimal_polynomial h) ∣ p.map (algebra_map F K) :=
+    minimal_polynomial.dvd h p_aeval,
+  have h_sep : (minimal_polynomial h).separable :=
+    polynomial.separable.of_dvd ((polynomial.separable_map (algebra_map F K)).mpr hp) h_dvd,
+  have p_map_ne_zero : p.map (algebra_map F K) ≠ 0 := polynomial.map_ne_zero p_ne_zero,
+  have p_map_splits : (p.map (algebra_map F K)).splits (algebra_map K E),
+  { rw [polynomial.splits_map_iff, ←is_scalar_tower.algebra_map_eq F K E],
+    exact sp.splits },
+  have h_splits : (minimal_polynomial h).splits (algebra_map K E) :=
+    polynomial.splits_of_splits_of_dvd (algebra_map K E) p_map_ne_zero p_map_splits h_dvd,
+  rw ← intermediate_field.card_alg_hom_adjoin_integral K h h_sep h_splits,
+  have key_equiv' : (K⟮x⟯ →ₐ[F] E) ≃
+    (K →ₐ[F] E) × {x // x ∈ ((minimal_polynomial h).map (algebra_map K E)).roots} :=
+  { to_fun := λ f, ⟨
+    { to_fun := λ k, f k,
+      map_zero' := f.map_zero,
+      map_one' := f.map_one,
+      map_add' := λ k l, f.map_add k l,
+      map_mul' := λ k l, f.map_mul k l,
+      commutes' := λ k, f.commutes k },
+    ⟨f (intermediate_field.adjoin_simple.gen K x), begin
+      rw polynomial.mem_roots,
+      rw polynomial.is_root,
+      rw polynomial.eval_map,
+      sorry,
+      sorry,
+    end⟩⟩,
+    inv_fun := sorry,
+    left_inv := sorry,
+    right_inv := sorry, },
+  --alg_hom_adjoin_integral_equiv
+  have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃ (K →ₐ[F] E) × (K⟮x⟯ →ₐ[K] E) :=
+  { to_fun := sorry,
+    inv_fun := sorry,
+    left_inv := sorry,
+    right_inv := sorry, },
+  rw fintype.card_congr key_equiv,
+  rw fintype.card_prod,
+
+
+  apply congr_arg (has_mul.mul (fintype.card (K →ₐ[F] E))),
+  apply fintype.card_congr,
+  refl,
+
+  /-have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃
+    Σ (f : K →ₐ[F] E), @alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f) :=
+  { to_fun := λ f, ⟨begin sorry end,begin sorry end⟩,
+    inv_fun := sorry,
+    left_inv := sorry,
+    right_inv := sorry, },
+  haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) := sorry,
+  rw fintype.card_congr key_equiv,
+  rw fintype.card_sigma,
+  apply finset.sum_const_nat,
+  intros f hf,
+  have h : is_integral K x := is_integral_of_is_scalar_tower x (is_integral_of_noetherian hFE x),
+  rw intermediate_field.adjoin.findim h,
+  have h_sep : (minimal_polynomial h).separable := sorry,
+  have h_splits : (minimal_polynomial h).splits
+    (@algebra_map K E _ _ (ring_hom.to_algebra f.to_ring_hom)) := sorry,
+  have key := @intermediate_field.card_alg_hom_adjoin_integral
+    K _ _ _ _ x E _ (ring_hom.to_algebra f.to_ring_hom) h h_sep h_splits,
+  exact key,
+  sorry,
+  sorry,
+  sorry,
+  sorry,-/
+end
+
+lemma is_galois_of_separable_splitting_field (sp : p.is_splitting_field F E) (hp : p.separable) :
   is_galois F E :=
 begin
-  haveI : finite_dimensional F E := polynomial.is_splitting_field.finite_dimensional E p,
-  --haveI : Π (K : intermediate_field F E), fintype (K →ₐ[F] E) := sorry,
-
+  haveI hFE : finite_dimensional F E := polynomial.is_splitting_field.finite_dimensional E p,
   let p' := (p.map (algebra_map F E)),
   let s := p'.roots.to_finset,
   have adjoin_root : (intermediate_field.adjoin F ↑s).to_subalgebra =
@@ -370,38 +454,17 @@ begin
     cases intermediate_field.mem_bot.mp (subtype.mem x) with y hy,
     change ↑(algebra_map F (⊥ : intermediate_field F E) y) = ↑x at hy,
     rw [←subtype.ext_iff.mpr hy, ϕ.commutes y],
-    refl, },
+    refl },
   apply intermediate_field.induction_on_adjoin' F s P base,
   intros K x hx hK,
-
   change fintype.card _ = _,
-
   suffices : fintype.card ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) =
     (fintype.card (K →ₐ[F] E)) * (findim K K⟮x⟯),
   { change fintype.card _ = _ at hK,
     rw [this, hK],
     rw findim_mul_findim F K K⟮x⟯,
     exact (linear_equiv.findim_eq (intermediate_field.lift2_alg_equiv K⟮x⟯).to_linear_equiv).symm },
-
-  have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃
-    Σ (f : K →ₐ[F] E), @alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f) :=
-  { to_fun := λ f, ⟨begin sorry end,begin sorry end⟩,
-    inv_fun := sorry,
-    left_inv := sorry,
-    right_inv := sorry, },
-  haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) := sorry,
-  rw fintype.card_congr key_equiv,
-  rw fintype.card_sigma,
-  apply finset.sum_const_nat,
-  intros f hf,
-  have h : is_integral K x := sorry,
-  have h_sep : (minimal_polynomial h).separable := sorry,
-  rw intermediate_field.adjoin.findim h,
-  have key := intermediate_field.alg_hom_adjoin_integral K h h_sep,
-  sorry,
-  sorry,
-  sorry,
-  sorry,
+  exact is_galois_of_separable_splitting_field_aux sp hp K (multiset.mem_to_finset.mp hx),
 end
 
 end splitting_field_galois

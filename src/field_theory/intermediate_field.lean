@@ -306,7 +306,14 @@ instance lift2_tower {F : intermediate_field K L} {E : intermediate_field F L} :
 ⟨λ a b c, by { simp only [algebra.smul_def, ring_hom.map_mul, mul_assoc], refl }⟩
 
 def lift2_alg_equiv {F : intermediate_field K L} (E : intermediate_field F L) :
-  (lift2 E) ≃ₐ[K] E := sorry
+  (lift2 E) ≃ₐ[K] E :=
+{ to_fun := λ x, x,
+  inv_fun := λ x, x,
+  left_inv := λ x, rfl,
+  right_inv := λ x, rfl,
+  map_add' := λ x y, rfl,
+  map_mul' := λ x y, rfl,
+  commutes' := λ x, rfl }
 
 end tower
 
