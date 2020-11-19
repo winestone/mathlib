@@ -287,4 +287,44 @@ lemma solvable_quotient_of_solvable (H : subgroup G) [H.normal] (h : is_solvable
   is_solvable (quotient_group.quotient H) :=
 solvable_image_of_solvable (show function.surjective (quotient_group.mk' H), by tidy) h
 
+open quotient_group
+
+--this theorem (and its proof) is due to Mario
+
+theorem eq_top_of_trivial_quotient (N:subgroup G) [N.normal]
+(H : (⊤ : subgroup (quotient_group.quotient N)) ≤ ⊥) :
+ N = ⊤ :=
+begin
+  rw [← ker_mk N, eq_top_iff, monoid_hom.ker, ← subgroup.map_le_iff_le_comap],
+  exact le_trans le_top H,
+end
+
+--(ker_mk N).symm.trans $ eq_top_iff.2 $ subgroup.map_le_iff_le_comap.1 $ le_trans le_top H
+
+
+lemma quotient_something (H : subgroup G) [H.normal]
+(h':is_solvable (quotient_group.quotient H)): ∃ m:ℕ, (nth_commutator G m)≤ H:=
+begin
+  unfold is_solvable at h',
+  cases h' with paris france,
+  induction paris with n n_ih,
+  rw nth_commutator_zero (quotient_group.quotient H) at france,
+  have is_all: H=(⊤:subgroup G),
+  apply eq_top_of_trivial_quotient,
+
+
+
+  sorry,
+
+
+
+end
+
+lemma short_exact_sequence_solvable (H : subgroup G) [H.normal]
+(h : is_solvable H) (h':is_solvable (quotient_group.quotient H)): is_solvable G:=
+begin
+  sorry,
+
+end
+
 end solvable
