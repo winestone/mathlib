@@ -5,29 +5,6 @@ Authors: Patrick Massot
 -/
 import topology.instances.real
 
-
-/-
-set_option trace.class_instances true
-
-def f (X : Type*) (n : ℕ) : Prop := sorry
-
-lemma foo1 (X : Type*) (n : ℕ) [has_mul X] : f X n := sorry
-
-lemma foo2 (X : Type*) (n : ℕ) [field X] : f X n := sorry
-
-lemma foo3 (X : Type*) (n : ℕ) : f X n := sorry
-
-lemma bar (X : Type*) (n : ℕ) : f X n :=
-begin
-  apply_rules [foo1, foo2],
-  apply foo2,
-  apply foo1 <|> apply foo2,
-end
-
-#exit
--/
-
-
 /-!
 # Path connectedness
 
@@ -116,7 +93,7 @@ subtype.ext $ by simp [I_symm]
 
 @[continuity]
 lemma continuous_I_symm : continuous σ :=
-by apply_cont [continuity]
+by continuity!
 
 /-- Projection of `ℝ` onto its unit interval. -/
 def proj_I : ℝ → I :=
@@ -309,11 +286,6 @@ lemma of_line_mem {f : ℝ → X} (hf : continuous_on f I) (h₀ : f 0 = x) (h�
 
 local attribute [simp] Iic_def
 
-def Z := linear_ordered_field
-
-set_option profiler true
-set_option trace.class_instances true
-
 /-- Concatenation of two paths from `x` to `y` and from `y` to `z`, putting the first
 path on `[0, 1/2]` and the second one on `[1/2, 1]`. -/
 @[trans] def trans (γ : path x y) (γ' : path y z) : path x z :=
@@ -323,14 +295,12 @@ path on `[0, 1/2]` and the second one on `[1/2, 1]`. -/
     apply (continuous_if _ _ _).comp continuous_subtype_coe,
     { norm_num },
     -- TODO: the following are provable by `continuity` but it is too slow
-    { apply continuous.mul, },
+    { exact ((path.continuous γ).comp continuous_proj_I).comp (continuous_const.mul continuous_id')},
     { exact ((path.continuous γ').comp continuous_proj_I).comp
       ((continuous_const.mul continuous_id').sub continuous_const) }
   end,
   source' := by norm_num,
   target' := by norm_num }
-
-#exit
 
 @[simp] lemma refl_trans_refl {X : Type*} [topological_space X] {a : X} :
   (path.refl a).trans (path.refl a) = path.refl a :=
