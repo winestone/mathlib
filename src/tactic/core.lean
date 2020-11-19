@@ -910,7 +910,7 @@ a lemma from the list until it can't.
  -/
 meta def apply_rules (hs : list pexpr) (n : nat) (opt : apply_cfg) : tactic unit :=
 do l ← lock_tactic_state $ build_list_expr_for_apply hs,
-   iterate_at_most_on_subgoals n (assumption <|> apply_list_expr opt l)
+   iterate_at_most_on_subgoals n (assumption <|> apply_instance <|> apply_list_expr opt l)
 
 /-- `replace h p` elaborates the pexpr `p`, clears the existing hypothesis named `h` from the local
 context, and adds a new hypothesis named `h`. The type of this hypothesis is the type of `p`.
