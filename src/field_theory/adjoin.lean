@@ -457,15 +457,21 @@ begin
   exact polynomial.nodup_roots ((polynomial.separable_map (algebra_map F K)).mpr h_sep),
 end
 
--- Not sure if this is the right way to do things
-def alg_hom_restrict (f : E →ₐ[F] K) (L : subalgebra F E) : L →ₐ[F] K := f.comp (L.val)
+section weird_shenanigans
 
-def alg_hom_extend_base (f : E →ₐ[F] K) (L : subalgebra F E) :
-  @alg_hom L E K _ _ _ _ (ring_hom.to_algebra (alg_hom_restrict F f L)) :=
+namespace pawugbsjagb
+
+variables (A B C D : Type*) [comm_semiring A] [comm_semiring B] [comm_semiring C] [comm_semiring D]
+[algebra A B] [algebra B C] [algebra A C] [algebra A D] [is_scalar_tower A B C]
+
+def alg_hom_restrict (f : C →ₐ[A] D) : B →ₐ[A] D := f.comp (is_scalar_tower.to_alg_hom A B C)
+
+def alg_hom_extend_base (f : C →ₐ[A] D) :
+  @alg_hom B C D _ _ _ _ (ring_hom.to_algebra (alg_hom_restrict A B C D f)) :=
 { commutes' := λ _, rfl .. f }
 
-def alg_hom_compose (L : subalgebra F E) (f : L →ₐ[F] K)
-  (g : @alg_hom L E K _ _ _ _ (ring_hom.to_algebra f)) : E →ₐ[F] K :=
+def alg_hom_compose (f : B →ₐ[A] D)
+  (g : @alg_hom B C D _ _ _ _ (ring_hom.to_algebra f)) : C →ₐ[A] D :=
 { to_fun := g,
   map_one' := by simp only [alg_hom.map_one],
   map_zero' := by simp only [alg_hom.map_zero],
@@ -474,22 +480,32 @@ def alg_hom_compose (L : subalgebra F E) (f : L →ₐ[F] K)
   commutes' :=
   begin
     intros r,
-    rw ← f.commutes' r,
-    exact @alg_hom.commutes' L E K _ _ _ _ (ring_hom.to_algebra f) g (algebra_map F L r),
+    have key := @alg_hom.commutes' B C D _ _ _ _ (ring_hom.to_algebra f) g (algebra_map A B r),
+    rw ← is_scalar_tower.algebra_map_apply at key,
+    rw ← is_scalar_tower.algebra_map_apply at key,
+    exact key,
   end }
 
-def alg_hom_equiv_sigma_subalgebra (L : subalgebra F E) :
-  (E →ₐ[F] K) ≃ Σ (f : L →ₐ[F] K), @alg_hom L E K _ _ _ _ (ring_hom.to_algebra f) :=
-{ to_fun := λ f, ⟨alg_hom_restrict F f L, alg_hom_extend_base F f L⟩,
-  inv_fun := λ fg, alg_hom_compose F L fg.1 fg.2,
+def alg_hom_equiv_sigma_subalgebra :
+  (C →ₐ[A] D) ≃ Σ (f : B →ₐ[A] D), @alg_hom B C D _ _ _ _ (ring_hom.to_algebra f) :=
+{ to_fun := λ f, ⟨alg_hom_restrict A B C D f, alg_hom_extend_base A B C D f⟩,
+  inv_fun := λ fg, alg_hom_compose A B C D fg.1 fg.2,
   left_inv := λ f, by {dsimp only, ext, refl},
   right_inv :=
   begin
     rintros ⟨⟨f, _, _, _, _, _⟩, g, _, _, _, _, hg⟩,
-    have : f = λ x, g x.val := by {ext, exact (hg x).symm},
+    have : f = λ x, g (algebra_map B C x) := by { ext, exact (hg x).symm },
     subst this,
     refl,
   end }
+
+end pawugbsjagb
+
+end weird_shenanigans
+
+def alg_hom_equiv_sigma_subalgebra (L : subalgebra F E) :
+  (E →ₐ[F] K) ≃ Σ (f : L →ₐ[F] K), @alg_hom L E K _ _ _ _ (ring_hom.to_algebra f) :=
+pawugbsjagb.alg_hom_equiv_sigma_subalgebra F L E K
 
 -- TODO: show that if `α` is integral and `E →ₐ[F⟮α⟯] K` always has fintype and constant size then
 -- the size of `E →ₐ[F] K` is equal to degree of minimal polynomial of `α` over `F` times the

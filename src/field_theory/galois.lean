@@ -357,40 +357,7 @@ begin
   have h_splits : (minimal_polynomial h).splits (algebra_map K E) :=
     polynomial.splits_of_splits_of_dvd (algebra_map K E) p_map_ne_zero p_map_splits h_dvd,
   rw ← intermediate_field.card_alg_hom_adjoin_integral K h h_sep h_splits,
-  have key_equiv' : (K⟮x⟯ →ₐ[F] E) ≃
-    (K →ₐ[F] E) × {x // x ∈ ((minimal_polynomial h).map (algebra_map K E)).roots} :=
-  { to_fun := λ f, ⟨
-    { to_fun := λ k, f k,
-      map_zero' := f.map_zero,
-      map_one' := f.map_one,
-      map_add' := λ k l, f.map_add k l,
-      map_mul' := λ k l, f.map_mul k l,
-      commutes' := λ k, f.commutes k },
-    ⟨f (intermediate_field.adjoin_simple.gen K x), begin
-      rw polynomial.mem_roots,
-      rw polynomial.is_root,
-      rw polynomial.eval_map,
-      sorry,
-      sorry,
-    end⟩⟩,
-    inv_fun := sorry,
-    left_inv := sorry,
-    right_inv := sorry, },
-  --alg_hom_adjoin_integral_equiv
-  have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃ (K →ₐ[F] E) × (K⟮x⟯ →ₐ[K] E) :=
-  { to_fun := sorry,
-    inv_fun := sorry,
-    left_inv := sorry,
-    right_inv := sorry, },
-  rw fintype.card_congr key_equiv,
-  rw fintype.card_prod,
-
-
-  apply congr_arg (has_mul.mul (fintype.card (K →ₐ[F] E))),
-  apply fintype.card_congr,
-  refl,
-
-  /-have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃
+  have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃
     Σ (f : K →ₐ[F] E), @alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f) :=
   { to_fun := λ f, ⟨begin sorry end,begin sorry end⟩,
     inv_fun := sorry,
@@ -412,7 +379,7 @@ begin
   sorry,
   sorry,
   sorry,
-  sorry,-/
+  sorry,
 end
 
 lemma is_galois_of_separable_splitting_field (sp : p.is_splitting_field F E) (hp : p.separable) :
