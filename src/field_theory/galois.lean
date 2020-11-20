@@ -336,13 +336,12 @@ fintype.card ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) = fintype.card
 begin
   have h : is_integral K x := is_integral_of_is_scalar_tower x (is_integral_of_noetherian hFE x),
   rw intermediate_field.adjoin.findim h,
-  have key_equiv' := intermediate_field.pawugbsjagb.alg_hom_equiv_sigma_subalgebra F K K⟮x⟯ E,
   have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃
     Σ (f : K →ₐ[F] E), @alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f) :=
-  { to_fun := λ f, ⟨begin sorry end,begin sorry end⟩,
-    inv_fun := sorry,
-    left_inv := sorry,
-    right_inv := sorry, },
+  begin
+    refine equiv.trans _ (intermediate_field.pawugbsjagb.alg_hom_equiv_sigma_subalgebra F K K⟮x⟯ E),
+    sorry,
+  end,
   haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) := sorry,
   rw fintype.card_congr key_equiv,
   rw fintype.card_sigma,
