@@ -336,15 +336,20 @@ fintype.card ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) = fintype.card
 begin
   have h : is_integral K x := is_integral_of_is_scalar_tower x (is_integral_of_noetherian hFE x),
   rw intermediate_field.adjoin.findim h,
+  have key_equiv' := intermediate_field.pawugbsjagb.alg_hom_equiv_sigma_subalgebra F K K⟮x⟯ E,
+  have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃
+    Σ (f : K →ₐ[F] E), @alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f) :=
+  { to_fun := λ f, ⟨begin sorry end,begin sorry end⟩,
+    inv_fun := sorry,
+    left_inv := sorry,
+    right_inv := sorry, },
+  haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) := sorry,
+  rw fintype.card_congr key_equiv,
+  rw fintype.card_sigma,
+  apply finset.sum_const_nat,
+  intros f hf,
 
-  have key_equiv := intermediate_field.pawugbsjagb.alg_hom_equiv_sigma_subalgebra F K K⟮x⟯ E,
-  have key_equiv' : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃
-    (Σ (f : K →ₐ[F] E), (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f))) := sorry,
-  rw ← fintype.of_equiv_card key_equiv',
-  --fintype.card_sigma
-
-
-  /-have p_ne_zero : p ≠ 0,
+  have p_ne_zero : p ≠ 0,
   { intro p_eq_zero,
     rw [p_eq_zero, polynomial.map_zero, polynomial.roots_zero] at hx,
     exact multiset.not_mem_zero x hx },
@@ -358,37 +363,14 @@ begin
     minimal_polynomial.dvd h p_aeval,
   have h_sep : (minimal_polynomial h).separable :=
     polynomial.separable.of_dvd ((polynomial.separable_map (algebra_map F K)).mpr hp) h_dvd,
-  have p_map_ne_zero : p.map (algebra_map F K) ≠ 0 := polynomial.map_ne_zero p_ne_zero,
-  have p_map_splits : (p.map (algebra_map F K)).splits (algebra_map K E),
-  { rw [polynomial.splits_map_iff, ←is_scalar_tower.algebra_map_eq F K E],
-    exact sp.splits },
-  have h_splits : (minimal_polynomial h).splits (algebra_map K E) :=
-    polynomial.splits_of_splits_of_dvd (algebra_map K E) p_map_ne_zero p_map_splits h_dvd,
-  rw ← intermediate_field.card_alg_hom_adjoin_integral K h h_sep h_splits,
-  have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃
-    Σ (f : K →ₐ[F] E), @alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f) :=
-  { to_fun := λ f, ⟨begin sorry end,begin sorry end⟩,
-    inv_fun := sorry,
-    left_inv := sorry,
-    right_inv := sorry, },
-  haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) := sorry,
-  rw fintype.card_congr key_equiv,
-  rw fintype.card_sigma,
-  apply finset.sum_const_nat,
-  intros f hf,
-  have h : is_integral K x := is_integral_of_is_scalar_tower x (is_integral_of_noetherian hFE x),
-  rw intermediate_field.adjoin.findim h,
-  have h_sep : (minimal_polynomial h).separable := sorry,
-  have h_splits : (minimal_polynomial h).splits
-    (@algebra_map K E _ _ (ring_hom.to_algebra f.to_ring_hom)) := sorry,
-  have key := @intermediate_field.card_alg_hom_adjoin_integral
-    K _ _ _ _ x E _ (ring_hom.to_algebra f.to_ring_hom) h h_sep h_splits,
-  exact key,
-  sorry,
-  sorry,
-  sorry,
-  sorry,-/
-  sorry,
+
+  rw ← @intermediate_field.card_alg_hom_adjoin_integral K _ E _ _ x E _
+    (ring_hom.to_algebra f) h h_sep,
+  { apply fintype.card_congr,
+    refl },
+  { refine polynomial.splits_of_splits_of_dvd _ (polynomial.map_ne_zero p_ne_zero) _ h_dvd,
+    rw polynomial.splits_map_iff,
+    sorry },
 end
 
 lemma is_galois_of_separable_splitting_field (sp : p.is_splitting_field F E) (hp : p.separable) :
