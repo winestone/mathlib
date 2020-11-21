@@ -23,6 +23,8 @@ namespace pi
 @[to_additive] instance has_one [∀ i, has_one $ f i] : has_one (Π i : I, f i) := ⟨λ _, 1⟩
 @[simp, to_additive] lemma one_apply [∀ i, has_one $ f i] : (1 : Π i, f i) i = 1 := rfl
 
+@[to_additive] lemma one_def [Π i, has_one $ f i] : (1 : Π i, f i) = λ i, 1 := rfl
+
 @[to_additive]
 instance has_mul [∀ i, has_mul $ f i] : has_mul (Π i : I, f i) := ⟨λ f g i, f i * g i⟩
 @[simp, to_additive] lemma mul_apply [∀ i, has_mul $ f i] : (x * y) i = x i * y i := rfl
@@ -55,6 +57,8 @@ by refine_struct { one := (1 : Π i, f i), mul := (*), inv := has_inv.inv, .. };
   tactic.pi_instance_derive_field
 
 @[simp] lemma sub_apply [∀ i, add_group $ f i] : (x - y) i = x i - y i := rfl
+
+lemma sub_def [Π i, add_group $ f i] : x - y = λ i, x i - y i := rfl
 
 @[to_additive]
 instance comm_group [∀ i, comm_group $ f i] : comm_group (Π i : I, f i) :=

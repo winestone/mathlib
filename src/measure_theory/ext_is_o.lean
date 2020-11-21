@@ -34,6 +34,18 @@ theorem box_additive_on_set_integral {μ : measure (ι → ℝ)} {g : (ι → �
   box_additive_on (λ l r, ∫ x in pi univ (λ i, Ioc (l i) (r i)), g x ∂μ) s :=
 box_additive_on_set_integral_preimage measurable_id hg
 
+theorem pi_univ_Ioo_ae_eq_Icc {μ : measure (ι → ℝ)}
+  (h : ∀ (x y : ι → ℝ) (i : ι), x i = y i → μ (Icc x y) = 0) (x y : ι → ℝ) :
+  pi univ (λ i, Ioo (x i) (y i)) =ᵐ[μ] Icc x y :=
+begin
+  refine eventually_le.antisymm (eventually_of_forall _) _,
+  { exact pi_univ_Icc x y ▸ pi_mono (λ _ _, Ioo_subset_Icc_self) },
+  { rw [ae_le_set],
+    refine measure_mono_null (Icc_diff_pi_univ_Ioo_subset x y x y)
+      (measure_union_null (measure_Union_null _) (measure_Union_null _)),
+    exacts [λ i, h _ _ i (by simp), λ i, h _ _ i (by simp)] }
+end
+
 theorem pi_univ_Ioc_ae_eq_Icc {μ : measure (ι → ℝ)}
   (h : ∀ (x y : ι → ℝ) (i : ι), x i = y i → μ (Icc x y) = 0) (x y : ι → ℝ) :
   pi univ (λ i, Ioc (x i) (y i)) =ᵐ[μ] Icc x y :=

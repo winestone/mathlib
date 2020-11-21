@@ -225,7 +225,7 @@ begin
   { rintros ⟨f', hf't, hf'⟩ k,
     rcases exists_rat_btwn (one_div_pos.2 (pow_pos (@zero_lt_two ℝ _ _) k)) with ⟨ε, hε⟩,
     rcases hf'.has_approx_fderiv_at_in_shell hε.1 with ⟨R₀, hR₀⟩,
-    rcases exists_pow_lt_of_lt_1 hR₀.fst (norm_nonneg a) ha with ⟨n, hn⟩,
+    rcases exists_pow_lt_of_lt_one hR₀.fst ha with ⟨n, hn⟩,
     rcases exists_rat_btwn hn with ⟨R, hR⟩,
     refine ⟨n, λ m, _⟩,
     rcases exists_rat_btwn (pow_pos h₀' m) with ⟨r, hr⟩,
