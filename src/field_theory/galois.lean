@@ -358,7 +358,6 @@ begin
   rw [fintype.card_congr key_equiv, fintype.card_sigma],
   apply finset.sum_const_nat,
   intros f hf,
-
   have p_ne_zero : p ≠ 0,
   { intro p_eq_zero,
     rw [p_eq_zero, polynomial.map_zero, polynomial.roots_zero] at hx,
@@ -373,14 +372,20 @@ begin
     minimal_polynomial.dvd h p_aeval,
   have h_sep : (minimal_polynomial h).separable :=
     polynomial.separable.of_dvd ((polynomial.separable_map (algebra_map F K)).mpr hp) h_dvd,
-
   rw ← @intermediate_field.card_alg_hom_adjoin_integral K _ E _ _ x E _
     (ring_hom.to_algebra f) h h_sep,
   { apply fintype.card_congr,
     refl },
   { refine polynomial.splits_of_splits_of_dvd _ (polynomial.map_ne_zero p_ne_zero) _ h_dvd,
-    rw polynomial.splits_map_iff,
-    sorry },
+    let q := p.map (algebra_map F K),
+    change q.splits f.to_ring_hom,
+    suffices : q.map f.to_ring_hom = q.map (algebra_map K E),
+    { rw [←polynomial.splits_id_iff_splits, this, polynomial.splits_id_iff_splits,
+          polynomial.splits_map_iff, ←is_scalar_tower.algebra_map_eq],
+      exact sp.splits },
+    ext,
+    simp only [polynomial.coeff_map],
+    exact alg_hom.commutes f (p.coeff n) },
 end
 
 lemma is_galois_of_separable_splitting_field (sp : p.is_splitting_field F E) (hp : p.separable) :
