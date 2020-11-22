@@ -349,9 +349,13 @@ begin
       right_inv := λ f,
         by { simp only [alg_hom.comp_assoc, to_alg_hom_eq_coe, comp_symm, alg_hom.comp_id] } },
   end,
-  haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) := sorry,
-  rw fintype.card_congr key_equiv,
-  rw fintype.card_sigma,
+  haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) :=
+  begin
+    intro f,
+    apply fintype.of_injective (sigma.mk f) (λ _ _ H, eq_of_heq ((sigma.mk.inj H).2)),
+    exact fintype.of_equiv ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) key_equiv,
+  end,
+  rw [fintype.card_congr key_equiv, fintype.card_sigma],
   apply finset.sum_const_nat,
   intros f hf,
 
