@@ -29,6 +29,16 @@ For example, `algebra.adjoin K {x}` might not include `x⁻¹`.
 open finite_dimensional
 open_locale classical
 
+namespace finset
+
+theorem induction_on' {α : Type*} {p : finset α → Prop} [decidable_eq α]
+  (S : finset α) (h₁ : p ∅) (h₂ : ∀ {a ∈ S} {s ⊆ S}, a ∉ s → p s → p (insert a s)) : p S :=
+begin
+  sorry
+end
+
+end finset
+
 namespace intermediate_field
 
 section adjoin_def
@@ -137,8 +147,7 @@ lemma subset_adjoin_of_subset_right {T : set E} (H : T ⊆ S) : T ⊆ adjoin F S
 λ x hx, subset_adjoin F S (H hx)
 
 @[simp] lemma adjoin_empty (F E : Type*) [field F] [field E] [algebra F E] :
-  adjoin F (∅ : set E) = ⊥ :=
-eq_bot_iff.mpr (adjoin_le_iff.mpr (set.empty_subset _))
+  adjoin F (∅ : set E) = ⊥ := rfl
 
 /-- If `K` is a field with `F ⊆ K` and `S ⊆ K` then `adjoin F S ≤ K`. -/
 lemma adjoin_le_subfield {K : subfield E} (HF : set.range (algebra_map F E) ⊆ K)
@@ -596,7 +605,11 @@ lemma induction_on_adjoin' (F : Type*) [field F] [algebra F E] (S : finset E)
   (P : intermediate_field F E → Prop) (base : P ⊥)
   (ih : ∀ (K : intermediate_field F E) (x ∈ S), P K → P ↑K⟮x⟯) : P (adjoin F ↑S) :=
 begin
-  sorry,
+  apply finset.induction_on' S,
+  { exact base },
+  { intros a h1 s h2 h3 h4,
+    rw [finset.coe_insert, set.insert_eq, set.union_comm, ←adjoin_adjoin_left],
+    exact ih (adjoin F s) a h1 h4 }
 end
 
 end induction
