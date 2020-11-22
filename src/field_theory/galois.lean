@@ -340,7 +340,14 @@ begin
     Σ (f : K →ₐ[F] E), @alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f) :=
   begin
     refine equiv.trans _ (intermediate_field.pawugbsjagb.alg_hom_equiv_sigma_subalgebra F K K⟮x⟯ E),
-    sorry,
+    have ϕ := intermediate_field.lift2_alg_equiv K⟮x⟯,
+    exact
+    { to_fun := λ f, f.comp ϕ.symm.to_alg_hom,
+      inv_fun := λ f, f.comp ϕ.to_alg_hom,
+      left_inv := λ f,
+        by { simp only [alg_hom.comp_assoc, to_alg_hom_eq_coe, symm_comp, alg_hom.comp_id] },
+      right_inv := λ f,
+        by { simp only [alg_hom.comp_assoc, to_alg_hom_eq_coe, comp_symm, alg_hom.comp_id] } },
   end,
   haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) := sorry,
   rw fintype.card_congr key_equiv,
