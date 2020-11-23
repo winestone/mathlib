@@ -29,15 +29,11 @@ For example, `algebra.adjoin K {x}` might not include `x⁻¹`.
 open finite_dimensional
 open_locale classical
 
-namespace finset
-
+/- Will be merged into finset/basic -/
 theorem induction_on' {α : Type*} {p : finset α → Prop} [decidable_eq α]
-  (S : finset α) (h₁ : p ∅) (h₂ : ∀ {a ∈ S} {s ⊆ S}, a ∉ s → p s → p (insert a s)) : p S :=
-begin
-  sorry
-end
-
-end finset
+  (S : finset α) (h₁ : p ∅) (h₂ : ∀ {a s}, a ∈ S → s ⊆ S → a ∉ s → p s → p (insert a s)) : p S :=
+@finset.induction_on α (λ T, T ⊆ S → p T) _ S (λ _, h₁) (λ a s has hqs hs,
+  let ⟨hS, sS⟩ := finset.insert_subset.1 hs in h₂ hS sS has (hqs sS)) (finset.subset.refl S)
 
 namespace intermediate_field
 
@@ -605,7 +601,7 @@ lemma induction_on_adjoin' (F : Type*) [field F] [algebra F E] (S : finset E)
   (P : intermediate_field F E → Prop) (base : P ⊥)
   (ih : ∀ (K : intermediate_field F E) (x ∈ S), P K → P ↑K⟮x⟯) : P (adjoin F ↑S) :=
 begin
-  apply finset.induction_on' S,
+  apply induction_on' S,
   { exact base },
   { intros a h1 s h2 h3 h4,
     rw [finset.coe_insert, set.insert_eq, set.union_comm, ←adjoin_adjoin_left],
