@@ -603,9 +603,9 @@ lemma induction_on_adjoin' (F : Type*) [field F] [algebra F E] (S : finset E)
 begin
   apply induction_on' S,
   { exact base },
-  { intros a s h1 h2 h3 h4,
+  { intros a s h1 _ _ h4,
     rw [finset.coe_insert, set.insert_eq, set.union_comm, ←adjoin_adjoin_left],
-    exact ih (adjoin F s) a h1 h4, }
+    exact ih (adjoin F s) a h1 h4 }
 end
 
 end induction
