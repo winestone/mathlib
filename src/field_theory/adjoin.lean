@@ -595,7 +595,7 @@ lemma induction_on_adjoin' (F : Type*) [field F] [algebra F E] (S : finset E)
   (P : intermediate_field F E → Prop) (base : P ⊥)
   (ih : ∀ (K : intermediate_field F E) (x ∈ S), P K → P ↑K⟮x⟯) : P (adjoin F ↑S) :=
 begin
-  apply induction_on' S,
+  apply finset.induction_on' S,
   { exact base },
   { intros a s h1 _ _ h4,
     rw [finset.coe_insert, set.insert_eq, set.union_comm, ←adjoin_adjoin_left],
