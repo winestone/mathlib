@@ -79,6 +79,11 @@ variables (G)
 def nth_commutator (n : ℕ) : subgroup G :=
 nat.rec_on n (⊤ : subgroup G) (λ _ H, general_commutator H H)
 
+def general_nth_commutator (G':subgroup G)(n:ℕ): subgroup G:=
+nat.rec_on n (G' : subgroup G) (λ _ H, general_commutator H H)
+
+
+
 instance top_normal: (⊤: subgroup G).normal :=
 { conj_mem :=  λ  n mem g, mem_top (g*n *g⁻¹ ), }
 
@@ -111,13 +116,38 @@ begin
   { exact λ x ⟨p, q, h⟩, ⟨p, mem_top p, q, mem_top q, h⟩ }
 end
 
-lemma nth_commutator_zero : nth_commutator G 0 = ⊤ := rfl
+@[simp] lemma nth_commutator_zero : nth_commutator G 0 = ⊤ := rfl
+lemma general_nth_commutator_subgroup (G':subgroup G): (general_nth_commutator G G' (0:ℕ) ) = G':=
+rfl
 
-lemma nth_commutator_one : nth_commutator G 1 = commutator G :=
+@[simp] lemma nth_commutator_one : nth_commutator G 1 = commutator G :=
 eq.symm $ commutator_eq_general_commutator_top_top G
+
+lemma general_nth_commutator_succ (G':subgroup G)(n:ℕ ): general_nth_commutator G G' (nat.succ n) =
+general_commutator (general_nth_commutator G G' n) (general_nth_commutator G G' n):=rfl
+
+
+lemma general_nth_commutator_one (G':subgroup G): general_nth_commutator G G' 1 =
+general_commutator G' G':=
+begin
+  rw [general_nth_commutator_succ,general_nth_commutator_subgroup],
+
+end
+
+
+
+--lemma isomorphism (H: subgroup G)(K:subgroup H):general_commutator H H = (general_commutator H (⊤:subgroup H) H).lift:=sorry
 
 lemma nth_commutator_succ (n : ℕ) :
   nth_commutator G (n + 1) = general_commutator (nth_commutator G n) (nth_commutator G n) := rfl
+
+lemma nth_commutator_eq_general_nth_commutator_if_top : nth_commutator G=general_nth_commutator G (⊤:subgroup G):=
+begin
+  funext,
+  induction n,
+  rw [nth_commutator_zero,general_nth_commutator_subgroup],
+  rw [nth_commutator_succ,general_nth_commutator_succ, n_ih],
+end
 
 variables {G} {G' : Type*} [group G'] {f : G →* G'}
 
@@ -132,9 +162,22 @@ begin
     refine ⟨p * q * p⁻¹ * q⁻¹, ⟨p, hp, q, hq, rfl⟩, by simp *⟩, },
 end
 
+--lemma nth_commutator_eq_nth_commutator_map (n:ℕ) :
+--(nth_commutator G n).map f= (nth_commutator ((⊤:subgroup G).map f) n):=sorry
+
 lemma lift_commutator_eq_commutator_lift_lift {H : subgroup G} (K₁ K₂ : subgroup H) :
   (general_commutator K₁ K₂).lift = general_commutator (K₁.lift) (K₂.lift) :=
 map_commutator_eq_commutator_map _ _
+
+lemma lift_nth_commutator_eq_nth_commutator {H : subgroup G} (n:ℕ) :
+  (nth_commutator H n).lift = general_nth_commutator G H n:=
+  begin
+    induction n,
+    rw [nth_commutator_zero,general_nth_commutator_subgroup],
+    sorry,
+    rw [nth_commutator_succ,general_nth_commutator_succ,
+    lift_commutator_eq_commutator_lift_lift, n_ih],
+  end
 
 lemma commutator_le_commutator_map {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'} (h₁ : K₁ ≤ H₁.map f)
   (h₂ : K₂ ≤ H₂.map f) : general_commutator K₁ K₂ ≤ (general_commutator H₁ H₂).map f :=
@@ -307,22 +350,53 @@ lemma quotient_something (H : subgroup G) [H.normal]
 begin
   unfold is_solvable at h',
   cases h' with paris france,
-  induction paris with n n_ih,
-  rw nth_commutator_zero (quotient_group.quotient H) at france,
-  have is_all: H=(⊤:subgroup G),
-  apply eq_top_of_trivial_quotient,
+  use paris,
 
+  have surj:function.surjective (quotient_group.mk' H),
+  convert surjective_quot_mk setoid.r,
+  have image: nth_commutator (quotient H) paris=(nth_commutator G paris).map (quotient_group.mk' H),
+  apply nth_commutator_eq_map_nth_commutator surj,
+  rw france at image,
+  suffices: ↑(nth_commutator G paris) ⊆ ↑H,
+  exact coe_subset_coe.mp this,
+  intros x x_in,
 
-
-  sorry,
-
-
-
+  --it seems like this should follow from image in one line
+  have bound:(mk' H) x ∈ (⊥:subgroup (quotient H)),
+  simp *,
+  use x,
+  split,
+  exact x_in,
+  simp only [eq_self_iff_true],
+  have reduction:(mk' H) x=(mk' H) 1,
+  simp[bound],
+  exact mem_bot.mp bound,
+  rw  subgroup.set.has_coe,
+  have triv_mem':=subgroup.one_mem H,
+  have triv_mem: (1:G)∈ ↑ H,
+  exact mem_coe.mpr triv_mem',
+  have s:= @quotient_group.eq G _inst_1 H 1 x,
+  have small:1⁻¹ * x=x,
+  simp only [one_inv, one_mul],
+  rw small at s,
+  apply s.1,
+  have hmmmm:↑(1:G)=mk (1:G),
+  exact (rfl.congr bound).mp (eq.symm bound),
+  have hmmmmmmmm:↑ x=mk x,
+  exact (rfl.congr (eq.symm bound)).mp bound,
+  change (mk) x=(mk) 1 at reduction,
+  symmetry,
+  rwa [hmmmm,hmmmmmmmm],
 end
 
 lemma short_exact_sequence_solvable (H : subgroup G) [H.normal]
 (h : is_solvable H) (h':is_solvable (quotient_group.quotient H)): is_solvable G:=
 begin
+  have reduction:=quotient_something H h',
+  unfold is_solvable at h,
+  cases h with n n_solves,
+  cases reduction with m m_solves,
+  use n+m,
   sorry,
 
 end
