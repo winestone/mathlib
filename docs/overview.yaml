@@ -112,7 +112,11 @@ General algebra:
     rupture field: 'adjoin_root'
     splitting field: 'polynomial.splitting_field'
     perfect closure: 'perfect_closure'
+<<<<<<< HEAD
     Galois correspondence: 'galois.galois_correspondence'
+=======
+    Galois correspondence: 'is_galois.intermediate_field_equiv_subgroup'
+>>>>>>> master
 
   Homological algebra:
     chain complex: 'chain_complex'
@@ -230,6 +234,7 @@ Analysis:
     absolutely convergent series in Banach spaces: 'summable_of_summable_norm'
     Hahn-Banach theorem: 'exists_extension_norm_eq'
     dual of a normed space: 'normed_space.dual'
+    Fréchet-Riesz representation of the dual of a Hilbert space: 'inner_product_space.to_dual'
     isometric inclusion in double dual: 'normed_space.inclusion_in_double_dual_isometry'
     completeness of spaces of bounded continuous functions: 'bounded_continuous_function.complete_space'
 
