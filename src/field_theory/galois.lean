@@ -124,6 +124,7 @@ lemma is_galois_of_alg_equiv_aux (h : E ≃ₐ[F] E') : is_galois F E → is_gal
 begin
   intro h_gal,
   split,
+  /- TODO : Replace these cases with results from separable.lean and normal.lean -/
   { intro x,
     cases h_gal.1 (h.symm x) with hx hhx,
     have H := is_integral_alg_hom h.to_alg_hom hx,
