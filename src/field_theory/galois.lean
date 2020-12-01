@@ -73,52 +73,6 @@ instance of_fixed_field (G : Type*) [group G] [fintype G] [mul_semiring_action G
 instance self : is_galois F F :=
 ⟨is_separable_self F, normal.self F⟩
 
-instance aut : group (E ≃ₐ[F] E) :=
-{ mul := λ ϕ ψ, ψ.trans ϕ,
-  mul_assoc := λ ϕ ψ χ, rfl,
-  one := 1,
-  one_mul := λ ϕ, by {ext, refl},
-  mul_one := λ ϕ, by {ext, refl},
-  inv := symm,
-  mul_left_inv := λ ϕ, by {ext, exact symm_apply_apply ϕ a} }
-
-lemma is_galois_implies_card_aut_eq_findim [finite_dimensional F E] [h : is_galois F E] :
-  fintype.card (E ≃ₐ[F] E) = findim F E :=
-begin
-  cases field.exists_primitive_element h.1 with α hα,
-  cases h.1 α with H1 h_separable,
-  cases h.2 α with H2 h_splits,
-  have switch : (⊤ : intermediate_field F E).to_subalgebra.to_submodule = ⊤ :=
-    by { ext, exact iff_of_true intermediate_field.mem_top submodule.mem_top },
-  rw [←findim_top, ←switch],
-  change fintype.card (E ≃ₐ[F] E) = findim F (⊤ : intermediate_field F E),
-  replace h_splits : polynomial.splits (algebra_map F F⟮α⟯) (minimal_polynomial H2),
-  { rw hα,
-    let map : E →+* (⊤ : intermediate_field F E) :=
-    { to_fun := λ x, ⟨x, intermediate_field.mem_top⟩,
-      map_one' := rfl,
-      map_mul' := λ _ _, rfl,
-      map_zero' := rfl,
-      map_add' := λ _ _, rfl },
-    rw (show algebra_map F (⊤ : intermediate_field F E) = map.comp (algebra_map F E),
-      by { ext, refl }),
-    exact polynomial.splits_comp_of_splits (algebra_map F E) map h_splits },
-  rw [←hα, intermediate_field.adjoin.findim H2],
-  rw ← intermediate_field.card_alg_hom_adjoin_integral F H2 h_separable h_splits,
-  apply fintype.card_congr,
-  transitivity (F⟮α⟯ ≃ₐ[F] F⟮α⟯),
-  { rw hα,
-    change (E ≃ₐ[F] E) ≃ ((⊤ : intermediate_field F E).to_subalgebra ≃ₐ[F]
-      (⊤ : intermediate_field F E).to_subalgebra),
-    rw intermediate_field.top_to_subalgebra,
-    exact
-    { to_fun := λ ϕ, (algebra.top_equiv).trans (trans ϕ (algebra.top_equiv).symm),
-      inv_fun := λ ϕ, (algebra.top_equiv).symm.trans (trans ϕ (algebra.top_equiv)),
-      left_inv := λ _, by { ext, simp only [apply_symm_apply, trans_apply] },
-      right_inv := λ _, by { ext, simp only [symm_apply_apply, trans_apply] } } },
-  { exact alg_equiv_equiv_alg_hom F F⟮α⟯ },
-end
-
 lemma intermediate_field.adjoin_simple.card_aut_eq_findim
   [finite_dimensional F E] {α : E} (hα : is_integral F α)
   (h_sep : (minimal_polynomial hα).separable)
