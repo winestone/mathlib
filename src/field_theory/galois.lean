@@ -241,8 +241,7 @@ lemma is_galois_iff_is_galois_top : is_galois F (⊤ : intermediate_field F E) �
 is_galois_of_alg_equiv (intermediate_field.top_equiv)
 
 instance is_galois_bot : is_galois F (⊥ : intermediate_field F E) :=
-(is_galois_of_alg_equiv intermediate_field.bot_equiv).mpr (galois.self F)
-variables (H : subgroup (E ≃ₐ[F] E)) (K : intermediate_field F E)
+(is_galois_of_alg_equiv intermediate_field.bot_equiv).mpr (is_galois.self F)
 
 namespace intermediate_field
 
@@ -378,9 +377,11 @@ end galois_correspondence
 
 section galois_equivalent_definitions
 
+open is_galois
+
 variables (F : Type*) [field F] (E : Type*) [field E] [algebra F E]
 
-lemma is_separable_splitting_field_of_is_galois [finite_dimensional F E] [h : is_galois F E] :
+lemma is_separable_splitting_field [finite_dimensional F E] [h : is_galois F E] :
   ∃ p : polynomial F, p.separable ∧ p.is_splitting_field F E :=
 begin
   cases field.exists_primitive_element h.1 with α h1,
@@ -401,31 +402,29 @@ begin
       { exact polynomial.map_ne_zero (minimal_polynomial.ne_zero h2) } } }
 end
 
-lemma is_galois_of_fixed_field_eq_bot [finite_dimensional F E]
-  (h : fixed_field (⊤ : subgroup (E ≃ₐ[F] E)) = ⊥) : is_galois F E :=
+lemma of_fixed_field_eq_bot [finite_dimensional F E]
+  (h : intermediate_field.fixed_field (⊤ : subgroup (E ≃ₐ[F] E)) = ⊥) : is_galois F E :=
 begin
   rw [←is_galois_iff_is_galois_bot, ←h],
-  exact galois.of_fixed_field E (⊤ : subgroup (E ≃ₐ[F] E)),
+  exact is_galois.of_fixed_field E (⊤ : subgroup (E ≃ₐ[F] E)),
 end
 
-lemma is_galois_of_card_aut_eq_findim [finite_dimensional F E]
+lemma of_card_aut_eq_findim [finite_dimensional F E]
   (h : fintype.card (E ≃ₐ[F] E) = findim F E) : is_galois F E :=
 begin
-  apply is_galois_of_fixed_field_eq_bot,
-  rw ← intermediate_field.findim_eq_one_iff,
-  have ne : findim (fixed_field (⊤ : subgroup (E ≃ₐ[F] E))) E ≠ 0 := (ne_of_lt findim_pos).symm,
-  rw [←mul_left_inj' ne, findim_mul_findim, ←h, one_mul, findim_fixed_field_eq_card],
+  apply of_fixed_field_eq_bot,
+  have ne : findim (intermediate_field.fixed_field (⊤ : subgroup (E ≃ₐ[F] E))) E ≠ 0 :=
+    (ne_of_lt findim_pos).symm,
+  rw [←intermediate_field.findim_eq_one_iff, ←mul_left_inj' ne, findim_mul_findim, ←h, one_mul,
+      intermediate_field.findim_fixed_field_eq_card],
   apply fintype.card_congr,
   exact { to_fun := λ g, ⟨g, subgroup.mem_top g⟩, inv_fun := coe,
           left_inv := λ g, rfl, right_inv := λ _, by { ext, refl } },
 end
 
-end galois_equivalent_definitions
+variables {F} {E} {p : polynomial F}
 
-section splitting_field_galois
-variables {F : Type*} {E : Type*} [field F] [field E] [algebra F E] {p : polynomial F}
-
-lemma is_galois_of_separable_splitting_field_aux [hFE : finite_dimensional F E]
+lemma of_separable_splitting_field_aux [hFE : finite_dimensional F E]
   (sp : p.is_splitting_field F E) (hp : p.separable) (K : intermediate_field F E) {x : E}
   (hx : x ∈ (p.map (algebra_map F E)).roots) :
 fintype.card ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) = fintype.card (K →ₐ[F] E) * findim K K⟮x⟯ :=
@@ -483,7 +482,7 @@ begin
     exact alg_hom.commutes f (p.coeff n) },
 end
 
-lemma is_galois_of_separable_splitting_field (sp : p.is_splitting_field F E) (hp : p.separable) :
+lemma of_separable_splitting_field (sp : p.is_splitting_field F E) (hp : p.separable) :
   is_galois F E :=
 begin
   haveI hFE : finite_dimensional F E := polynomial.is_splitting_field.finite_dimensional E p,
@@ -499,7 +498,7 @@ begin
   suffices : P (intermediate_field.adjoin F ↑s),
   { rw adjoin_root at this,
     change fintype.card _ = _ at this,
-    apply is_galois_of_card_aut_eq_findim,
+    apply of_card_aut_eq_findim,
     have swap : findim F (⊤ : intermediate_field F E) = findim F E :=
       linear_equiv.findim_eq intermediate_field.top_equiv.to_linear_equiv,
     rw [←swap, ← this],
@@ -532,32 +531,7 @@ begin
     rw [this, hK],
     rw findim_mul_findim F K K⟮x⟯,
     exact (linear_equiv.findim_eq (intermediate_field.lift2_alg_equiv K⟮x⟯).to_linear_equiv).symm },
-  exact is_galois_of_separable_splitting_field_aux sp hp K (multiset.mem_to_finset.mp hx),
+  exact of_separable_splitting_field_aux sp hp K (multiset.mem_to_finset.mp hx),
 end
-
-end splitting_field_galois
-
-end galois
-namespace is_galois
-
-lemma is_separable_splitting_field [finite_dimensional F E] [h : is_galois F E] :
-  ∃ p : polynomial F, p.separable ∧ p.is_splitting_field F E :=
-begin
-  cases field.exists_primitive_element h.1 with α h1,
-  have h2 : is_integral F α := h.integral α,
-  have h3 : (minimal_polynomial h2).separable := h.separable α,
-  have h4 : (minimal_polynomial h2).splits (algebra_map F E) := h.normal α,
-  use [minimal_polynomial h2, h3, h4],
-  rw [eq_top_iff, ←intermediate_field.top_to_subalgebra, ←h1],
-  rw intermediate_field.adjoin_simple_to_subalgebra_of_integral F α h2,
-  apply algebra.adjoin_mono,
-  rw [set.singleton_subset_iff, finset.mem_coe, multiset.mem_to_finset, polynomial.mem_roots],
-  { dsimp only [polynomial.is_root],
-    rw [polynomial.eval_map, ←polynomial.aeval_def],
-    exact minimal_polynomial.aeval h2 },
-  { exact polynomial.map_ne_zero (minimal_polynomial.ne_zero h2) }
-end
-
-end is_galois
 
 end galois_equivalent_definitions
