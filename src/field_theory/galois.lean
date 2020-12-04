@@ -125,17 +125,7 @@ begin
   intro h_gal,
   split,
   /- TODO : Replace these cases with results from separable.lean and normal.lean -/
-  { intro x,
-    cases h_gal.1 (h.symm x) with hx hhx,
-    have H := is_integral_alg_hom h.to_alg_hom hx,
-    simp only [alg_equiv.coe_alg_hom, alg_equiv.to_alg_hom_eq_coe, alg_equiv.apply_symm_apply] at H,
-    use H,
-    apply polynomial.separable.of_dvd hhx,
-    apply minimal_polynomial.dvd H,
-    apply ring_hom.injective h.symm.to_alg_hom.to_ring_hom,
-    rw ring_hom.map_zero,
-    exact eq.trans (polynomial.aeval_alg_hom_apply h.symm.to_alg_hom x
-      (minimal_polynomial hx)).symm (minimal_polynomial.aeval hx), },
+  { exact h_gal.1.of_alg_hom h.symm.to_alg_hom },
   { intro x,
     cases h_gal.2 (h.symm x) with hx hhx,
     have H := is_integral_alg_hom h.to_alg_hom hx,
@@ -477,7 +467,7 @@ begin
     change ↑(algebra_map F (⊥ : intermediate_field F E) y) = ↑x at hy,
     rw [←subtype.ext_iff.mpr hy, ϕ.commutes y],
     refl },
-  apply intermediate_field.induction_on_adjoin' F s P base,
+  apply intermediate_field.induction_on_adjoin_finset s P base,
   intros K x hx hK,
   change fintype.card _ = _,
   suffices : fintype.card ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) =
