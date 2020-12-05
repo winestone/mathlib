@@ -776,6 +776,14 @@ begin
 end
 
 @[to_additive]
+lemma lift_le (K : subgroup H) : K.lift ≤ H :=
+by tidy
+
+@[to_additive]
+lemma lift_top : (⊤ : subgroup H).lift = H :=
+by tidy
+
+@[to_additive]
 lemma eq_bot_iff_lift_eq_bot (K : subgroup H) : K = ⊥ ↔ K.lift = ⊥ :=
 begin
   split,
