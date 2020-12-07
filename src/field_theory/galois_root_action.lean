@@ -198,6 +198,28 @@ begin
   rw equiv.apply_symm_apply (roots_aux_equiv_roots p),
 end
 
+def gal_action_hom : gal p →* equiv.perm (roots p) :=
+{ to_fun := λ ϕ, equiv.mk (λ x, ϕ • x) (λ x, ϕ⁻¹ • x)
+  (λ x, inv_smul_smul ϕ x) (λ x, smul_inv_smul ϕ x),
+  map_one' := by { ext1 x, exact mul_action.one_smul x },
+  map_mul' := λ x y, by { ext1 z, exact mul_action.mul_smul x y z } }
+
+lemma gal_action_hom_injective : function.injective (gal_action_hom p) :=
+begin
+  rw monoid_hom.injective_iff,
+  intros ϕ hϕ,
+  let equalizer := alg_hom.equalizer ϕ.to_alg_hom (alg_hom.id ℚ p.splitting_field),
+  suffices : equalizer = ⊤,
+  { exact alg_equiv.ext (λ x, (subalgebra.ext_iff.mp this x).mpr algebra.mem_top) },
+  rw [eq_top_iff, ←splitting_field.adjoin_roots p, algebra.adjoin_le_iff],
+  intros x hx,
+  have key := equiv.perm.ext_iff.mp hϕ (roots_aux_equiv_roots p ⟨x, hx⟩),
+  change roots_aux_equiv_roots p (ϕ • (roots_aux_equiv_roots p).symm
+    (roots_aux_equiv_roots p ⟨x, hx⟩)) = roots_aux_equiv_roots p ⟨x, hx⟩ at key,
+  rw equiv.symm_apply_apply at key,
+  exact subtype.ext_iff.mp (equiv.injective (roots_aux_equiv_roots p) key),
+end
+
 end rational_polynomial
 
 end rational_field
