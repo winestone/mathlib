@@ -106,6 +106,32 @@ instance has_continuous_mul_of_discrete_topology [topological_space N]
   [has_mul N] [discrete_topology N] : has_continuous_mul N :=
 ⟨continuous_of_discrete_topology⟩
 
+open_locale filter
+
+open function
+
+lemma has_continuous_mul_of_comm_of_nice_nhds_one (M : Type*) [comm_monoid M] [topological_space M]
+  (hmul : tendsto (uncurry ((*) : M → M → M)) (𝓝 1 ×ᶠ 𝓝 1) (𝓝 1))
+  (hleft : ∀ x₀ : M, 𝓝 x₀ = map (λ x, x₀*x) (𝓝 1)) : has_continuous_mul M :=
+{ continuous_mul := begin
+    rw continuous_iff_continuous_at,
+    rintros ⟨x₀, y₀⟩,
+    have key : (λ (p : M × M), x₀ * p.1 * (y₀ * p.2)) =
+      ((λ x, x₀ * y₀ * x) ∘ (uncurry (*))),
+    { ext,
+      change x₀ * x.1 * (y₀ * x.2) = x₀ * y₀ * (x.1 * x.2),
+      ac_refl },
+    calc map (λ (p : M × M), p.1 * p.2) (𝓝 (x₀, y₀))
+        = map (λ (p : M × M), p.1 * p.2) (𝓝 x₀ ×ᶠ 𝓝 y₀)
+            : by rw nhds_prod_eq
+    ... = map (λ (p : M × M), x₀ * p.1 * (y₀ * p.2)) ((𝓝 1) ×ᶠ (𝓝 1))
+            : by rw [hleft x₀, hleft y₀, prod_map_map_eq, filter.map_map]
+    ... = map ((λ x, x₀ * y₀ * x) ∘ (uncurry (*))) ((𝓝 1) ×ᶠ (𝓝 1)) : by rw key
+    ... = map (λ x, x₀ * y₀ * x) (map (uncurry (*)) ((𝓝 1) ×ᶠ (𝓝 1))) : by rw filter.map_map
+    ... ≤ map (λ x, x₀ * y₀ * x) (𝓝 1) : map_mono hmul
+    ... = 𝓝 (x₀ * y₀) : (hleft _).symm
+  end }
+
 end has_continuous_mul
 
 section has_continuous_mul
