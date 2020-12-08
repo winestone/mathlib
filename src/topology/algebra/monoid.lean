@@ -110,6 +110,7 @@ open_locale filter
 
 open function
 
+@[to_additive]
 lemma has_continuous_mul_of_comm_of_nice_nhds_one (M : Type*) [comm_monoid M] [topological_space M]
   (hmul : tendsto (uncurry ((*) : M → M → M)) (𝓝 1 ×ᶠ 𝓝 1) (𝓝 1))
   (hleft : ∀ x₀ : M, 𝓝 x₀ = map (λ x, x₀*x) (𝓝 1)) : has_continuous_mul M :=
