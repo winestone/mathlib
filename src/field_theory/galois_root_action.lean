@@ -34,7 +34,7 @@ instance : group (gal p) := alg_equiv.aut
 instance : fintype (gal p) := alg_equiv.fintype ℚ p.splitting_field
 
 /- Will be used to show that gal contains a p-cycle -/
-lemma prime_degree_dvd_findim (p_irr : irreducible p) (p_deg : p.nat_degree.prime) :
+lemma prime_degree_dvd_card (p_irr : irreducible p) (p_deg : p.nat_degree.prime) :
   p.nat_degree ∣ fintype.card (gal p) :=
 begin
   haveI := of_separable_splitting_field (is_splitting_field.splitting_field p)

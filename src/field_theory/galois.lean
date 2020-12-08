@@ -369,62 +369,47 @@ end
 
 variables {F} {E} {p : polynomial F}
 
+def equiv_of_alg_equiv (C : Type*) [field C] [algebra F C] {D : Type*} [field D] [algebra F D]
+  (ϕ : D ≃ₐ[F] E) : (D →ₐ[F] C) ≃ (E →ₐ[F] C) :=
+{ to_fun := λ f, f.comp ϕ.symm.to_alg_hom,
+  inv_fun := λ f, f.comp ϕ.to_alg_hom,
+  left_inv := λ f,
+    by { simp only [alg_hom.comp_assoc, to_alg_hom_eq_coe, symm_comp, alg_hom.comp_id] },
+  right_inv := λ f,
+    by { simp only [alg_hom.comp_assoc, to_alg_hom_eq_coe, comp_symm, alg_hom.comp_id] } }
+
 lemma of_separable_splitting_field_aux [hFE : finite_dimensional F E]
   (sp : p.is_splitting_field F E) (hp : p.separable) (K : intermediate_field F E) {x : E}
   (hx : x ∈ (p.map (algebra_map F E)).roots) :
 fintype.card ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) = fintype.card (K →ₐ[F] E) * findim K K⟮x⟯ :=
 begin
-  have h : is_integral K x := is_integral_of_is_scalar_tower x (is_integral_of_noetherian hFE x),
-  rw intermediate_field.adjoin.findim h,
   have key_equiv : ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) ≃
     Σ (f : K →ₐ[F] E), @alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f) :=
-  begin
-    refine equiv.trans _ (intermediate_field.pawugbsjagb.alg_hom_equiv_sigma_subalgebra F K K⟮x⟯ E),
-    have ϕ := intermediate_field.lift2_alg_equiv K⟮x⟯,
-    exact
-    { to_fun := λ f, f.comp ϕ.symm.to_alg_hom,
-      inv_fun := λ f, f.comp ϕ.to_alg_hom,
-      left_inv := λ f,
-        by { simp only [alg_hom.comp_assoc, to_alg_hom_eq_coe, symm_comp, alg_hom.comp_id] },
-      right_inv := λ f,
-        by { simp only [alg_hom.comp_assoc, to_alg_hom_eq_coe, comp_symm, alg_hom.comp_id] } },
-  end,
-  haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) :=
-  begin
-    intro f,
+  equiv.trans (equiv_of_alg_equiv E (intermediate_field.lift2_alg_equiv K⟮x⟯))
+    (intermediate_field.pawugbsjagb.alg_hom_equiv_sigma_subalgebra F K K⟮x⟯ E),
+  haveI : Π (f : K →ₐ[F] E), fintype (@alg_hom K K⟮x⟯ E _ _ _ _ (ring_hom.to_algebra f)) := by
+  { intro f,
     apply fintype.of_injective (sigma.mk f) (λ _ _ H, eq_of_heq ((sigma.mk.inj H).2)),
-    exact fintype.of_equiv ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) key_equiv,
-  end,
-  rw [fintype.card_congr key_equiv, fintype.card_sigma],
+    exact fintype.of_equiv ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) key_equiv },
+  have h : is_integral K x := is_integral_of_is_scalar_tower x (is_integral_of_noetherian hFE x),
+  rw [intermediate_field.adjoin.findim h, fintype.card_congr key_equiv, fintype.card_sigma],
   apply finset.sum_const_nat,
   intros f hf,
   have p_ne_zero : p ≠ 0,
   { intro p_eq_zero,
-    rw [p_eq_zero, polynomial.map_zero, polynomial.roots_zero] at hx,
-    exact multiset.not_mem_zero x hx },
-  have p_aeval : polynomial.aeval x (p.map (algebra_map F K)) = 0,
-  { rw [polynomial.aeval_def, polynomial.eval₂_map, ←is_scalar_tower.algebra_map_eq F K E,
-        ←polynomial.eval_map, ←polynomial.is_root,
-        ←polynomial.mem_roots (polynomial.map_ne_zero p_ne_zero)],
-    exact hx,
-    exact field.to_nontrivial E },
-  have h_dvd : (minimal_polynomial h) ∣ p.map (algebra_map F K) :=
-    minimal_polynomial.dvd h p_aeval,
-  have h_sep : (minimal_polynomial h).separable :=
-    polynomial.separable.of_dvd ((polynomial.separable_map (algebra_map F K)).mpr hp) h_dvd,
-  rw ← @intermediate_field.card_alg_hom_adjoin_integral K _ E _ _ x E _
-    (ring_hom.to_algebra f) h h_sep,
+    rwa [p_eq_zero, polynomial.map_zero, polynomial.roots_zero] at hx },
+  have h_dvd : (minimal_polynomial h) ∣ p.map (algebra_map F K),
+  { apply minimal_polynomial.dvd,
+    rw [polynomial.aeval_def, polynomial.eval₂_map, ←is_scalar_tower.algebra_map_eq F K E,
+        ←polynomial.eval_map, ←polynomial.is_root],
+    exact (polynomial.mem_roots (polynomial.map_ne_zero p_ne_zero)).mp hx },
+  rw ← @intermediate_field.card_alg_hom_adjoin_integral K _ E _ _ x E _ (ring_hom.to_algebra f) h
+    (polynomial.separable.of_dvd ((polynomial.separable_map (algebra_map F K)).mpr hp) h_dvd),
   { apply fintype.card_congr, refl },
   { refine polynomial.splits_of_splits_of_dvd _ (polynomial.map_ne_zero p_ne_zero) _ h_dvd,
-    change (p.map (algebra_map F K)).splits f.to_ring_hom,
-    suffices : (p.map (algebra_map F K)).map f.to_ring_hom =
-      (p.map (algebra_map F K)).map (algebra_map K E),
-    { rw [←polynomial.splits_id_iff_splits, this, polynomial.map_map,
-          ←is_scalar_tower.algebra_map_eq, polynomial.splits_id_iff_splits],
-      exact sp.splits },
-    ext,
-    simp only [polynomial.coeff_map],
-    exact alg_hom.commutes f (p.coeff n) },
+    rw [←polynomial.splits_id_iff_splits, polynomial.map_map, ←is_scalar_tower.algebra_map_eq,
+      polynomial.splits_id_iff_splits],
+    exact sp.splits },
 end
 
 lemma of_separable_splitting_field (sp : p.is_splitting_field F E) (hp : p.separable) :
@@ -442,41 +427,25 @@ begin
   let P : intermediate_field F E → Prop := λ K, fintype.card (K →ₐ[F] E) = findim F K,
   suffices : P (intermediate_field.adjoin F ↑s),
   { rw adjoin_root at this,
-    change fintype.card _ = _ at this,
     apply of_card_aut_eq_findim,
-    have swap : findim F (⊤ : intermediate_field F E) = findim F E :=
-      linear_equiv.findim_eq intermediate_field.top_equiv.to_linear_equiv,
-    rw [←swap, ← this],
+    rw ← eq.trans this (linear_equiv.findim_eq intermediate_field.top_equiv.to_linear_equiv),
     apply fintype.card_congr,
-    transitivity (⊤ : intermediate_field F E) ≃ₐ[F] E,
-    { change (E ≃ₐ[F] E) ≃ ((⊤ : intermediate_field F E).to_subalgebra ≃ₐ[F] E),
-      rw intermediate_field.top_to_subalgebra,
-      exact
-      { to_fun := λ ϕ, (algebra.top_equiv).trans ϕ,
-        inv_fun := λ ϕ, (algebra.top_equiv).symm.trans ϕ,
-        left_inv := λ _, by { ext, simp only [apply_symm_apply, trans_apply] },
-        right_inv := λ _, by { ext, simp only [symm_apply_apply, trans_apply] } } },
-    { exact alg_equiv_equiv_alg_hom_of_findim_eq swap } },
+    apply equiv.trans (alg_equiv_equiv_alg_hom F E),
+    exact equiv_of_alg_equiv E intermediate_field.top_equiv.symm },
   have base : P ⊥,
-  { change _ = findim F (⊥ : intermediate_field F E).to_subalgebra,
-    rw [intermediate_field.bot_to_subalgebra, subalgebra.findim_bot, fintype.card_eq_one_iff],
-    use (⊥ : intermediate_field F E).val,
-    intro ϕ,
-    ext,
-    cases intermediate_field.mem_bot.mp (subtype.mem x) with y hy,
-    change ↑(algebra_map F (⊥ : intermediate_field F E) y) = ↑x at hy,
-    rw [←subtype.ext_iff.mpr hy, ϕ.commutes y],
-    refl },
+  { have h : is_integral F (0 : E) := is_integral_zero,
+    have key := intermediate_field.card_alg_hom_adjoin_integral F h,
+    rw [minimal_polynomial.zero, polynomial.nat_degree_X] at key,
+    specialize key polynomial.separable_X (polynomial.splits_X (algebra_map F E)),
+    rw [←@subalgebra.findim_bot F E _ _ _, ←intermediate_field.bot_to_subalgebra] at key,
+    refine eq.trans _ key,
+    apply fintype.card_congr,
+    rw intermediate_field.adjoin_zero },
   apply intermediate_field.induction_on_adjoin_finset s P base,
   intros K x hx hK,
-  change fintype.card _ = _,
-  suffices : fintype.card ((↑K⟮x⟯ : intermediate_field F E) →ₐ[F] E) =
-    (fintype.card (K →ₐ[F] E)) * (findim K K⟮x⟯),
-  { change fintype.card _ = _ at hK,
-    rw [this, hK],
-    rw findim_mul_findim F K K⟮x⟯,
-    exact (linear_equiv.findim_eq (intermediate_field.lift2_alg_equiv K⟮x⟯).to_linear_equiv).symm },
-  exact of_separable_splitting_field_aux sp hp K (multiset.mem_to_finset.mp hx),
+  simp only [P] at *,
+  rw [of_separable_splitting_field_aux sp hp K (multiset.mem_to_finset.mp hx), hK, findim_mul_findim],
+  exact (linear_equiv.findim_eq (intermediate_field.lift2_alg_equiv K⟮x⟯).to_linear_equiv).symm,
 end
 
 end galois_equivalent_definitions
