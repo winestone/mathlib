@@ -15,10 +15,15 @@ begin
     { exact hx (subgroup.normal_closure k) (by apply_instance) subgroup.subset_normal_closure }
 end
 
+-- The inclusion group homorphism from a subgroup to the group
 def subgroup.inclusion {G : Type*} [group G] (H : subgroup G) : H →* G :=
   ⟨λ h, h.1, rfl, λ _ _, rfl⟩
 
+@[simp] lemma subgroup.inclusion_def {G : Type*} [group G] (H : subgroup G) (h : H) :
+  H.inclusion h = h.1 := rfl
+
 -- ↓ Goes in subgroup.lean
+/-- The `subgroup.map` of a normal subgroup under a surjective group homomorphism is normal -/
 @[to_additive]
 lemma subgroup.normal.map {G : Type*} [group G] {N : Type*} [group N]
   {H : subgroup G} (hH : H.normal) (f : G →* N) (hf : function.surjective f) :
@@ -31,9 +36,6 @@ lemma subgroup.normal.map {G : Type*} [group G] {N : Type*} [group N]
     refine ⟨_, hH.conj_mem u hu g, _⟩,
     simp [monoid_hom.map_mul, heq],
   end ⟩
-
-@[simp] lemma subgroup.inclusion_def {G : Type*} [group G] (H : subgroup G) (h : H) :
-  H.inclusion h = h.1 := rfl
 
 /-- The `n`-th derived subgroup is the commutator subgroup of the `n - 1`-th derived subgroup-/
 def derived_subgroup (G : Type*) [group G] : ℕ → subgroup G
@@ -92,6 +94,8 @@ begin
             ⟨⟨p, by simp only [zero]⟩, ⟨q, by simp only [zero]⟩, rfl⟩, rfl⟩ } }
 end
 
+/-- A group is solvable if there exists some natural number `n` such that the `n`-th
+  derived subgroup is the trivial subgroup `⊥ : subgroup G` -/
 def is_solvable (G : Type*) [group G] :=
   ∃ n : ℕ, derived_subgroup G n = ⊥
 
