@@ -88,9 +88,9 @@ def to_submonoid (s : subring R) : submonoid R :=
 
 instance : has_coe (subring R) (set R) := ⟨subring.carrier⟩
 
-instance : has_coe_to_sort (subring R) := ⟨Type*, λ S, S.carrier⟩
-
 instance : has_mem R (subring R) := ⟨λ m S, m ∈ (S:set R)⟩
+
+instance : has_coe_to_sort (subring R) := ⟨Type*, λ S, {x : R // x ∈ S}⟩
 
 /-- Construct a `subring R` from a set `s`, a submonoid `sm`, and an additive
 subgroup `sa` such that `x ∈ s ↔ x ∈ sm ↔ x ∈ sa`. -/
@@ -767,3 +767,7 @@ lemma closure_preimage_le (f : R →+* S) (s : set S) :
 closure_le.2 $ λ x hx, mem_coe.2 $ mem_comap.2 $ subset_closure hx
 
 end subring
+
+lemma add_subgroup.int_mul_mem {G : add_subgroup R} (k : ℤ) {g : R} (h : g ∈ G) :
+  (k : R) * g ∈ G :=
+by { convert add_subgroup.gsmul_mem G h k, simp }
