@@ -20,7 +20,10 @@ of the forgetful functor Ab → Grp.
 
 import group_theory.quotient_group
 import tactic.group
+import group_theory.perm.sign
+import set_theory.cardinal
 open subgroup
+
 
 universes u v
 
@@ -169,7 +172,7 @@ lemma lift_commutator_eq_commutator_lift_lift {H : subgroup G} (K₁ K₂ : subg
   (general_commutator K₁ K₂).lift = general_commutator (K₁.lift) (K₂.lift) :=
 map_commutator_eq_commutator_map _ _
 
-lemma lift_nth_commutator_eq_nth_commutator {H : subgroup G} (n:ℕ) :
+lemma nth_commutator_lift_eq_general_nth_commutator {H : subgroup G} (n:ℕ) :
   (nth_commutator H n).lift = general_nth_commutator G H n:=
   begin
     induction n,
@@ -390,6 +393,55 @@ begin
   symmetry,
   rwa [hmmmm,hmmmmmmmm],
 end
+inductive weekday : Type
+| monday : weekday
+| tuesday : weekday
+| wednesday : weekday
+| thursday : weekday
+| friday : weekday
+
+lemma weekday_perm_unsolvable:¬ is_solvable (equiv.perm weekday):=
+begin
+  unfold is_solvable,
+  push_neg,
+end
+
+
+
+lemma lift_subgroup_eq_subgroup (H: subgroup G):(⊤:subgroup H).lift=H:=
+begin
+  --change (⊤:subgroup H).map (subtype H) = H,
+  apply subgroup.partial_order.le_antisymm,
+  --library_search!,
+  --rw ←  subgroup.coe_subset_coe,
+
+  intros x x_in,
+  have s:(⊤:subgroup H).lift = (⊤:subgroup H).map (subtype H):=rfl,
+  rw s at x_in,
+  --have t: ∃ y∈ H, x= y.map,
+
+
+
+
+  --change x∈( (⊤:subgroup H).map (subtype G)) at x_in,
+  have zeta:= (@subgroup.mem_lift G _inst_1 ⊤  H),
+  --change x∈ ↑ H,
+
+  --change ∃ y∈ H, x= (↑y:G),
+  --have xi:=@subgroup.mem_lift G _inst_1 H,
+  specialize zeta ⟨ x,mem_top x⟩,
+  --have w: (⊤:subgroup H).lift = (⊤:subgroup H).map (subtype H):=rfl,
+  --rw w at x_in,
+  --simp *,
+  sorry,
+
+
+end
+lemma mem_lift (H:subgroup G)(K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ K.lift :=
+begin
+  rcases x with ⟨x, hx⟩,
+  exact ⟨λ h, ⟨⟨x, hx⟩, h, rfl⟩, λ _, by tidy⟩,
+end
 
 lemma short_exact_sequence_solvable (H : subgroup G) [H.normal]
 (h : is_solvable H) (h':is_solvable (quotient_group.quotient H)): is_solvable G:=
@@ -402,5 +454,49 @@ begin
   sorry,
 
 end
+
+--def alternating_group (X:Type u)[fintype X]:Type u:=(equiv.perm.sign X).ker
+
+--instance (X:Type u)[fintype X]: group((equiv.perm.sign X).ker)
+
+lemma unsolvability_of_S_5 (X:Type u)(big:5≤ cardinal.mk X)[fintype X]:¬ is_solvable (equiv.perm X):=
+begin
+  --have x:=X.elems.val.to_list,
+  unfold is_solvable,
+  push_neg,
+  have moscow:=_inst_3.elems,
+  have russia:=_inst_3.complete,
+  let delhi:=fintype.elems X,
+  let paris:=(delhi).val,
+  have france:=(delhi).nodup,
+  have u: list X,
+  exact list.nil,
+
+
+  rw cardinal.le_mk_iff_exists_set at big,
+  cases big with big_subset florida,
+  --have v:cardinal.mk big_subset<cardinal.omega,
+  --apply cardinal.lt_omega.2,
+  --use 5,
+
+  --exact florida,
+
+  --have u: fintype big_subset,
+  --apply fintype.of_equiv,
+  have w:fintype.card ↥big_subset=5,
+
+  --library_search,
+
+
+  have equiv: nonempty((fin 5)≃ big_subset),
+
+  apply fintype.card_eq.1,
+
+
+  --library_search!,
+  --have first: ∃ x_1,x_1∈ big_subset,
+
+end
+
 
 end solvable
