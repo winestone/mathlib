@@ -115,6 +115,39 @@ end is_galois
 
 end
 
+section is_galois_tower
+
+variables (F K E : Type*) [field F] [field K] [field E] {E' : Type*} [field E'] [algebra F E']
+variables [algebra F K] [algebra F E] [algebra K E] [is_scalar_tower F K E]
+
+lemma is_galois.tower_top_of_is_galois [h : is_galois F E] : is_galois K E :=
+⟨is_separable_tower_top_of_is_separable K h.1, normal.tower_top_of_normal F K E h.2⟩
+
+variables {F E}
+
+@[priority 100] -- see Note [lower instance priority]
+instance is_galois.tower_top_intermediate_field (K : intermediate_field F E) [h : is_galois F E] :
+  is_galois K E := is_galois.tower_top_of_is_galois F K E
+
+lemma is_galois_iff_is_galois_bot : is_galois (⊥ : intermediate_field F E) E ↔ is_galois F E :=
+begin
+  split,
+  { introI h,
+    exact is_galois.tower_top_of_is_galois (⊥ : intermediate_field F E) F E },
+  { introI h, apply_instance },
+end
+
+lemma is_galois.of_alg_equiv [h : is_galois F E] (f : E ≃ₐ[F] E') : is_galois F E' :=
+⟨h.1.of_alg_hom f.symm, normal.of_alg_equiv f⟩
+
+lemma alg_equiv.transfer_galois (f : E ≃ₐ[F] E') : is_galois F E ↔ is_galois F E' :=
+⟨λ h, by exactI is_galois.of_alg_equiv f, λ h, by exactI is_galois.of_alg_equiv f.symm⟩
+
+lemma is_galois_iff_is_galois_top : is_galois F (⊤ : intermediate_field F E) ↔ is_galois F E :=
+(intermediate_field.top_equiv).transfer_galois
+
+end is_galois_tower
+
 section galois_correspondence
 
 variables {F : Type*} [field F] {E : Type*} [field E] [algebra F E]
