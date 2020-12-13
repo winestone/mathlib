@@ -146,53 +146,15 @@ lemma alg_equiv.transfer_galois (f : E ≃ₐ[F] E') : is_galois F E ↔ is_galo
 lemma is_galois_iff_is_galois_top : is_galois F (⊤ : intermediate_field F E) ↔ is_galois F E :=
 (intermediate_field.top_equiv).transfer_galois
 
+instance is_galois_bot : is_galois F (⊥ : intermediate_field F E) :=
+(is_galois_of_alg_equiv intermediate_field.bot_equiv).mpr (is_galois.self F)
+
 end is_galois_tower
 
 section galois_correspondence
 
 variables {F : Type*} [field F] {E : Type*} [field E] [algebra F E]
 variables (H : subgroup (E ≃ₐ[F] E)) (K : intermediate_field F E)
-
-instance is_galois.tower_top [h : is_galois F E] : is_galois K E :=
-⟨is_separable_tower_top_of_is_separable K h.1, normal.tower_top_of_normal F K E h.2⟩
-
-instance algebra_over_intermediate_field_bot : algebra (⊥ : intermediate_field F E) F :=
-{ to_fun := intermediate_field.bot_equiv,
-  map_zero' := alg_equiv.map_zero _,
-  map_one' := alg_equiv.map_one _,
-  map_add' := alg_equiv.map_add _,
-  map_mul' := alg_equiv.map_mul _,
-  smul := λ x y, (intermediate_field.bot_equiv x) * y,
-  smul_def' := λ _ _, rfl,
-  commutes' := λ _ _, mul_comm _ _ }
-
-instance is_scalar_tower_over_intermediate_field_bot :
-  is_scalar_tower (⊥ : intermediate_field F E) F E :=
-⟨begin
-  intros x y z,
-  suffices : (algebra_map F E) (algebra_map (⊥ : intermediate_field F E) F x) = ↑x,
-  { simp only [algebra.smul_def, ring_hom.map_mul, this, mul_assoc], refl },
-  let ϕ := algebra.of_id F (⊥ : subalgebra F E),
-  let ψ := alg_equiv.of_bijective ϕ ((algebra.bot_equiv F E).symm.bijective),
-  change ↑(ψ (ψ.symm ⟨x, _⟩)) = (↑x : E),
-  rw alg_equiv.apply_symm_apply,
-  refl,
-end⟩
-
-lemma is_galois_iff_is_galois_bot : is_galois (⊥ : intermediate_field F E) E ↔ is_galois F E :=
-begin
-  split,
-  { intro h,
-    exact ⟨is_separable_tower_top_of_is_separable _ h.1, normal.tower_top_of_normal _ F E h.2⟩ },
-  { intro h,
-    exactI is_galois.tower_top ⊥ },
-end
-
-lemma is_galois_iff_is_galois_top : is_galois F (⊤ : intermediate_field F E) ↔ is_galois F E :=
-is_galois_of_alg_equiv (intermediate_field.top_equiv)
-
-instance is_galois_bot : is_galois F (⊥ : intermediate_field F E) :=
-(is_galois_of_alg_equiv intermediate_field.bot_equiv).mpr (is_galois.self F)
 
 namespace intermediate_field
 
