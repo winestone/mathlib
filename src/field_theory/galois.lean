@@ -151,33 +151,6 @@ end is_galois_tower
 section galois_correspondence
 
 variables {F : Type*} [field F] {E : Type*} [field E] [algebra F E]
-variables {E' : Type*} [field E'] [algebra F E']
-
-lemma is_galois_of_alg_equiv_aux (h : E ≃ₐ[F] E') : is_galois F E → is_galois F E' :=
-begin
-  intro h_gal,
-  split,
-  /- TODO : Replace these cases with results from separable.lean and normal.lean -/
-  { exact h_gal.1.of_alg_hom h.symm.to_alg_hom },
-  { intro x,
-    cases h_gal.2 (h.symm x) with hx hhx,
-    have H := is_integral_alg_hom h.to_alg_hom hx,
-    simp only [alg_equiv.coe_alg_hom, alg_equiv.to_alg_hom_eq_coe, alg_equiv.apply_symm_apply] at H,
-    use H,
-    apply polynomial.splits_of_splits_of_dvd (algebra_map F E') (minimal_polynomial.ne_zero hx),
-    { rw (show (algebra_map F E') = h.to_alg_hom.to_ring_hom.comp (algebra_map F E),
-          by exact (alg_hom.comp_algebra_map h.to_alg_hom).symm),
-      exact polynomial.splits_comp_of_splits (algebra_map F E) h.to_alg_hom.to_ring_hom hhx },
-    { apply minimal_polynomial.dvd H,
-      apply ring_hom.injective h.symm.to_alg_hom.to_ring_hom,
-      rw ring_hom.map_zero,
-      exact eq.trans (polynomial.aeval_alg_hom_apply h.symm.to_alg_hom x
-        (minimal_polynomial hx)).symm (minimal_polynomial.aeval hx) } }
-end
-
-lemma is_galois_of_alg_equiv (h : E ≃ₐ[F] E') : is_galois F E ↔ is_galois F E' :=
-⟨is_galois_of_alg_equiv_aux h, is_galois_of_alg_equiv_aux h.symm⟩
-
 variables (H : subgroup (E ≃ₐ[F] E)) (K : intermediate_field F E)
 
 instance is_galois.tower_top [h : is_galois F E] : is_galois K E :=
