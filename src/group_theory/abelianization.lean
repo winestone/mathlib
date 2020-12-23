@@ -177,10 +177,12 @@ lemma nth_commutator_lift_eq_general_nth_commutator {H : subgroup G} (n:ℕ) :
   begin
     induction n,
     rw [nth_commutator_zero,general_nth_commutator_subgroup],
-    sorry,
+    by tidy,
     rw [nth_commutator_succ,general_nth_commutator_succ,
     lift_commutator_eq_commutator_lift_lift, n_ih],
+    sorry,
   end
+#check subgroup.lift_top
 
 lemma commutator_le_commutator_map {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'} (h₁ : K₁ ≤ H₁.map f)
   (h₂ : K₂ ≤ H₂.map f) : general_commutator K₁ K₂ ≤ (general_commutator H₁ H₂).map f :=
