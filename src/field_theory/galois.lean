@@ -45,6 +45,9 @@ variables (F : Type*) [field F] (E : Type*) [field E] [algebra F E]
 
 namespace is_galois
 
+instance self : is_galois F F :=
+⟨is_separable_self F, normal_self F⟩
+
 @[priority 100] -- see Note [lower instance priority]
 instance to_is_separable [h : is_galois F E] : is_separable F E := h.1
 
