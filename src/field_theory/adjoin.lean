@@ -167,7 +167,8 @@ lemma subset_adjoin_of_subset_right {T : set E} (H : T ⊆ S) : T ⊆ adjoin F S
 λ x hx, subset_adjoin F S (H hx)
 
 @[simp] lemma adjoin_empty (F E : Type*) [field F] [field E] [algebra F E] :
-  adjoin F (∅ : set E) = ⊥ := rfl
+  adjoin F (∅ : set E) = ⊥ :=
+eq_bot_iff.mpr (adjoin_le_iff.mpr (set.empty_subset _))
 
 /-- If `K` is a field with `F ⊆ K` and `S ⊆ K` then `adjoin F S ≤ K`. -/
 lemma adjoin_le_subfield {K : subfield E} (HF : set.range (algebra_map F E) ⊆ K)
