@@ -56,14 +56,6 @@ begin
   exact finset.prod_eq_zero x.2 (minimal_polynomial.aeval _)
 end
 
-lemma normal.self (F : Type*) [field F] : normal F F :=
-begin
-  intros x,
-  use is_integral_algebra_map,
-  rw minimal_polynomial.algebra_map',
-  exact splits_X_sub_C (algebra_map F F),
-end
-
 section normal_tower
 
 variables (E : Type*) [field E] [algebra F E] [algebra K E] [is_scalar_tower F K E]

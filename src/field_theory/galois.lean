@@ -73,9 +73,6 @@ instance of_fixed_field (G : Type*) [group G] [fintype G] [mul_semiring_action G
   is_galois (mul_action.fixed_points G E) E :=
 ⟨fixed_points.separable G E, fixed_points.normal G E⟩
 
-instance self : is_galois F F :=
-⟨is_separable_self F, normal.self F⟩
-
 lemma intermediate_field.adjoin_simple.card_aut_eq_findim
   [finite_dimensional F E] {α : E} (hα : is_integral F α)
   (h_sep : (minimal_polynomial hα).separable)
