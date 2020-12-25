@@ -87,6 +87,8 @@ nat.rec_on n (G' : subgroup G) (λ _ H, general_commutator H H)
 
 
 
+
+
 instance top_normal: (⊤: subgroup G).normal :=
 { conj_mem :=  λ  n mem g, mem_top (g*n *g⁻¹ ), }
 
@@ -137,6 +139,31 @@ begin
 
 end
 
+lemma additive_general_nth_commutator (G':subgroup G) (n m:ℕ ):general_nth_commutator G G' (n+m)
+=general_nth_commutator G (general_nth_commutator G G' n) m:=
+begin
+  induction m,
+  simp only [general_nth_commutator_subgroup, add_zero],
+  simp only [general_nth_commutator_succ, m_ih],
+end
+
+lemma additive_general_nth_commutator' (G':subgroup G) (n m:ℕ ):general_nth_commutator G G' (n+m)
+=general_nth_commutator G (general_nth_commutator G G' m) n:=
+begin
+  rw[add_comm n m],
+  exact additive_general_nth_commutator G G' m n,
+end
+
+lemma general_nth_commutator_mono (H K:subgroup G) (leq:H≤ K) (n:ℕ):general_nth_commutator G H n
+≤ general_nth_commutator G K n:=
+begin
+  induction n,
+  {simp only [general_nth_commutator_subgroup,leq]},
+
+  {rw [general_nth_commutator_succ,general_nth_commutator_succ],
+  exact general_commutator_mono n_ih n_ih},
+end
+
 
 
 --lemma isomorphism (H: subgroup G)(K:subgroup H):general_commutator H H = (general_commutator H (⊤:subgroup H) H).lift:=sorry
@@ -165,6 +192,23 @@ begin
     refine ⟨p * q * p⁻¹ * q⁻¹, ⟨p, hp, q, hq, rfl⟩, by simp *⟩, },
 end
 
+lemma map_nth_commutator_eq_nth_commutator_map (H:Type u)[group H] (f : H→* G)(H':subgroup H)(n:ℕ):
+(general_nth_commutator H H' n).map f = general_nth_commutator G (H'.map f) n:=
+begin
+  induction n,
+  simp only[general_nth_commutator_subgroup],
+  rw [general_nth_commutator_succ,general_nth_commutator_succ,
+  map_commutator_eq_commutator_map,n_ih],
+end
+
+lemma lift_nth_commutator_eq_nth_commutator_lift (H:subgroup G)(H':subgroup H)(n:ℕ):
+(general_nth_commutator H H' n).lift = general_nth_commutator G (H').lift n:=
+begin
+  apply map_nth_commutator_eq_nth_commutator_map,
+end
+
+
+
 --lemma nth_commutator_eq_nth_commutator_map (n:ℕ) :
 --(nth_commutator G n).map f= (nth_commutator ((⊤:subgroup G).map f) n):=sorry
 
@@ -180,9 +224,8 @@ lemma nth_commutator_lift_eq_general_nth_commutator {H : subgroup G} (n:ℕ) :
     by tidy,
     rw [nth_commutator_succ,general_nth_commutator_succ,
     lift_commutator_eq_commutator_lift_lift, n_ih],
-    sorry,
   end
-#check subgroup.lift_top
+--#check subgroup.lift_top
 
 lemma commutator_le_commutator_map {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'} (h₁ : K₁ ≤ H₁.map f)
   (h₂ : K₂ ≤ H₂.map f) : general_commutator K₁ K₂ ≤ (general_commutator H₁ H₂).map f :=
@@ -406,39 +449,15 @@ lemma weekday_perm_unsolvable:¬ is_solvable (equiv.perm weekday):=
 begin
   unfold is_solvable,
   push_neg,
-end
-
-
-
-lemma lift_subgroup_eq_subgroup (H: subgroup G):(⊤:subgroup H).lift=H:=
-begin
-  --change (⊤:subgroup H).map (subtype H) = H,
-  apply subgroup.partial_order.le_antisymm,
-  --library_search!,
-  --rw ←  subgroup.coe_subset_coe,
-
-  intros x x_in,
-  have s:(⊤:subgroup H).lift = (⊤:subgroup H).map (subtype H):=rfl,
-  rw s at x_in,
-  --have t: ∃ y∈ H, x= y.map,
-
-
-
-
-  --change x∈( (⊤:subgroup H).map (subtype G)) at x_in,
-  have zeta:= (@subgroup.mem_lift G _inst_1 ⊤  H),
-  --change x∈ ↑ H,
-
-  --change ∃ y∈ H, x= (↑y:G),
-  --have xi:=@subgroup.mem_lift G _inst_1 H,
-  specialize zeta ⟨ x,mem_top x⟩,
-  --have w: (⊤:subgroup H).lift = (⊤:subgroup H).map (subtype H):=rfl,
-  --rw w at x_in,
-  --simp *,
+  --have stability:∀ n:ℕ,
+  --intro n,
+  --induction n,
+  --pply subgroup.eq_bot_iff_forall (nth_commutator (equiv.perm weekday) ),
   sorry,
 
-
 end
+
+
 lemma mem_lift (H:subgroup G)(K : subgroup H) (x : H) : x ∈ K ↔ ↑x ∈ K.lift :=
 begin
   rcases x with ⟨x, hx⟩,
@@ -453,13 +472,35 @@ begin
   cases h with n n_solves,
   cases reduction with m m_solves,
   use n+m,
-  sorry,
+  rw [nth_commutator_eq_general_nth_commutator_if_top,additive_general_nth_commutator' G],
+  rw nth_commutator_eq_general_nth_commutator_if_top at m_solves,
+  rw nth_commutator_eq_general_nth_commutator_if_top at n_solves,
+  apply eq_bot_iff.mpr,
 
+  have s: general_nth_commutator G H n≤ ⊥,
+
+  {rw ← nth_commutator_eq_general_nth_commutator_if_top at n_solves,
+  suffices t: (nth_commutator H n).lift = general_nth_commutator G H n,
+  rw n_solves at t,
+  have v: (⊥:subgroup H).lift =⊥:=(⊥:subgroup H).eq_bot_iff_lift_eq_bot.mp rfl,
+  {rw v at t,
+  finish},
+  apply nth_commutator_lift_eq_general_nth_commutator},
+
+  suffices x:
+  general_nth_commutator G (general_nth_commutator G ⊤ m) n≤ general_nth_commutator G H n,
+  finish,
+
+  apply general_nth_commutator_mono,
+  exact m_solves,
 end
+--nth_commutator_eq_map_nth_commutator
 
 --def alternating_group (X:Type u)[fintype X]:Type u:=(equiv.perm.sign X).ker
 
 --instance (X:Type u)[fintype X]: group((equiv.perm.sign X).ker)
+
+
 
 lemma unsolvability_of_S_5 (X:Type u)(big:5≤ cardinal.mk X)[fintype X]:¬ is_solvable (equiv.perm X):=
 begin
