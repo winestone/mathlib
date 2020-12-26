@@ -729,8 +729,8 @@ variables [semiring R] [nontrivial R] {p q : polynomial R}
 @[simp] lemma degree_X_pow (n : ℕ) : degree ((X : polynomial R) ^ n) = n :=
 by rw [X_pow_eq_monomial, degree_monomial _ (@one_ne_zero R _ _)]
 
-theorem not_is_unit_X : ¬ is_unit (X : polynomial R) :=
-λ ⟨⟨_, g, hfg, hgf⟩, rfl⟩, @zero_ne_one R _ _ $ by { rw [← coeff_one_zero, ← hgf], simp }
+@[simp] lemma nat_degree_X_pow (n : ℕ) : nat_degree ((X : polynomial R) ^ n) = n :=
+nat_degree_eq_of_degree_eq_some (degree_X_pow n)
 
 @[simp] lemma degree_mul_X : degree (p * X) = degree p + 1 := by simp [degree_mul_monic monic_X]
 

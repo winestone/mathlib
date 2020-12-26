@@ -18,11 +18,13 @@ inductive SBR : E → Prop
 | neg (α : E) : SBR α → SBR (-α)
 | mul (α β : E) : SBR α → SBR β → SBR (α * β)
 | inv (α : E) : SBR α → SBR (α⁻¹)
-| rad (α : E) (n : ℕ) : SBR (α^n) → SBR α
+| rad (α : E) (n : ℕ) (hn : n ≠ 0) : SBR (α^n) → SBR α
 
 namespace SBR
 
 variables {F} {α : E}
+
+#check leading_coeff_comp
 
 theorem is_integral (h : SBR F α) : is_integral F α :=
 begin
@@ -34,7 +36,16 @@ begin
   { exact λ _ _, is_integral_neg },
   { exact λ _ _ _ _, is_integral_mul },
   { sorry },
-  { sorry },
+  { intros α n hn _ hα,
+    obtain ⟨p, h1, h2⟩ := (is_algebraic_iff_is_integral F).mpr hα,
+    rw ← is_algebraic_iff_is_integral,
+    use p.comp (X ^ n),
+    split,
+    { intro h,
+      rw [←leading_coeff_eq_zero, leading_coeff_comp, leading_coeff_X_pow, one_pow, mul_one] at h,
+      exact h1 (leading_coeff_eq_zero.mp h),
+      rwa[nat_degree_X_pow], },
+    { rw [aeval_comp, aeval_X_pow, h2] } },
 end
 
 theorem thm (h : SBR F α) : (is_solvable ((minimal_polynomial (is_integral h)).splitting_field
