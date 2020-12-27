@@ -53,7 +53,8 @@ begin
   apply @SBR.rec F _ E _ _ (λ a, ∀ h' : SBR F a,
     (is_solvable ((minimal_polynomial (is_integral h')).splitting_field ≃ₐ[F]
     (minimal_polynomial (is_integral h')).splitting_field))) _ _ _ _ _ _ _ h,
-  { sorry },
+  { intros α _,
+    rw minimal_polynomial.eq_X_sub_C, },
   { sorry },
   { sorry },
   { sorry },
