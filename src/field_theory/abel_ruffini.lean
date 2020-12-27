@@ -33,7 +33,10 @@ begin
   { exact λ _ _ _ _, is_integral_add },
   { exact λ _ _, is_integral_neg },
   { exact λ _ _ _ _, is_integral_mul },
-  { sorry },
+  { intros α _ hα,
+    have : is_algebraic F (↑(⟨α, hα⟩ : integral_closure F E) : E),
+    { exact (is_algebraic_iff_is_integral F).mpr hα, },
+    exact subalgebra.inv_mem_of_algebraic (integral_closure F E) this },
   { intros α n hn _ hα,
     rw ← is_algebraic_iff_is_integral,
     obtain ⟨p, h1, h2⟩ := (is_algebraic_iff_is_integral F).mpr hα,
@@ -41,7 +44,7 @@ begin
     intro h,
     rw [←leading_coeff_eq_zero, leading_coeff_comp, leading_coeff_X_pow, one_pow, mul_one] at h,
     exact h1 (leading_coeff_eq_zero.mp h),
-    rwa nat_degree_X_pow, },
+    rwa nat_degree_X_pow },
 end
 
 theorem thm (h : SBR F α) : (is_solvable ((minimal_polynomial (is_integral h)).splitting_field
