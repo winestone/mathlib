@@ -518,7 +518,7 @@ begin
 
   rw cardinal.le_mk_iff_exists_set at big,
   cases big with big_subset florida,
-  --have v:cardinal.mk big_subset<cardinal.omega,
+  --have v:cardinal.mk big_subset < cardinal.omega,
   --apply cardinal.lt_omega.2,
   --use 5,
 
@@ -538,7 +538,7 @@ begin
 
   --library_search!,
   --have first: ∃ x_1,x_1∈ big_subset,
-
+  all_goals { sorry },
 end
 
 
