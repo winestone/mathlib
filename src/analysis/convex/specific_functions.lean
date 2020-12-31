@@ -26,7 +26,8 @@ open_locale big_operators
 
 /-- `exp` is convex on the whole real line -/
 lemma convex_on_exp : convex_on univ exp :=
-convex_on_univ_of_deriv2_nonneg differentiable_exp (by simp)
+convex_on_univ_of_deriv2_nonneg differentiable_exp
+  (by simp only [differentiable_id', differentiable.exp, real.deriv_exp])
   (assume x, (iter_deriv_exp 2).symm ▸ le_of_lt (exp_pos x))
 
 /-- `x^n`, `n : ℕ` is convex on the whole real line whenever `n` is even -/
@@ -107,10 +108,10 @@ begin
   { apply differentiable.differentiable_on, simp [hp] },
   { rw A,
     assume x hx,
-    replace hx : x ≠ 0, by { simp at hx, exact ne_of_gt hx },
-    simp [differentiable_at.differentiable_within_at, hx] },
+    rw [interior_Ici, mem_Ioi] at hx,
+    simp [differentiable_at.differentiable_within_at, hx.ne.symm] },
   { assume x hx,
-    replace hx : 0 < x, by simpa using hx,
+    rw [interior_Ici, mem_Ioi] at hx,
     suffices : 0 ≤ p * ((p - 1) * x ^ (p - 1 - 1)), by simpa [ne_of_gt hx, A],
     apply mul_nonneg (le_trans zero_le_one hp),
     exact mul_nonneg (sub_nonneg_of_le hp) (rpow_nonneg_of_nonneg (le_of_lt hx) _) }
@@ -128,10 +129,9 @@ begin
   { refine ((times_cont_diff_on_log.deriv_of_open _ le_top).differentiable_on le_top).mono h₁,
     exact is_open_compl_singleton },
   { intros x hx,
-    rw [function.iterate_succ, function.iterate_one],
-    change (deriv (deriv log)) x ≤ 0,
-    rw [deriv_log', deriv_inv (show x ≠ 0, by {rintro rfl, exact lt_irrefl 0 hx})],
-    exact neg_nonpos.mpr (inv_nonneg.mpr (pow_two_nonneg x)) }
+    rw [function.iterate_succ, function.iterate_one, function.comp_app, deriv_log',
+      deriv_inv (mem_Ioi.mp hx).ne.symm, neg_nonpos, inv_nonneg],
+    exact pow_two_nonneg x }
 end
 
 lemma concave_on_log_Iio : concave_on (Iio 0) log :=
@@ -146,8 +146,7 @@ begin
   { refine ((times_cont_diff_on_log.deriv_of_open _ le_top).differentiable_on le_top).mono h₁,
     exact is_open_compl_singleton },
   { intros x hx,
-    rw [function.iterate_succ, function.iterate_one],
-    change (deriv (deriv log)) x ≤ 0,
-    rw [deriv_log', deriv_inv (show x ≠ 0, by {rintro rfl, exact lt_irrefl 0 hx})],
-    exact neg_nonpos.mpr (inv_nonneg.mpr (pow_two_nonneg x)) }
+    rw [function.iterate_succ, function.iterate_one, function.comp_app, deriv_log',
+      deriv_inv (mem_Iio.mp hx).ne, neg_nonpos, inv_nonneg],
+    exact pow_two_nonneg x }
 end
