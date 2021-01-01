@@ -33,12 +33,11 @@ instance : group (gal p) := alg_equiv.aut
 
 instance : fintype (gal p) := alg_equiv.fintype ℚ p.splitting_field
 
-/- Will be used to show that gal contains a p-cycle -/
+/- Used to show that gal contains a p-cycle -/
 lemma prime_degree_dvd_card (p_irr : irreducible p) (p_deg : p.nat_degree.prime) :
   p.nat_degree ∣ fintype.card (gal p) :=
 begin
-  haveI := of_separable_splitting_field (is_splitting_field.splitting_field p)
-    (irreducible.separable p_irr p_irr.ne_zero),/- Todo: refactor irreducible.separable to eliminate ne_zero assumption-/
+  haveI : is_galois ℚ p.splitting_field := is_galois.of_separable_splitting_field p_irr.separable,
   rw is_galois.card_aut_eq_findim ℚ p.splitting_field,
   have hp : p.degree ≠ 0 :=
     λ h, nat.prime.ne_zero p_deg (nat_degree_eq_zero_iff_degree_le_zero.mpr (le_of_eq h)),
@@ -188,7 +187,7 @@ instance gal_action : mul_action (gal p) (roots p) :=
   one_smul := λ _, by simp only [equiv.apply_symm_apply, one_smul],
   mul_smul := λ _ _ _, by simp only [equiv.apply_symm_apply, equiv.symm_apply_apply, mul_smul] }
 
-/- Will be used to show that gal has a transposition -/
+/- Used to show that gal has a transposition -/
 lemma conjugation_action {x : roots p} : ↑((conjugation p) • x) = complex.conj x :=
 begin
   let ϕ := (embedding p).alg_equiv_range_field,
