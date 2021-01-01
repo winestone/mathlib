@@ -95,12 +95,11 @@ def P (α : SBR F E) : Prop :=
   is_solvable ((minimal_polynomial (is_integral α)).splitting_field ≃ₐ[F]
     (minimal_polynomial (is_integral α)).splitting_field)
 
-lemma induction0 (α : F) : P (algebra_map F (SBR F E) α) :=
+lemma induction0 : P (0 : SBR F E) :=
 begin
-  rw [P, minimal_polynomial.eq_X_sub_C],
-  let K := (X - C α).splitting_field,
-  have h1 : ⊤ = ⊥ := (is_splitting_field.splits_iff K (X - C α)).mp
-    (splits_X_sub_C (ring_hom.id F)),
+  rw [P, minimal_polynomial.zero],
+  let K := (X : polynomial F).splitting_field,
+  have h1 : ⊤ = ⊥ := (is_splitting_field.splits_iff K X).mp (splits_X (ring_hom.id F)),
   have h2 : K ≃ₐ[F] F := (algebra.top_equiv.symm.trans
     (intermediate_field.subalgebra.equiv_of_eq h1)).trans (algebra.bot_equiv F K),
   have h3 : (K ≃ₐ[F] K) ≃* (F ≃ₐ[F] F),
@@ -124,7 +123,7 @@ theorem thm (α : SBR F E) : P α :=
 begin
   revert α,
   apply SBR.induction,
-  { exact induction0 },
+  { exact λ α, induction1 (algebra_map_mem _ _) induction0 },
   { intros α β,
     apply induction2,
     change ↑α + ↑β ∈ _,
