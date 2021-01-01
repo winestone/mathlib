@@ -180,11 +180,24 @@ end
 
 lemma induction2 {α β γ : SBR F E} (hγ : γ ∈ F⟮α, β⟯) (hα : P α) (hβ : P β) : P γ :=
 begin
+  let p := (minimal_polynomial (is_integral α)),
+  let q := (minimal_polynomial (is_integral β)),
+  let r := (minimal_polynomial (is_integral γ)),
+  --(p * q).splitting_field.aut embeds into p.splitting_field.aut × q.splitting_field.aut
+  --(p * q).splitting_field.aut surjects onto r.splitting_field.aut
+  --F⟮α, β⟯ ↪ (p * q).splitting_field takes γ to a root of r
+  --By Galois, r splits
   sorry,
 end
 
 lemma induction1 {α β : SBR F E} (hβ : β ∈ F⟮α⟯) (hα : P α) : P β :=
 induction2 (adjoin.mono F _ _ (ge_of_eq (set.pair_eq_singleton α)) hβ) hα hα
+
+lemma top_eq_bot_of_top_eq_bot {R A : Type*} [comm_semiring R] [semiring A] [algebra R A]
+(h : ⊤ = (⊥ : subalgebra R A)) : ⊤ = (⊥ : subgroup (A ≃ₐ[R] A)) :=
+begin
+  sorry,
+end
 
 lemma induction0 : P (0 : SBR F E) :=
 begin
