@@ -6,6 +6,16 @@ import field_theory.algebraic_closure
 noncomputable theory
 open_locale classical
 
+def alg_equiv.restrict_is_splitting_field {F E K : Type*} [field F] [field E] [field K]
+[algebra F E] [algebra E K] [algebra F K] [is_scalar_tower F E K] (p : polynomial F)
+[polynomial.is_splitting_field F E p]
+(ϕ : K ≃ₐ[F] K) : E ≃ₐ[F] E := sorry
+
+lemma alg_equiv.restrict_is_splitting_field_commutes {F E K : Type*} [field F] [field E] [field K]
+[algebra F E] [algebra E K] [algebra F K] [is_scalar_tower F E K] (p : polynomial F)
+[polynomial.is_splitting_field F E p] (ϕ : K ≃ₐ[F] K) (x : E) :
+algebra_map E K (ϕ.restrict_is_splitting_field p x) = ϕ (algebra_map E K x) := sorry
+
 open polynomial intermediate_field
 
 section abel_ruffini
@@ -100,13 +110,13 @@ begin
   sorry,
 end
 
-lemma induction2 {α β γ : SBR F E} (hγ : ↑γ ∈ F⟮(α : E), (β : E)⟯) (hα : P α) (hβ : P β) : P γ :=
+lemma induction2 {α β γ : SBR F E} (hγ : γ ∈ F⟮α, β⟯) (hα : P α) (hβ : P β) : P γ :=
 begin
   sorry,
 end
 
-lemma induction1 {α β : SBR F E} (hγ : ↑β ∈ F⟮(α : E)⟯) (hα : P α) : P β :=
-induction2 (adjoin.mono F _ _ (ge_of_eq (set.pair_eq_singleton (α : E))) hγ) hα hα
+lemma induction1 {α β : SBR F E} (hβ : β ∈ F⟮α⟯) (hα : P α) : P β :=
+induction2 (adjoin.mono F _ _ (ge_of_eq (set.pair_eq_singleton α)) hβ) hα hα
 
 lemma induction0 : P (0 : SBR F E) :=
 begin
@@ -127,10 +137,10 @@ begin
   { exact λ α, induction1 (algebra_map_mem _ _) induction0 },
   { exact λ α β, induction2 (add_mem _ (subset_adjoin F _ (set.mem_insert α _))
       (subset_adjoin F _ (set.mem_insert_of_mem α (set.mem_singleton β)))) },
-  { exact λ α, induction1 (neg_mem _ (mem_adjoin_simple_self F (α : E))) },
+  { exact λ α, induction1 (neg_mem _ (mem_adjoin_simple_self F α)) },
   { exact λ α β, induction2 (mul_mem _ (subset_adjoin F _ (set.mem_insert α _))
       (subset_adjoin F _ (set.mem_insert_of_mem α (set.mem_singleton β)))) },
-  { exact λ α, induction1 (inv_mem _ (mem_adjoin_simple_self F (α : E))) },
+  { exact λ α, induction1 (inv_mem _ (mem_adjoin_simple_self F α)) },
   { exact λ α n, induction3 },
 end
 
