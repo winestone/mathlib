@@ -95,6 +95,19 @@ def P (α : SBR F E) : Prop :=
   is_solvable ((minimal_polynomial (is_integral α)).splitting_field ≃ₐ[F]
     (minimal_polynomial (is_integral α)).splitting_field)
 
+lemma induction3 {α : SBR F E} {n : ℕ} (hn : n ≠ 0) (hα : P (α ^ n)) : P α :=
+begin
+  sorry,
+end
+
+lemma induction2 {α β γ : SBR F E} (hγ : ↑γ ∈ F⟮(α : E), (β : E)⟯) (hα : P α) (hβ : P β) : P γ :=
+begin
+  sorry,
+end
+
+lemma induction1 {α β : SBR F E} (hγ : ↑β ∈ F⟮(α : E)⟯) (hα : P α) : P β :=
+induction2 (adjoin.mono F _ _ (ge_of_eq (set.pair_eq_singleton (α : E))) hγ) hα hα
+
 lemma induction0 : P (0 : SBR F E) :=
 begin
   rw [P, minimal_polynomial.zero],
@@ -107,36 +120,18 @@ begin
   sorry,
 end
 
-lemma induction1 {α β : SBR F E} (hγ : ↑β ∈ F⟮(α : E)⟯) (hα : P α) : P β :=
-begin
-  sorry,
-end
-
-lemma induction2 {α β γ : SBR F E} (hγ : ↑γ ∈ F⟮(α : E), (β : E)⟯) (hα : P α) (hβ : P β) : P γ :=
-begin
-  sorry,
-end
-
-lemma induction3 : "nth root stuff" = "seems pretty tricky" := sorry
-
 theorem thm (α : SBR F E) : P α :=
 begin
   revert α,
   apply SBR.induction,
   { exact λ α, induction1 (algebra_map_mem _ _) induction0 },
-  { intros α β,
-    apply induction2,
-    change ↑α + ↑β ∈ _,
-    sorry },
+  { exact λ α β, induction2 (add_mem _ (subset_adjoin F _ (set.mem_insert α _))
+      (subset_adjoin F _ (set.mem_insert_of_mem α (set.mem_singleton β)))) },
   { exact λ α, induction1 (neg_mem _ (mem_adjoin_simple_self F (α : E))) },
-  { intros α β,
-    apply induction2,
-    change ↑α * ↑β ∈ _,
-    apply mul_mem,/- Maybe add these two lemmas to adjoin.lean ? -/
-    sorry,
-    sorry },
+  { exact λ α β, induction2 (mul_mem _ (subset_adjoin F _ (set.mem_insert α _))
+      (subset_adjoin F _ (set.mem_insert_of_mem α (set.mem_singleton β)))) },
   { exact λ α, induction1 (inv_mem _ (mem_adjoin_simple_self F (α : E))) },
-  { sorry },
+  { exact λ α n, induction3 },
 end
 
 end SBR
