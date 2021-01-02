@@ -795,20 +795,20 @@ lemma lift_top : (⊤ : subgroup H).lift = H :=
 by tidy
 
 @[to_additive]
-lemma eq_bot_iff_lift_eq_bot (K : subgroup H) : K = ⊥ ↔ K.lift = ⊥ :=
+lemma eq_bot_iff_map_eq_bot {G' : Type*} [group G'] {f : G →* G'}  (hf : function.injective f)
+  (H : subgroup G) : H = ⊥ ↔ H.map f = ⊥ :=
 begin
   split,
-  { intro h,
-    rw h,
-    exact map_bot _, },
-  { intro h,
-    rw eq_bot_iff_forall at *,
-    rintros ⟨x, _⟩ hx,
-    rw mem_lift at hx,
-    ext,
-    rw [coe_one, coe_mk],
-    exact h x hx, },
+  { intros h, rw [h, map_bot], },
+  { rw [eq_bot_iff_forall, eq_bot_iff_forall],
+    intros h x hx,
+    have hfx : f x = 1 := h (f x) ⟨x, hx, rfl⟩,
+    exact hf (show f x = f 1, by simp only [hfx, monoid_hom.map_one]), },
 end
+
+@[to_additive]
+lemma eq_bot_iff_lift_eq_bot (K : subgroup H) : K = ⊥ ↔ K.lift = ⊥ :=
+eq_bot_iff_map_eq_bot (by ext) K
 
 end subgroup_lift
 
