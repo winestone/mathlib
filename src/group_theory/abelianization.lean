@@ -151,7 +151,7 @@ begin
     exact general_commutator_mono ih ih },
 end
 
-lemma nth_commutator_eq_general_nth_commutator_if_top :
+lemma nth_commutator_eq_general_nth_commutator_top :
   nth_commutator G = general_nth_commutator ⊤ :=
 begin
   funext,
@@ -223,7 +223,7 @@ end nth_commutator_map
 
 section general_nth_commutator_map
 
-variables (H : subgroup G)
+variables (f) (H : subgroup G)
 
 lemma map_nth_commutator_eq_nth_commutator_map (n : ℕ) :
   (general_nth_commutator H n).map f = general_nth_commutator (H.map f) n :=
@@ -236,7 +236,7 @@ end
 
 lemma lift_nth_commutator_eq_nth_commutator_lift (K : subgroup H) (n : ℕ) :
   (general_nth_commutator K n).lift = general_nth_commutator K.lift n :=
-map_nth_commutator_eq_nth_commutator_map _ _
+map_nth_commutator_eq_nth_commutator_map _ _ _
 
 lemma nth_commutator_lift_eq_general_nth_commutator (n : ℕ) :
   (nth_commutator H n).lift = general_nth_commutator H n:=
@@ -345,9 +345,7 @@ end
 lemma is_solvable_of_top_eq_bot (h : (⊤ : subgroup G) = ⊥) : is_solvable G :=
 ⟨0, by simp *⟩
 
-variables {G}
-
-variables {G' : Type*} [group G'] {f : G →* G'}
+variables {G} {G' : Type*} [group G'] {f : G →* G'}
 
 lemma solvable_of_solvable_injective (hf : function.injective f) (h : is_solvable G') :
   is_solvable G :=
@@ -404,14 +402,38 @@ lemma nth_commutator_le_ker {G' : Type*} [group G'] (f : G →* G') (h : is_solv
   ∃ n, nth_commutator G n ≤ f.ker :=
 begin
   cases h with n hn,
-  use n,
   have key := nth_commutator_map_le_nth_commutator f n,
-  rwa [hn, le_ker] at key,
+  exact ⟨n, by rwa [hn, le_ker] at key⟩,
 end
 
 lemma nth_commutator_le_of_solvable_quotient (H : subgroup G) [H.normal]
   (h : is_solvable (quotient_group.quotient H)) : ∃ n, (nth_commutator G n) ≤ H :=
 by {rw ← ker_mk H, exact nth_commutator_le_ker (mk' H) h}
+
+lemma nth_commutator_le_map_nth_commutator_of_le_map {G' : Type*} [group G'] {f : G →* G'}
+  {H : subgroup G} {K : subgroup G'} (h : K ≤ H.map f) (n : ℕ) :
+  general_nth_commutator K n ≤ (general_nth_commutator H n).map f :=
+calc general_nth_commutator K n
+      ≤ general_nth_commutator (map f H) n : general_nth_commutator_mono _ _ h n
+  ... = (general_nth_commutator H n).map f : by rw ← map_nth_commutator_eq_nth_commutator_map
+
+lemma short_exact_sequence_solvable' {G' G'' : Type*} [group G'] [group G''] (f : G' →* G)
+  (g : G →* G'') (hfg : f.range = g.ker) (hG' : is_solvable G') (hG'' : is_solvable G'') :
+  is_solvable G :=
+begin
+  cases hG' with n hn,
+  obtain ⟨m, hm⟩ := nth_commutator_le_ker g hG'',
+  use n + m,
+  rw [eq_bot_iff, nth_commutator_eq_general_nth_commutator_top, additive_general_nth_commutator',
+    ← nth_commutator_eq_general_nth_commutator_top],
+  rw [← hfg, monoid_hom.range_eq_map] at hm,
+  calc general_nth_commutator (nth_commutator G m) n
+      ≤ (general_nth_commutator (⊤ : subgroup G') n).map f : nth_commutator_le_map_nth_commutator_of_le_map hm n
+  ... = (nth_commutator G' n).map f : by rw ← nth_commutator_eq_general_nth_commutator_top
+  ... = (⊥ : subgroup G').map f : by rw hn
+  ... = (⊥ : subgroup G) : map_bot f,
+end
+
 
 lemma quotient_something (H : subgroup G) [H.normal]
   (h' : is_solvable (quotient_group.quotient H)) : ∃ m : ℕ, (nth_commutator G m) ≤ H :=
@@ -465,14 +487,14 @@ begin
   cases h with n n_solves,
   cases reduction with m m_solves,
   use n+m,
-  rw [nth_commutator_eq_general_nth_commutator_if_top,additive_general_nth_commutator'],
-  rw nth_commutator_eq_general_nth_commutator_if_top at m_solves,
-  rw nth_commutator_eq_general_nth_commutator_if_top at n_solves,
+  rw [nth_commutator_eq_general_nth_commutator_top, additive_general_nth_commutator'],
+  rw nth_commutator_eq_general_nth_commutator_top at m_solves,
+  rw nth_commutator_eq_general_nth_commutator_top at n_solves,
   apply eq_bot_iff.mpr,
 
   have s: general_nth_commutator H n≤ ⊥,
 
-  {rw ← nth_commutator_eq_general_nth_commutator_if_top at n_solves,
+  {rw ← nth_commutator_eq_general_nth_commutator_top at n_solves,
   suffices t: (nth_commutator H n).lift = general_nth_commutator H n,
   rw n_solves at t,
   have v: (⊥:subgroup H).lift =⊥:=(⊥:subgroup H).eq_bot_iff_lift_eq_bot.mp rfl,
