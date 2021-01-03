@@ -1,5 +1,4 @@
 import group_theory.perm.cycles
-import data.zmod.basic
 
 open equiv
 open equiv.perm
