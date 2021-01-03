@@ -196,7 +196,14 @@ induction2 (adjoin.mono F _ _ (ge_of_eq (set.pair_eq_singleton α)) hβ) hα hα
 lemma top_eq_bot_of_top_eq_bot {R A : Type*} [comm_semiring R] [semiring A] [algebra R A]
 (h : ⊤ = (⊥ : subalgebra R A)) : ⊤ = (⊥ : subgroup (A ≃ₐ[R] A)) :=
 begin
-  sorry,
+  rw subgroup.eq_bot_iff_forall,
+  rw eq_bot_iff at h,
+  intros f _,
+  ext,
+  specialize h (show a ∈ ⊤, from algebra.mem_top),
+  rw [algebra.coe_bot, set.mem_range] at h,
+  rcases h with ⟨x, rfl⟩,
+  rw [alg_equiv.commutes, alg_equiv.commutes],
 end
 
 lemma induction0 : P (0 : SBR F E) :=
@@ -204,11 +211,8 @@ begin
   rw [P, minimal_polynomial.zero],
   let K := (X : polynomial F).splitting_field,
   have h1 : ⊤ = ⊥ := (is_splitting_field.splits_iff K X).mp (splits_X (ring_hom.id F)),
-  have h2 : K ≃ₐ[F] F := (algebra.top_equiv.symm.trans
-    (intermediate_field.subalgebra.equiv_of_eq h1)).trans (algebra.bot_equiv F K),
-  have h3 : (K ≃ₐ[F] K) ≃* (F ≃ₐ[F] F),
-  { sorry },
-  sorry,
+  have h2 : ⊤ = ⊥ := top_eq_bot_of_top_eq_bot h1,
+  exact is_solvable_of_top_eq_bot _ h2,
 end
 
 theorem thm (α : SBR F E) : P α :=

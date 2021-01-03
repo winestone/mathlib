@@ -338,6 +338,9 @@ begin
   ... = ⊥ : rfl,
 end
 
+lemma is_solvable_of_top_eq_bot (h : (⊤ : subgroup G) = ⊥) : is_solvable G :=
+⟨0, by simp *⟩
+
 variables {G}
 
 variables {G' : Type*} [group G'] {f : G →* G'}
