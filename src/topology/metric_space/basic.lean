@@ -562,7 +562,6 @@ uniformity_basis_dist.cauchy_iff
 theorem nhds_basis_ball : (𝓝 x).has_basis (λ ε:ℝ, 0 < ε) (ball x) :=
 nhds_basis_uniformity uniformity_basis_dist
 
-@[nolint gt_or_ge]
 theorem mem_nhds_iff : s ∈ 𝓝 x ↔ ∃ε>0, ball x ε ⊆ s :=
 nhds_basis_ball.mem_iff
 
