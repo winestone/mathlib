@@ -197,12 +197,10 @@ lemma top_eq_bot_of_top_eq_bot {R A : Type*} [comm_semiring R] [semiring A] [alg
 (h : ⊤ = (⊥ : subalgebra R A)) : ⊤ = (⊥ : subgroup (A ≃ₐ[R] A)) :=
 begin
   rw subgroup.eq_bot_iff_forall,
-  rw eq_bot_iff at h,
-  intros f _,
-  ext,
-  specialize h (show a ∈ ⊤, from algebra.mem_top),
-  rw [algebra.coe_bot, set.mem_range] at h,
-  rcases h with ⟨x, rfl⟩,
+  rintros f -,
+  ext a,
+  have key : a ∈ (⊥ : subalgebra R A) := eq_bot_iff.mp h algebra.mem_top,
+  rcases set.mem_range.mp (algebra.mem_bot.mp key) with ⟨x, rfl⟩,
   rw [alg_equiv.commutes, alg_equiv.commutes],
 end
 
