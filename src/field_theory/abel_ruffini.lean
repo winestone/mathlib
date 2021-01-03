@@ -210,9 +210,8 @@ lemma induction0 : P (0 : SBR F E) :=
 begin
   rw [P, minimal_polynomial.zero],
   let K := (X : polynomial F).splitting_field,
-  have h1 : ⊤ = ⊥ := (is_splitting_field.splits_iff K X).mp (splits_X (ring_hom.id F)),
-  have h2 : ⊤ = ⊥ := top_eq_bot_of_top_eq_bot h1,
-  exact is_solvable_of_top_eq_bot _ h2,
+  have h : ⊤ = ⊥ := (is_splitting_field.splits_iff K X).mp (splits_X (ring_hom.id F)),
+  exact is_solvable_of_top_eq_bot _ (top_eq_bot_of_top_eq_bot h),
 end
 
 theorem thm (α : SBR F E) : P α :=
