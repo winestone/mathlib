@@ -434,6 +434,15 @@ begin
   ... = (⊥ : subgroup G) : map_bot f,
 end
 
+lemma range_subtype (H : subgroup G) : H.subtype.range = H :=
+by { ext, exact ⟨λ ⟨⟨x, hx⟩, rfl⟩, hx, λ hx, ⟨⟨x, hx⟩, rfl⟩⟩ }
+
+lemma short_exact_sequence_solvable'' (H : subgroup G) [H.normal] (h : is_solvable H)
+  (h' : is_solvable (quotient_group.quotient H)) : is_solvable G :=
+begin
+  refine short_exact_sequence_solvable' (subtype H) (mk' H) _ h h',
+  rw [ker_mk, range_subtype],
+end
 
 lemma quotient_something (H : subgroup G) [H.normal]
   (h' : is_solvable (quotient_group.quotient H)) : ∃ m : ℕ, (nth_commutator G m) ≤ H :=
