@@ -2082,7 +2082,7 @@ end prod
 /-! ### Lemmas about set-indexed products of sets -/
 
 section pi
-variables {ι : Type*} {α : ι → Type*} {s : set ι} {t t₁ t₂ : Π i, set (α i)}
+variables {ι : Type*} {α : ι → Type*} {s s₁ : set ι} {t t₁ t₂ : Π i, set (α i)}
 
 /-- Given an index set `i` and a family of sets `s : Π i, set (α i)`, `pi i s`
 is the set of dependent functions `f : Πa, π a` such that `f a` belongs to `π a`
@@ -2099,6 +2099,9 @@ by simp
 
 lemma pi_mono (h : ∀ i ∈ s, t₁ i ⊆ t₂ i) : pi s t₁ ⊆ pi s t₂ :=
 λ x hx i hi, (h i hi $ hx i hi)
+
+lemma pi_congr (h : s = s₁) (h' : ∀ i ∈ s, t i = t₁ i) : pi s t = pi s₁ t₁ :=
+h ▸ (ext $ λ x, forall_congr $ λ i, forall_congr $ λ hi, h' i hi ▸ iff.rfl)
 
 lemma pi_eq_empty {i : ι} (hs : i ∈ s) (ht : t i = ∅) : s.pi t = ∅ :=
 by { ext f, simp only [mem_empty_eq, not_forall, iff_false, mem_pi, not_imp],
@@ -2143,6 +2146,32 @@ begin
   { rintros ⟨ht₁, ht₂⟩ i his,
     by_cases p i; simp * at * }
 end
+
+lemma pi_union_left : (s ∪ s₁).pi t = s.pi t ∩ s₁.pi t :=
+by simp [pi, or_imp_distrib, forall_and_distrib, set_of_and]
+
+@[simp] lemma pi_singleton (i : ι) : pi {i} t = {x | x i ∈ t i} := by simp [pi]
+
+@[simp] lemma pi_inter_compl (s : set ι) : pi s t ∩ pi sᶜ t = pi univ t :=
+by rw [← pi_union_left, union_compl_self]
+
+lemma pi_update_of_not_mem [decidable_eq ι] {β : Π i, Type*} {i : ι} (hi : i ∉ s) (f : Π j, α j)
+  (a : α i) (t : Π j, α j → set (β j)) :
+  s.pi (λ j, t j (update f i a j)) = s.pi (λ j, t j (f j)) :=
+pi_congr rfl $ λ j hj, by { rw update_noteq, exact λ h, hi (h ▸ hj) }
+
+lemma pi_update_of_mem [decidable_eq ι] {β : Π i, Type*} {i : ι} (hi : i ∈ s) (f : Π j, α j)
+  (a : α i) (t : Π j, α j → set (β j)) :
+  s.pi (λ j, t j (update f i a j)) = {x | x i ∈ t i a} ∩ (s \ {i}).pi (λ j, t j (f j)) :=
+calc s.pi (λ j, t j (update f i a j)) = ({i} ∪ s \ {i}).pi (λ j, t j (update f i a j)) :
+  by rw [union_diff_self, union_eq_self_of_subset_left (singleton_subset_iff.2 hi)]
+... = {x | x i ∈ t i a} ∩ (s \ {i}).pi (λ j, t j (f j)) :
+  by { rw [pi_union_left, pi_singleton, update_same, pi_update_of_not_mem], simp }
+
+lemma pi_univ_update [decidable_eq ι] {β : Π i, Type*} (i : ι) (f : Π j, α j)
+  (a : α i) (t : Π j, α j → set (β j)) :
+  pi univ (λ j, t j (update f i a j)) = {x | x i ∈ t i a} ∩ pi {i}ᶜ (λ j, t j (f j)) :=
+by rw [compl_eq_univ_diff, ← pi_update_of_mem (mem_univ _)]
 
 open_locale classical
 

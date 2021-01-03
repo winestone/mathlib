@@ -1,5 +1,5 @@
 import measure_theory.ext_is_o
-import analysis.calculus.measurable_deriv
+import analysis.calculus.fderiv_measurable
 
 open measure_theory set function topological_space asymptotics
 open_locale big_operators topological_space filter

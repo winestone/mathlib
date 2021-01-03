@@ -3,7 +3,7 @@ import measure_theory.set_integral
 
 variables {ι α : Type*} [decidable_eq ι] [encodable ι] [measurable_space α]
 
-open measure_theory set topological_space (second_countable_topology) filter
+open measure_theory set topological_space (second_countable_topology) filter function
 open_locale nnreal topological_space filter big_operators
 
 namespace measure_theory
@@ -11,8 +11,10 @@ namespace measure_theory
 theorem measure.box_additive_pi_Ioc (μ : measure (ι → ℝ)) (s : set (ι → ℝ)) :
   box_additive_on (λ l r, μ (pi univ (λ i, Ioc (l i) (r i)))) s :=
 begin
-  refine box_additive_on.of_pi_Ioc s _ (λ I₁ I₂ I hu hd, _),
-  rw [← measure_union hd I₁.is_measurable_pi_Ioc I₂.is_measurable_pi_Ioc, hu]
+  intros l u hsub m hm i,
+  rw [← measure_union disjoint_pi_univ_Ioc_update_left_right,
+    pi_univ_Ioc_update_union l u i (m i) ⟨hm.1 i, hm.2 i⟩];
+    exact is_measurable.pi (countable_encodable _) (λ _ _, is_measurable_Ioc)
 end
 
 variables {E : Type*} [normed_group E] [normed_space ℝ E]
@@ -22,11 +24,19 @@ theorem box_additive_on_set_integral_preimage {f : α → ι → ℝ} (hf : meas
   {μ : measure α} {g : α → E} {s : set (ι → ℝ)} (hg : integrable_on g (f ⁻¹' s) μ) :
   box_additive_on (λ l r, ∫ x in f ⁻¹' (pi univ (λ i, Ioc (l i) (r i))), g x ∂μ) s :=
 begin
-  refine box_additive_on.of_pi_Ioc s (λ t, ∫ x in f ⁻¹' t, g x ∂μ) (λ I₁ I₂ I hu hd, _),
-  rw [← integral_union (hd.preimage f) (hf I₁.is_measurable_pi_Ioc) (hf I₂.is_measurable_pi_Ioc),
-    ← preimage_union, hu],
-  exacts [hg.mono_set (preimage_mono I₁.pi_Ioc_subset_set),
-    hg.mono_set (preimage_mono I₂.pi_Ioc_subset_set)]
+  intros l u hsub m hm i,
+  rw [← integral_union, ← preimage_union, pi_univ_Ioc_update_union l u i (m i) ⟨hm.1 i, hm.2 i⟩],
+  { exact disjoint_pi_univ_Ioc_update_left_right.preimage _ },
+  { apply hf,
+    exact is_measurable.pi (countable_encodable univ) (λ _ _, is_measurable_Ioc) },
+  { apply hf,
+    exact is_measurable.pi (countable_encodable univ) (λ _ _, is_measurable_Ioc) },
+  { refine hg.mono_set (preimage_mono (subset.trans _ hsub)),
+    rw [pi_univ_Ioc_update_right, ← pi_univ_Icc],
+    exacts [(trans (inter_subset_right _ _) $ pi_mono $ λ i hi, Ioc_subset_Icc_self), hm.2 i] },
+  { refine hg.mono_set (preimage_mono (subset.trans _ hsub)),
+    rw [pi_univ_Ioc_update_left, ← pi_univ_Icc],
+    exacts [(trans (inter_subset_right _ _) $ pi_mono $ λ i hi, Ioc_subset_Icc_self), hm.1 i] }
 end
 
 theorem box_additive_on_set_integral {μ : measure (ι → ℝ)} {g : (ι → ℝ) → E} {s : set (ι → ℝ)}

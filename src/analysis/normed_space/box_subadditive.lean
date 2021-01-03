@@ -273,19 +273,6 @@ lemma box_additive_on_prod_edist [decidable_eq ι] [fintype ι] (s : set (ι →
 by simpa only [edist_nndist, ← ennreal.coe_finset_prod, box_additive_on.coe_ennreal]
   using box_additive_on_prod_nndist s
 
-/-- An additive function on sets (e.g., `measure_theory.measure` or integral of an integrable
-function) defines a `box_additive_on` function
-`λ l r, f (set.pi set.univ (λ i, set.Ioc (l i) (r i)))`. -/
-lemma box_additive_on.of_pi_Ioc [decidable_eq ι] [linear_order α] [add_monoid M] (s : set (ι → α))
-  (f : set (ι → α) → M)
-  (hf : ∀ I₁ I₂ I : subinterval s, I₁.pi_Ioc ∪ I₂.pi_Ioc = I.pi_Ioc → disjoint I₁.pi_Ioc I₂.pi_Ioc →
-    f I₁.pi_Ioc + f I₂.pi_Ioc = f I.pi_Ioc) :
-  box_additive_on (λ l r : ι → α, f (set.pi univ (λ i, set.Ioc (l i) (r i)))) s :=
-begin
-  intros I m hm i,
-  convert hf _ _ _ (I.union_pi_subbox_Ioc₁ m hm i) _; simp [I.disjoint_pi_subbox_Ioc]
-end
-
 lemma box_additive_on_sum_faces_fin {G n} [add_comm_group G] [preorder α]
   (s : set (fin (n + 1) → α)) (f : fin (n + 1) → α → (fin n → α) → (fin n → α) → G)
   (hf : ∀ i m, box_additive_on (f i m) ((fin.insert_nth i m) ⁻¹' s)) :
@@ -293,59 +280,29 @@ lemma box_additive_on_sum_faces_fin {G n} [add_comm_group G] [preorder α]
     ∑ i, (f i (r i) (l ∘ i.succ_above) (r ∘ i.succ_above) -
       f i (l i) (l ∘ i.succ_above) (r ∘ i.succ_above))) s :=
 begin
-  intros I m hm i,
+  intros l u hsub m hm i,
   refine sum_add_distrib.symm.trans (sum_congr rfl $ λ j hj, _), clear hj,
   by_cases hj : j = i,
   { subst j,
     have : ∀ j x (c : α), update x i c (i.succ_above j) = x (i.succ_above j),
       from λ j x c, update_noteq (i.succ_above_ne _) _ _,
     simp only [update_same, (∘), this], abel },
-  { suffices : ∀ x ∈ Icc (I.left j) (I.right j),
-      f j x (I.left ∘ j.succ_above) (update I.right i (m i) ∘ j.succ_above) +
-      f j x (update I.left i (m i) ∘ j.succ_above) (I.right ∘ j.succ_above) =
-      f j x (I.left ∘ j.succ_above) (I.right ∘ j.succ_above),
-    { simp only [update_noteq hj, ← this, set.left_mem_Icc, set.right_mem_Icc, I.nontrivial j],
+  { have hle : l ≤ u := hm.1.trans hm.2,
+    suffices : ∀ x ∈ Icc (l j) (u j),
+      f j x (l ∘ j.succ_above) (update u i (m i) ∘ j.succ_above) +
+      f j x (update l i (m i) ∘ j.succ_above) (u ∘ j.succ_above) =
+      f j x (l ∘ j.succ_above) (u ∘ j.succ_above),
+    { simp only [update_noteq hj, ← this, set.left_mem_Icc, set.right_mem_Icc, hle j],
       abel },
     rintros x ⟨hxl, hxr⟩,
     have : ∀ x, update x i (m i) ∘ j.succ_above =
       update (x ∘ j.succ_above) (j.pred_above i $ ne.symm hj) (m i),
     { intro x, convert update_comp _ fin.succ_above_right_injective _ _, simp },
     simp only [this], clear this,
-    convert @hf j x ⟨I.left ∘ j.succ_above, I.right ∘ j.succ_above,
-      λ k, I.nontrivial (j.succ_above k),
-      λ y hy, I.mem_set_of_mem ⟨λ k, _, λ k, _⟩⟩ (m ∘ j.succ_above) _ _;
-      simp only [fin.succ_above_pred_above, set.mem_Icc, set.subinterval.mem_mk],
-    { refine (fin.forall_iff_succ_above j).2 ⟨_, λ k, _⟩ k; simp [hxl, hy.1 _] },
-    { refine (fin.forall_iff_succ_above j).2 ⟨_, λ k, _⟩ k; simp [hxr, hy.2 _] },
-    { exact ⟨λ k, hm.1 _, λ k, hm.2 _⟩ } }
-end
-
-lemma box_additive_on_sum_faces_fin2 {G} [add_comm_group G] [partial_order α]
-  (s : set (fin 2 → α)) (f₀ f₁ : α → α → α → G)
-  (h₀ : ∀ {x y₁ y₂ t}, y₁ ≤ t → t ≤ y₂ → (∀ t ∈ Icc y₁ y₂, ![x, t] ∈ s) →
-    f₀ x y₁ t + f₀ x t y₂ = f₀ x y₁ y₂)
-  (h₁ : ∀ {x₁ x₂ y t}, x₁ ≤ t → t ≤ x₂ → (∀ t ∈ Icc x₁ x₂, ![t, y] ∈ s) →
-    f₁ y x₁ t + f₁ y t x₂ = f₁ y x₁ x₂) :
-  box_additive_on (λ (l r : fin 2 → α),
-    f₀ (r 0) (l 1) (r 1) - f₀ (l 0) (l 1) (r 1) +
-    f₁ (r 1) (l 0) (r 0) - f₁ (l 1) (l 0) (r 0)) s :=
-begin
-  convert box_additive_on_sum_faces_fin s ![λ c x y, f₀ c (x 0) (y 0), λ c x y, f₁ c (x 0) (y 0)] _,
-  { ext l r, simp [fin.sum_univ_succ], abel },
-  { rintros i c ⟨l, r, hle, hsub⟩ m hm j,
-    fin_cases j; fin_cases i,
-    { convert h₀ _ _ _; try { simp [hm.1 _, hm.2 _] },
-      intros t hlt htr,
-      convert_to @fin.insert_nth _ (λ _, α) 0 c ![t] ∈ s,
-      { rw [fin.insert_nth_zero', matrix.vec_cons] },
-      { refine hsub ⟨_, _⟩; simp [matrix.vec_cons, fin.le_cons, fin.cons_le, *] } },
-    { convert h₁ _ _ _; try { simp [hm.1 _, hm.2 _] },
-      intros t hlt htr,
-      convert_to @fin.insert_nth _ (λ _, α) 1 c ![t] ∈ s,
-      { refine fin.eq_insert_nth_iff.2 ⟨rfl, _⟩,
-        ext j,
-        erw [fin.eq_zero j, fin.succ_above_last], refl },
-      { refine hsub ⟨_, _⟩; simp [matrix.vec_cons, fin.le_cons, fin.cons_le, *] } } }
+    convert @hf j x (l ∘ j.succ_above) (u ∘ j.succ_above)
+      (λ y hy, hsub ⟨_, _⟩) (m ∘ j.succ_above) ⟨λ k, hm.1 _, λ k, hm.2 _⟩ _;
+      simp only [fin.succ_above_pred_above, fin.le_insert_nth_iff, fin.insert_nth_le_iff, *],
+    exacts [⟨trivial, hy.1⟩, ⟨trivial, hy.2⟩] }
 end
 
 end
@@ -594,18 +551,6 @@ begin
       (λ _ _ _ _, prod_nonneg $ λ _ _, dist_nonneg)).box_supadditive_on,
   refine eq_zero_of_forall_is_o hle hf this _,
   simpa only [dist_eq_norm, ← normed_field.norm_prod, uncurry, is_o_norm_right]
-end
-
-lemma eq_zero_of_forall_is_o_prod' {x y : ι → ℝ} (hle : x ≤ y)
-  (hf : box_subadditive_on (λ x y, ∥f x y∥) (Icc x y))
-  (Hc : ∀ (b ∈ Icc x y), is_o (uncurry f) (λ p, ∏ i, (p.1 i - p.2 i))
-    (𝓝[(set.Icc x b).prod (set.Icc b y)] (b, b))) : f x y = 0 :=
-begin
-  refine hf.eq_zero_of_forall_is_o_prod _ ⟨x, y, hle, set.subset.refl _⟩,
-  intros b hb,
-  convert Hc b hb using 3; ext z,
-  exact ⟨λ h, ⟨h.2.1, h.1⟩, λ h, ⟨h.2, ⟨h.1, h.2.trans hb.2⟩⟩⟩,
-  exact ⟨λ h, ⟨h.1, h.2.2⟩, λ h, ⟨h.1, ⟨hb.1.trans h.1, h.2⟩⟩⟩
 end
 
 end normed_group
