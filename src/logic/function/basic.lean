@@ -34,6 +34,8 @@ lemma const_def {y : β} : (λ x : α, y) = const α y := rfl
 
 @[simp] lemma comp_const {f : β → γ} {b : β} : f ∘ const α b = const α (f b) := rfl
 
+lemma id_def : @id α = λ x, x := rfl
+
 lemma hfunext {α α': Sort u} {β : α → Sort v} {β' : α' → Sort v} {f : Πa, β a} {f' : Πa, β' a}
   (hα : α = α') (h : ∀a a', a == a' → f a == f' a') : f == f' :=
 begin
@@ -302,6 +304,16 @@ variables {α : Sort u} {β : α → Sort v} {α' : Sort w} [decidable_eq α] [d
 /-- Replacing the value of a function at a given point by a given value. -/
 def update (f : Πa, β a) (a' : α) (v : β a') (a : α) : β a :=
 if h : a = a' then eq.rec v h.symm else f a
+
+/-- On non-dependent functions, `function.update` can be expressed as an `ite` -/
+lemma update_apply {β : Sort*} (f : α → β) (a' : α) (b : β) (a : α) :
+  update f a' b a = if a = a' then b else f a :=
+begin
+  dunfold update,
+  congr,
+  funext,
+  rw eq_rec_constant,
+end
 
 @[simp] lemma update_same (a : α) (v : β a) (f : Πa, β a) : update f a v a = v :=
 dif_pos rfl

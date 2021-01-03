@@ -529,7 +529,7 @@ section module
 variables {η : Type*} {ιs : η → Type*} {Ms : η → Type*}
 variables [ring R] [∀i, add_comm_group (Ms i)] [∀i, module R (Ms i)]
 
-lemma linear_independent_std_basis
+lemma linear_independent_std_basis [decidable_eq η]
   (v : Πj, ιs j → (Ms j)) (hs : ∀i, linear_independent R (v i)) :
   linear_independent R (λ (ji : Σ j, ιs j), std_basis R Ms ji.1 (v ji.1 ji.2)) :=
 begin
@@ -560,7 +560,7 @@ end
 
 variable [fintype η]
 
-lemma is_basis_std_basis (s : Πj, ιs j → (Ms j)) (hs : ∀j, is_basis R (s j)) :
+lemma is_basis_std_basis [decidable_eq η] (s : Πj, ιs j → (Ms j)) (hs : ∀j, is_basis R (s j)) :
   is_basis R (λ (ji : Σ j, ιs j), std_basis R Ms ji.1 (s ji.1 ji.2)) :=
 begin
   split,
@@ -594,25 +594,23 @@ end
 section
 variables (R η)
 
-lemma is_basis_fun₀ : is_basis R
+lemma is_basis_fun₀ [decidable_eq η] : is_basis R
     (λ (ji : Σ (j : η), unit),
        (std_basis R (λ (i : η), R) (ji.fst)) 1) :=
-@is_basis_std_basis R η (λi:η, unit) (λi:η, R) _ _ _ _ (λ _ _, (1 : R))
+@is_basis_std_basis R η (λi:η, unit) (λi:η, R) _ _ _ _ _ (λ _ _, (1 : R))
   (assume i, @is_basis_singleton_one _ _ _ _)
 
-lemma is_basis_fun : is_basis R (λ i, std_basis R (λi:η, R) i 1) :=
+lemma is_basis_fun [decidable_eq η] : is_basis R (λ i, std_basis R (λi:η, R) i 1) :=
 by convert (is_basis_fun₀ R η).comp ((equiv.sigma_equiv_prod _ _).trans (equiv.prod_punit η)).symm
   (equiv.bijective _)
 
 @[simp] lemma fun_basis_repr_apply (f : η → R) (i : η) :
   (is_basis_fun R η).repr _ f i = f i :=
 begin
-  refine is_basis.repr_apply_eq _ _ _ _ _ _; try { intros; ext; simp },
-  clear i, intro i,
-  ext j,
-  by_cases hj : j = i,
-  { subst j, simp },
-  { simp [std_basis_apply, finsupp.single_apply, hj, ne.symm hj] },
+  apply (is_basis_fun₀ R η).comp (λ i, ⟨i, punit.star⟩),
+  apply bijective_iff_has_inverse.2,
+  use sigma.fst,
+  simp [function.left_inverse, function.right_inverse]
 end
 
 end

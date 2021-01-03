@@ -3,7 +3,7 @@ Copyright (c) 2020 Joseph Myers. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Joseph Myers, Yury Kudryashov.
 -/
-import linear_algebra.affine_space.ordered
+import linear_algebra.affine_space.midpoint
 import topology.metric_space.isometry
 import topology.instances.real_vector_space
 
@@ -257,7 +257,7 @@ continuous_vadd.comp (hf.prod_mk hg)
 
 lemma continuous.vsub {f g : α → P} (hf : continuous f) (hg : continuous g) :
   continuous (f -ᵥ g) :=
-continuous_vsub.comp (hf.prod_mk hg)
+continuous_vsub.comp (hf.prod_mk hg : _)
 
 lemma continuous_at.vadd {f : α → V} {g : α → P} {x : α} (hf : continuous_at f x)
   (hg : continuous_at g x) :
@@ -366,27 +366,3 @@ affine_map.mk' f
         continuous_const, hfc.comp, continuous_id])
   (classical.arbitrary P)
   (λ p, by simp)
-
-namespace set
-
-namespace subinterval
-
-omit V V'
-
-lemma size_pi_subbox_midpoint {ι : Type*} [fintype ι] [decidable_eq ι]
-  {s : set (ι → ℝ)} (I : subinterval s) (t : finset ι) :
-  (I.pi_subbox (I.midpoint ℝ) (I.midpoint_mem ℝ) t tᶜ).size = I.size / 2 :=
-begin
-  simp only [size, dist_pi_def, pi_subbox_left, pi_subbox_right, subinterval.midpoint],
-  norm_cast,
-  rw [div_eq_inv_mul, nnreal.mul_finset_sup],
-  congr' with i : 2,
-  push_cast,
-  by_cases hi : i ∈ t,
-  { have : i ∉ tᶜ, by simp [hi], simp [*] },
-  { simp [*] }
-end
-
-end subinterval
-
-end set
