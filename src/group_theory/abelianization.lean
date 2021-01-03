@@ -190,6 +190,8 @@ end
 
 section nth_commutator_map
 
+variables (f)
+
 lemma nth_commutator_map_le_nth_commutator (n : ℕ) :
   (nth_commutator G n).map f ≤ nth_commutator G' n :=
 begin
@@ -197,6 +199,8 @@ begin
   { simp only [nth_commutator_zero, le_top], },
   { simp only [nth_commutator_succ, map_commutator_eq_commutator_map, general_commutator_mono, *], }
 end
+
+variables {f}
 
 lemma nth_commutator_le_map_nth_commutator (hf : function.surjective f) (n : ℕ) :
   nth_commutator G' n ≤ (nth_commutator G n).map f :=
@@ -209,11 +213,11 @@ end
 
 lemma nth_commutator_eq_map_nth_commutator (hf : function.surjective f) (n : ℕ) :
   nth_commutator G' n = (nth_commutator G n).map f :=
-le_antisymm (nth_commutator_le_map_nth_commutator hf n) (nth_commutator_map_le_nth_commutator n)
+le_antisymm (nth_commutator_le_map_nth_commutator hf n) (nth_commutator_map_le_nth_commutator f n)
 
 lemma nth_commutator_lift_le_nth_commutator (H : subgroup G) (n : ℕ) :
   (nth_commutator H n).lift ≤ nth_commutator G n :=
-nth_commutator_map_le_nth_commutator n
+nth_commutator_map_le_nth_commutator _ n
 
 end nth_commutator_map
 
@@ -352,7 +356,7 @@ begin
   use n,
   rw eq_bot_iff_map_eq_bot hf,
   rw eq_bot_iff at *,
-  calc map f (nth_commutator G n) ≤ nth_commutator G' n : nth_commutator_map_le_nth_commutator n
+  calc map f (nth_commutator G n) ≤ nth_commutator G' n : nth_commutator_map_le_nth_commutator f n
   ... ≤ ⊥ : hn,
 end
 
@@ -378,8 +382,7 @@ open quotient_group
 --this theorem (and its proof) is due to Mario
 
 theorem eq_top_of_trivial_quotient (N:subgroup G) [N.normal]
-(H : (⊤ : subgroup (quotient_group.quotient N)) ≤ ⊥) :
- N = ⊤ :=
+  (H : (⊤ : subgroup (quotient_group.quotient N)) ≤ ⊥) : N = ⊤ :=
 begin
   rw [← ker_mk N, eq_top_iff, monoid_hom.ker, ← subgroup.map_le_iff_le_comap],
   exact le_trans le_top H,
@@ -387,9 +390,31 @@ end
 
 --(ker_mk N).symm.trans $ eq_top_iff.2 $ subgroup.map_le_iff_le_comap.1 $ le_trans le_top H
 
+lemma le_ker {G' : Type*} [group G'] (f : G →* G') {H : subgroup G} : H.map f ≤ ⊥ ↔ H ≤ f.ker :=
+begin
+  split,
+  { intros h x hx,
+    rw [← eq_bot_iff, eq_bot_iff_forall] at h,
+    exact (monoid_hom.mem_ker f).mpr (h (f x) ⟨x, hx, rfl⟩), },
+  { rintros h _ ⟨x, hx, rfl⟩,
+    exact mem_bot.mpr ((monoid_hom.mem_ker f).mp (h hx)), },
+end
+
+lemma nth_commutator_le_ker {G' : Type*} [group G'] (f : G →* G') (h : is_solvable G') :
+  ∃ n, nth_commutator G n ≤ f.ker :=
+begin
+  cases h with n hn,
+  use n,
+  have key := nth_commutator_map_le_nth_commutator f n,
+  rwa [hn, le_ker] at key,
+end
+
+lemma nth_commutator_le_of_solvable_quotient (H : subgroup G) [H.normal]
+  (h : is_solvable (quotient_group.quotient H)) : ∃ n, (nth_commutator G n) ≤ H :=
+by {rw ← ker_mk H, exact nth_commutator_le_ker (mk' H) h}
 
 lemma quotient_something (H : subgroup G) [H.normal]
-(h':is_solvable (quotient_group.quotient H)): ∃ m:ℕ, (nth_commutator G m)≤ H:=
+  (h' : is_solvable (quotient_group.quotient H)) : ∃ m : ℕ, (nth_commutator G m) ≤ H :=
 begin
   unfold is_solvable at h',
   cases h' with paris france,
@@ -431,24 +456,6 @@ begin
   symmetry,
   rwa [hmmmm,hmmmmmmmm],
 end
-inductive weekday : Type
-| monday : weekday
-| tuesday : weekday
-| wednesday : weekday
-| thursday : weekday
-| friday : weekday
-
-lemma weekday_perm_unsolvable:¬ is_solvable (equiv.perm weekday):=
-begin
-  unfold is_solvable,
-  push_neg,
-  --have stability:∀ n:ℕ,
-  --intro n,
-  --induction n,
-  --pply subgroup.eq_bot_iff_forall (nth_commutator (equiv.perm weekday) ),
-  sorry,
-
-end
 
 lemma short_exact_sequence_solvable (H : subgroup G) [H.normal]
 (h : is_solvable H) (h':is_solvable (quotient_group.quotient H)): is_solvable G:=
@@ -480,13 +487,32 @@ begin
   apply general_nth_commutator_mono,
   exact m_solves,
 end
+
+
+inductive weekday : Type
+| monday : weekday
+| tuesday : weekday
+| wednesday : weekday
+| thursday : weekday
+| friday : weekday
+
+lemma weekday_perm_unsolvable:¬ is_solvable (equiv.perm weekday):=
+begin
+  unfold is_solvable,
+  push_neg,
+  --have stability:∀ n:ℕ,
+  --intro n,
+  --induction n,
+  --pply subgroup.eq_bot_iff_forall (nth_commutator (equiv.perm weekday) ),
+  sorry,
+
+end
+
 --nth_commutator_eq_map_nth_commutator
 
 --def alternating_group (X:Type u)[fintype X]:Type u:=(equiv.perm.sign X).ker
 
 --instance (X:Type u)[fintype X]: group((equiv.perm.sign X).ker)
-
-
 
 lemma unsolvability_of_S_5 (X:Type u)(big:5≤ cardinal.mk X)[fintype X]:¬ is_solvable (equiv.perm X):=
 begin
@@ -526,6 +552,5 @@ begin
   --have first: ∃ x_1,x_1∈ big_subset,
   all_goals { sorry },
 end
-
 
 end solvable
