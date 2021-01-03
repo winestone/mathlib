@@ -63,8 +63,8 @@ begin
   have : Ioc m (y i₀) = Ioi m ∩ Ioc (x i₀) (y i₀),
     by rw [← Ioi_inter_Iic, ← Ioi_inter_Iic, ← inter_assoc,
       inter_eq_self_of_subset_left (Ioi_subset_Ioi hm)],
-  simp_rw [pi_univ_update i₀ _ _ (λ i z, Ioc z (y i)), ← pi_inter_compl ({i₀} : set ι),
-    pi_singleton, ← inter_assoc, this],
+  simp_rw [univ_pi_update i₀ _ _ (λ i z, Ioc z (y i)), ← pi_inter_compl ({i₀} : set ι),
+    singleton_pi', ← inter_assoc, this],
   refl
 end
 
@@ -74,8 +74,8 @@ begin
   have : Ioc (x i₀) m = Iic m ∩ Ioc (x i₀) (y i₀),
     by rw [← Ioi_inter_Iic, ← Ioi_inter_Iic, inter_left_comm,
       inter_eq_self_of_subset_left (Iic_subset_Iic.2 hm)],
-  simp_rw [pi_univ_update i₀ y m (λ i z, Ioc (x i) z), ← pi_inter_compl ({i₀} : set ι),
-    pi_singleton, ← inter_assoc, this],
+  simp_rw [univ_pi_update i₀ y m (λ i z, Ioc (x i) z), ← pi_inter_compl ({i₀} : set ι),
+    singleton_pi', ← inter_assoc, this],
   refl
 end
 

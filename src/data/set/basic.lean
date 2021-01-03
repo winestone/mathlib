@@ -2137,6 +2137,9 @@ by { ext, simp [pi, or_imp_distrib, forall_and_distrib] }
   pi {i} t = (eval i ⁻¹' t i) :=
 by { ext, simp [pi] }
 
+lemma singleton_pi' (i : ι) (t : Π i, set (α i)) : pi {i} t = {x | x i ∈ t i} :=
+singleton_pi i t
+
 lemma pi_if {p : ι → Prop} [h : decidable_pred p] (s : set ι) (t₁ t₂ : Π i, set (α i)) :
   pi s (λ i, if p i then t₁ i else t₂ i) = pi {i ∈ s | p i} t₁ ∩ pi {i ∈ s | ¬ p i} t₂ :=
 begin
@@ -2147,13 +2150,11 @@ begin
     by_cases p i; simp * at * }
 end
 
-lemma pi_union_left : (s ∪ s₁).pi t = s.pi t ∩ s₁.pi t :=
+lemma union_pi : (s ∪ s₁).pi t = s.pi t ∩ s₁.pi t :=
 by simp [pi, or_imp_distrib, forall_and_distrib, set_of_and]
 
-@[simp] lemma pi_singleton (i : ι) : pi {i} t = {x | x i ∈ t i} := by simp [pi]
-
 @[simp] lemma pi_inter_compl (s : set ι) : pi s t ∩ pi sᶜ t = pi univ t :=
-by rw [← pi_union_left, union_compl_self]
+by rw [← union_pi, union_compl_self]
 
 lemma pi_update_of_not_mem [decidable_eq ι] {β : Π i, Type*} {i : ι} (hi : i ∉ s) (f : Π j, α j)
   (a : α i) (t : Π j, α j → set (β j)) :
@@ -2166,9 +2167,9 @@ lemma pi_update_of_mem [decidable_eq ι] {β : Π i, Type*} {i : ι} (hi : i ∈
 calc s.pi (λ j, t j (update f i a j)) = ({i} ∪ s \ {i}).pi (λ j, t j (update f i a j)) :
   by rw [union_diff_self, union_eq_self_of_subset_left (singleton_subset_iff.2 hi)]
 ... = {x | x i ∈ t i a} ∩ (s \ {i}).pi (λ j, t j (f j)) :
-  by { rw [pi_union_left, pi_singleton, update_same, pi_update_of_not_mem], simp }
+  by { rw [union_pi, singleton_pi', update_same, pi_update_of_not_mem], simp }
 
-lemma pi_univ_update [decidable_eq ι] {β : Π i, Type*} (i : ι) (f : Π j, α j)
+lemma univ_pi_update [decidable_eq ι] {β : Π i, Type*} (i : ι) (f : Π j, α j)
   (a : α i) (t : Π j, α j → set (β j)) :
   pi univ (λ j, t j (update f i a j)) = {x | x i ∈ t i a} ∩ pi {i}ᶜ (λ j, t j (f j)) :=
 by rw [compl_eq_univ_diff, ← pi_update_of_mem (mem_univ _)]
