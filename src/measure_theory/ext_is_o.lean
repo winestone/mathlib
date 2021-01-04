@@ -1,10 +1,15 @@
 import analysis.normed_space.box_subadditive
 import measure_theory.set_integral
+import measure_theory.lebesgue_measure
+import measure_theory.pi
 
-variables {ι α : Type*} [decidable_eq ι] [encodable ι] [measurable_space α]
+variables {ι ι' α : Type*} [decidable_eq ι] [encodable ι] [decidable_eq ι'] [fintype ι']
+  [measurable_space α]
 
 open measure_theory set topological_space (second_countable_topology) filter function
 open_locale nnreal topological_space filter big_operators
+
+local attribute [instance] encodable.fintype.encodable
 
 namespace measure_theory
 
@@ -44,10 +49,32 @@ theorem box_additive_on_set_integral {μ : measure (ι → ℝ)} {g : (ι → �
   box_additive_on (λ l r, ∫ x in pi univ (λ i, Ioc (l i) (r i)), g x ∂μ) s :=
 box_additive_on_set_integral_preimage measurable_id hg
 
-theorem pi_univ_Ioo_ae_eq_Icc {μ : measure (ι → ℝ)}
-  (h : ∀ (x y : ι → ℝ) (i : ι), x i = y i → μ (Icc x y) = 0) (x y : ι → ℝ) :
+theorem real.volume_Icc_pi (x y : ι' → ℝ) : volume (Icc x y) = ∏ i, ennreal.of_real (y i - x i) :=
+begin
+  rw [← pi_univ_Icc, volume_pi],
+  { simp only [real.volume_Icc] },
+  { exact λ i, is_measurable_Icc }
+end
+
+theorem real.volume_Icc_pi_to_real {x y : ι' → ℝ} (h : x ≤ y) :
+  (volume (Icc x y)).to_real = ∏ i, (y i - x i) :=
+by simp only [real.volume_Icc_pi, ennreal.to_real_prod, ennreal.to_real_of_real (sub_nonneg.2 (h _))]
+
+theorem real.volume_Icc_pi_eq_zero_of_le {x y : ι' → ℝ} (i : ι') (h : y i ≤ x i) :
+  volume (Icc x y) = 0 :=
+begin
+  rw real.volume_Icc_pi,
+  refine finset.prod_eq_zero (finset.mem_univ i) _,
+  simpa
+end
+
+theorem pi_univ_Ioo_ae_eq_Icc' {μ : measure (ι → ℝ)}
+  (h : ∀ i xi, μ {x | x i = xi} = 0) (x y : ι → ℝ) :
   pi univ (λ i, Ioo (x i) (y i)) =ᵐ[μ] Icc x y :=
 begin
+  replace h : ∀ (x y : ι → ℝ) i, y i ≤ x i → μ (Icc x y) = 0,
+  { refine λ x y i hi, measure_mono_null (λ z hz, _) (h i (y i)),
+    exact le_antisymm (hz.2 _) (hi.trans (hz.1 _)) },
   refine eventually_le.antisymm (eventually_of_forall _) _,
   { exact pi_univ_Icc x y ▸ pi_mono (λ _ _, Ioo_subset_Icc_self) },
   { rw [ae_le_set],
@@ -56,44 +83,34 @@ begin
     exacts [λ i, h _ _ i (by simp), λ i, h _ _ i (by simp)] }
 end
 
-theorem pi_univ_Ioc_ae_eq_Icc {μ : measure (ι → ℝ)}
-  (h : ∀ (x y : ι → ℝ) (i : ι), x i = y i → μ (Icc x y) = 0) (x y : ι → ℝ) :
+theorem pi_univ_Ioo_ae_eq_Icc (x y : ι' → ℝ) :
+  pi univ (λ i, Ioo (x i) (y i)) =ᵐ[volume] Icc x y :=
+pi_univ_Ioo_ae_eq_Icc' (λ _ _, measure.measure_pi_hyperplane _ _ _) _ _
+
+theorem pi_univ_Ioc_ae_eq_Icc' {μ : measure (ι → ℝ)}
+  (h : ∀ i xi, μ {x | x i = xi} = 0) (x y : ι → ℝ) :
   pi univ (λ i, Ioc (x i) (y i)) =ᵐ[μ] Icc x y :=
 begin
   refine eventually_le.antisymm (eventually_of_forall _) _,
   { exact pi_univ_Icc x y ▸ pi_mono (λ _ _, Ioc_subset_Icc_self) },
-  { rw [ae_le_set],
-    refine measure_mono_null (Icc_diff_pi_univ_Ioc_subset x x y) (measure_Union_null _),
-    refine λ i, h _ _ i _,
-    simp }
+  { refine (pi_univ_Ioo_ae_eq_Icc' h x y).symm.trans_le (eventually_of_forall _),
+    exact pi_mono (λ _ _, Ioo_subset_Ioc_self) }
 end
 
-theorem box_additive_on_set_integral_Icc {μ : measure (ι → ℝ)}
-  (hμ : ∀ (x y : ι → ℝ) (i : ι), x i = y i → μ (Icc x y) = 0) {g : (ι → ℝ) → E} {s : set (ι → ℝ)}
-  (hg : integrable_on g s μ) :
+theorem pi_univ_Ioc_ae_eq_Icc (x y : ι' → ℝ) :
+  pi univ (λ i, Ioc (x i) (y i)) =ᵐ[volume] Icc x y :=
+pi_univ_Ioc_ae_eq_Icc' (λ _ _, measure.measure_pi_hyperplane _ _ _) _ _
+
+theorem box_additive_on_set_integral_Icc' {μ : measure (ι → ℝ)}
+  (hμ : ∀ i xi, μ {x | x i = xi} = 0)  {g : (ι → ℝ) → E}
+  {s : set (ι → ℝ)} (hg : integrable_on g s μ) :
   box_additive_on (λ l r, ∫ x in Icc l r, g x ∂μ) s :=
-by simpa only [restrict_congr_set (pi_univ_Ioc_ae_eq_Icc hμ _ _)]
+by simpa only [restrict_congr_set (pi_univ_Ioc_ae_eq_Icc' hμ _ _)]
   using box_additive_on_set_integral hg
 
-theorem box_additive_on_set_integral_Icc' [fintype ι] {μ : measure (ι → ℝ)}
-  (hμ : ∀ x y, μ (Icc x y) = ∏ i, ennreal.of_real (y i - x i)) {g : (ι → ℝ) → E} {s : set (ι → ℝ)}
-  (hg : integrable_on g s μ) :
-  box_additive_on (λ l r, ∫ x in Icc l r, g x ∂μ) s :=
-begin
-  refine box_additive_on_set_integral_Icc (λ x y i hi, _) hg,
-  rw [hμ],
-  refine finset.prod_eq_zero (finset.mem_univ i) _,
-  simp [hi.ge]
-end
-
-theorem locally_finite_of_measure_Icc [fintype ι] {μ : measure (ι → ℝ)}
-  (hμ : ∀ x y, μ (Icc x y) = ∏ i, ennreal.of_real (y i - x i)) :
-  locally_finite_measure μ :=
-begin
-  refine ⟨λ x, ⟨Icc (x - 1) (x + 1), _, _⟩⟩,
-  { exact pi_Icc_mem_nhds' (λ i, sub_lt_self _ zero_lt_one)
-      (λ i, lt_add_of_pos_right _ zero_lt_one) },
-  simp [hμ, ennreal.pow_lt_top]
-end
+theorem box_additive_on_set_integral_Icc {g : (ι' → ℝ) → E} {s : set (ι' → ℝ)}
+  (hg : integrable_on g s) :
+  box_additive_on (λ l r, ∫ x in Icc l r, g x) s :=
+box_additive_on_set_integral_Icc' (λ _ _, measure.measure_pi_hyperplane _ _ _) hg
 
 end measure_theory

@@ -435,6 +435,11 @@ begin
   exact classical.some_spec h
 end
 
+lemma differentiable_within_at.exists_is_o (h : differentiable_within_at 𝕜 f s x) :
+  ∃ (f' : E →L[𝕜] F) (y : F) (g : E → F), is_o g (λ x', x' - x) (𝓝[s] x) ∧
+    f = λ x', y + f' (x' - x) + g x' :=
+⟨fderiv_within 𝕜 f s x, f x, _, h.has_fderiv_within_at, funext $ λ x', by abel⟩
+
 lemma has_fderiv_at.fderiv (h : has_fderiv_at f f' x) : fderiv 𝕜 f x = f' :=
 by { ext, rw has_fderiv_at_unique h h.differentiable_at.has_fderiv_at }
 

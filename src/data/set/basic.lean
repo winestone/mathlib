@@ -2097,6 +2097,9 @@ by simp
 
 @[simp] lemma empty_pi (s : Π i, set (α i)) : pi ∅ s = univ := by { ext, simp [pi] }
 
+@[simp] lemma pi_univ (s : set ι) : pi s (λ i, (univ : set (α i))) = univ :=
+eq_univ_of_forall $ λ f i hi, mem_univ _
+
 lemma pi_mono (h : ∀ i ∈ s, t₁ i ⊆ t₂ i) : pi s t₁ ⊆ pi s t₂ :=
 λ x hx i hi, (h i hi $ hx i hi)
 
@@ -2173,6 +2176,10 @@ lemma univ_pi_update [decidable_eq ι] {β : Π i, Type*} (i : ι) (f : Π j, α
   (a : α i) (t : Π j, α j → set (β j)) :
   pi univ (λ j, t j (update f i a j)) = {x | x i ∈ t i a} ∩ pi {i}ᶜ (λ j, t j (f j)) :=
 by rw [compl_eq_univ_diff, ← pi_update_of_mem (mem_univ _)]
+
+lemma univ_pi_update_univ [decidable_eq ι] (i : ι) (s : set (α i)) :
+  pi univ (update (λ j : ι, (univ : set (α j))) i s) = eval i ⁻¹' s :=
+by rw [univ_pi_update i (λ j, (univ : set (α j))) s (λ j t, t), pi_univ, inter_univ, preimage]
 
 open_locale classical
 
