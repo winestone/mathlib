@@ -88,7 +88,54 @@ end alg_equiv_restrict
 
 section abel_ruffini
 
-variables (F : Type*) [field F] {E : Type*} [field E] [algebra F E]
+variables {F : Type*} [field F] {E : Type*} [field E] [algebra F E]
+
+def Gal (p : polynomial F) := p.splitting_field ≃ₐ[F] p.splitting_field
+
+instance (p : polynomial F) : group (Gal p) := alg_equiv.aut
+
+instance (p q : polynomial F) : has_scalar p.splitting_field (p * q).splitting_field :=
+{ smul := sorry,
+}
+
+instance (p q : polynomial F) : algebra p.splitting_field (p * q).splitting_field :=
+{ to_fun := sorry,
+  map_zero' := sorry,
+  map_one' := sorry,
+  map_add' := sorry,
+  map_mul' := sorry,
+  smul_def' := sorry,
+  commutes' := sorry,
+}
+
+instance (p q : polynomial F) : is_scalar_tower F p.splitting_field (p * q).splitting_field :=
+{ smul_assoc := sorry,
+}
+
+def swap {p q : polynomial F} (φ : Gal (p * q)) : Gal (q * p) :=
+{ to_fun := sorry,
+  inv_fun := sorry,
+  map_add' := sorry,
+  map_mul' := sorry,
+  commutes' := sorry,
+  right_inv := sorry,
+  left_inv := sorry,
+}
+
+def gal_prod_to_prod_gal (p q : polynomial F) : Gal (p * q) →* Gal p × Gal q :=
+{ to_fun := λ f, ⟨alg_equiv.restrict_is_splitting_field f p _, alg_equiv.restrict_is_splitting_field (swap f) q _⟩,
+  map_one' := sorry,
+  map_mul' := sorry,
+}
+
+lemma gal_prod_to_prod_gal_inj (p q : polynomial F) :
+  function.injective (gal_prod_to_prod_gal p q) := sorry
+
+lemma gal_prod_solvable (p q : polynomial F) (hp : is_solvable (Gal p)) (hq : is_solvable (Gal q)) :
+  is_solvable (Gal (p * q)) :=
+solvable_of_solvable_injective (gal_prod_to_prod_gal_inj p q) (prod_solvable _ hp hq)
+
+variables (F)
 
 inductive is_SBR : E → Prop
 | base (a : F) : is_SBR (algebra_map F E a)
@@ -170,8 +217,7 @@ begin
 end
 
 def P (α : SBR F E) : Prop :=
-  is_solvable ((minimal_polynomial (is_integral α)).splitting_field ≃ₐ[F]
-    (minimal_polynomial (is_integral α)).splitting_field)
+is_solvable $ Gal $ minimal_polynomial (is_integral α)
 
 lemma induction3 {α : SBR F E} {n : ℕ} (hn : n ≠ 0) (hα : P (α ^ n)) : P α :=
 begin
@@ -183,10 +229,13 @@ begin
   let p := (minimal_polynomial (is_integral α)),
   let q := (minimal_polynomial (is_integral β)),
   let r := (minimal_polynomial (is_integral γ)),
-  --(p * q).splitting_field.aut embeds into p.splitting_field.aut × q.splitting_field.aut
-  --(p * q).splitting_field.aut surjects onto r.splitting_field.aut
-  --F⟮α, β⟯ ↪ (p * q).splitting_field takes γ to a root of r
-  --By Galois, r splits
+  -- (p * q).splitting_field.aut embeds into p.splitting_field.aut × q.splitting_field.aut
+  -- (p * q).splitting_field.aut surjects onto r.splitting_field.aut
+  -- Define F(α, β) ↪ (p * q).splitting_field
+  -- F⟮α, β⟯ ↪ (p * q).splitting_field takes γ to a root of r
+  -- By Galois, r splits
+  -- So we get an embedding r.splitting_field ↪ (p * q).splitting_field
+  -- So we can use a general theorem of galois theory to say that Gal (p * q) surjects onto Gal r
   sorry,
 end
 
