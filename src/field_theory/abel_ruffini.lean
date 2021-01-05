@@ -84,6 +84,25 @@ lemma alg_equiv.restrict_is_splitting_field_commutes [is_splitting_field F E p] 
 algebra_map E K (χ.restrict_is_splitting_field p E x) = χ (algebra_map E K x) :=
 χ.to_alg_hom.restrict_is_splitting_field_commutes p E x
 
+lemma alg_equiv.restrict_is_splitting_field_comp [hp : is_splitting_field F E p] :
+(χ.restrict_is_splitting_field p E).trans (ω.restrict_is_splitting_field p E) =
+  (χ.trans ω).restrict_is_splitting_field p E :=
+alg_equiv.ext (λ _, (algebra_map E K).injective (by
+{ simp only [alg_equiv.trans_apply, alg_equiv.restrict_is_splitting_field_commutes] }))
+
+def alg_equiv.restict_is_splitting_field_hom [hp : is_splitting_field F E p] :
+(K ≃ₐ[F] K) →* (E ≃ₐ[F] E) :=
+monoid_hom.mk' (λ χ, χ.restrict_is_splitting_field p E)
+  (λ ω χ, (χ.restrict_is_splitting_field_comp ω p E).symm)
+
+lemma alg_equiv.restrict_is_splitting_field_hom_surjective [hp : is_splitting_field F E p]
+  [finite_dimensional E K] : function.surjective
+  ((alg_equiv.restict_is_splitting_field_hom p E) : (K ≃ₐ[F] K) →* (E ≃ₐ[F] E)).to_fun :=
+begin
+  sorry,
+end
+
+
 end alg_equiv_restrict
 
 section abel_ruffini

@@ -1,40 +1,38 @@
 import group_theory.perm.cycles
 
-open equiv
-open equiv.perm
+open subgroup equiv equiv.perm
 
 lemma closure_is_cycle {α : Type*} [fintype α] [linear_order α] :
-subgroup.closure ({σ | is_cycle σ} : set (perm α)) = ⊤ :=
+closure ({σ | is_cycle σ} : set (perm α)) = ⊤ :=
 begin
   rw eq_top_iff,
   intros x hx,
   obtain ⟨h1, h2, h3⟩ := subtype.mem (cycle_factors x),
   rw ← h1,
-  exact subgroup.list_prod_mem _ (λ y hy, subgroup.subset_closure (h2 y hy)),
+  exact list_prod_mem _ (λ y hy, subset_closure (h2 y hy)),
 end
 
 lemma closure_is_swap {α : Type*} [fintype α] [linear_order α] :
-subgroup.closure ({σ | is_swap σ} : set (perm α)) = ⊤ :=
+closure ({σ | is_swap σ} : set (perm α)) = ⊤ :=
 begin
   rw eq_top_iff,
   intros x hx,
   obtain ⟨h1, h2⟩ := subtype.mem (swap_factors x),
   rw ← h1,
-  exact subgroup.list_prod_mem _ (λ y hy, subgroup.subset_closure (h2 y hy)),
+  exact list_prod_mem _ (λ y hy, subset_closure (h2 y hy)),
 end
 
 lemma closure_cycle_adjacent_swap {α : Type*} [fintype α] [linear_order α] {σ : perm α}
   (h1 : is_cycle σ) (h2 : σ.support = ⊤) (x : α) :
-subgroup.closure ({σ, swap x (σ x)} : set (perm α)) = ⊤ :=
+closure ({σ, swap x (σ x)} : set (perm α)) = ⊤ :=
 begin
-  let H := subgroup.closure ({σ, swap x (σ x)} : set (perm α)),
-  have h3 : σ ∈ H := subgroup.subset_closure (set.mem_insert σ _),
-  have h4 : swap x (σ x) ∈ H :=
-    subgroup.subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)),
+  let H := closure ({σ, swap x (σ x)} : set (perm α)),
+  have h3 : σ ∈ H := subset_closure (set.mem_insert σ _),
+  have h4 : swap x (σ x) ∈ H := subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)),
   have step1 : ∀ (n : ℕ), swap ((σ^n) x) ((σ^(n+1)) x) ∈ H,
   { intro n,
     induction n with n ih,
-    { exact subgroup.subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)) },
+    { exact subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)) },
     { convert H.mul_mem (H.mul_mem h3 ih) (H.inv_mem h3),
       rw [mul_swap_eq_swap_mul, mul_inv_cancel_right], refl } },
   have step2 : ∀ (n : ℕ), swap x ((σ^n) x) ∈ H,
@@ -71,7 +69,7 @@ begin
     { rw [h6, swap_self], exact H.one_mem },
     rw [←swap_mul_swap_mul_swap h5 h6, swap_comm z x],
     exact H.mul_mem (H.mul_mem (step4 y) (step4 z)) (step4 y) },
-  rw [eq_top_iff ,←closure_is_swap, subgroup.closure_le],
+  rw [eq_top_iff ,←closure_is_swap, closure_le],
   rintros τ ⟨y, z, h5, h6⟩,
   rw h6,
   exact step5 y z,
