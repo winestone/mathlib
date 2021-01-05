@@ -1011,14 +1011,42 @@ end
 lemma lintegral_eq_supr_eapprox_lintegral {f : α → ennreal} (hf : measurable f) :
   (∫⁻ a, f a ∂μ) = (⨆n, (eapprox f n).lintegral μ) :=
 calc (∫⁻ a, f a ∂μ) = (∫⁻ a, ⨆n, (eapprox f n : α → ennreal) a ∂μ) :
-   by congr; ext a; rw [supr_eapprox_apply f hf]
- ... = (⨆n, ∫⁻ a, (eapprox f n : α → ennreal) a ∂μ) :
- begin
-   rw [lintegral_supr],
-   { assume n, exact (eapprox f n).measurable },
-   { assume i j h, exact (monotone_eapprox f h) }
- end
- ... = (⨆n, (eapprox f n).lintegral μ) : by congr; ext n; rw [(eapprox f n).lintegral_eq_lintegral]
+  by congr; ext a; rw [supr_eapprox_apply f hf]
+... = (⨆n, ∫⁻ a, (eapprox f n : α → ennreal) a ∂μ) :
+begin
+  rw [lintegral_supr],
+  { assume n, exact (eapprox f n).measurable },
+  { assume i j h, exact (monotone_eapprox f h) }
+end
+... = (⨆n, (eapprox f n).lintegral μ) : by congr; ext n; rw [(eapprox f n).lintegral_eq_lintegral]
+
+lemma lintegral_mono_ae {f g : α → ennreal} (h : ∀ᵐ a ∂μ, f a ≤ g a) :
+  (∫⁻ a, f a ∂μ) ≤ (∫⁻ a, g a ∂μ) :=
+begin
+  rcases exists_is_measurable_superset_of_measure_eq_zero h with ⟨t, hts, ht, ht0⟩,
+  have : ∀ᵐ x ∂μ, x ∉ t := measure_zero_iff_ae_nmem.1 ht0,
+  refine (supr_le $ assume s, supr_le $ assume hfs,
+    le_supr_of_le (s.restrict tᶜ) $ le_supr_of_le _ _),
+  { assume a,
+    by_cases a ∈ t;
+      simp [h, restrict_apply, ht.compl],
+    exact le_trans (hfs a) (by_contradiction $ assume hnfg, h (hts hnfg)) },
+  { refine le_of_eq (simple_func.lintegral_congr $ this.mono $ λ a hnt, _),
+    by_cases hat : a ∈ t; simp [hat, ht.compl],
+    exact (hnt hat).elim }
+end
+
+lemma lintegral_congr_ae {f g : α → ennreal} (h : f =ᵐ[μ] g) :
+  (∫⁻ a, f a ∂μ) = (∫⁻ a, g a ∂μ) :=
+le_antisymm (lintegral_mono_ae $ h.le) (lintegral_mono_ae $ h.symm.le)
+
+lemma lintegral_congr {f g : α → ennreal} (h : ∀ a, f a = g a) :
+  (∫⁻ a, f a ∂μ) = (∫⁻ a, g a ∂μ) :=
+by simp only [h]
+
+lemma set_lintegral_congr {f : α → ennreal} {s t : set α} (h : s =ᵐ[μ] t) :
+  ∫⁻ x in s, f x ∂μ = ∫⁻ x in t, f x ∂μ :=
+by rw [restrict_congr_set h]
 
 lemma lintegral_mono_ae {f g : α → ennreal} (h : ∀ᵐ a ∂μ, f a ≤ g a) :
   (∫⁻ a, f a ∂μ) ≤ (∫⁻ a, g a ∂μ) :=
