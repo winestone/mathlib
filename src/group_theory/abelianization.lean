@@ -444,6 +444,20 @@ begin
   rw [ker_mk, range_subtype],
 end
 
+lemma solvable_prod {G' : Type*} [group G'] (h : is_solvable G) (h' : is_solvable G') :
+  is_solvable (G × G') :=
+begin
+  refine short_exact_sequence_solvable' (monoid_hom.inl G G') (monoid_hom.snd G G') _ h h',
+  ext x, split,
+  { rintros ⟨y, rfl⟩,
+    simp only [monoid_hom.mem_ker, monoid_hom.inl_apply, monoid_hom.coe_snd], },
+  { cases x with x y,
+    intros hx,
+    simp only [monoid_hom.mem_ker, monoid_hom.coe_snd] at hx,
+    simp only [monoid_hom.mem_range, monoid_hom.inl_apply, hx],
+    use x, }
+end
+
 lemma quotient_something (H : subgroup G) [H.normal]
   (h' : is_solvable (quotient_group.quotient H)) : ∃ m : ℕ, (nth_commutator G m) ≤ H :=
 begin
