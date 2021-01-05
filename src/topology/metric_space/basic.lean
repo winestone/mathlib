@@ -1215,6 +1215,12 @@ by { rw [nndist_pi_def], exact finset.le_sup (finset.mem_univ b) }
 lemma dist_le_pi_dist (f g : Πb, π b) (b : β) : dist (f b) (g b) ≤ dist f g :=
 by simp only [dist_nndist, nnreal.coe_le_coe, nndist_le_pi_nndist f g b]
 
+lemma real.dist_pi_le_of_mem_Icc {f₁ f₂ g₁ g₂ : β → ℝ} (h₁ : f₁ ∈ Icc g₁ g₂) (h₂ : f₂ ∈ Icc g₁ g₂) :
+  dist f₁ f₂ ≤ dist g₁ g₂ :=
+(dist_pi_le_iff dist_nonneg).2 $ λ b,
+  (abs_sub_le_of_subinterval $ interval_subset_interval (Icc_subset_interval' ⟨h₂.1 b, h₂.2 b⟩)
+    (Icc_subset_interval' ⟨h₁.1 b, h₁.2 b⟩)).trans (dist_le_pi_dist g₁ g₂ b)
+
 /-- An open ball in a product space is a product of open balls. The assumption `0 < r`
 is necessary for the case of the empty product. -/
 lemma ball_pi (x : Πb, π b) {r : ℝ} (hr : 0 < r) :

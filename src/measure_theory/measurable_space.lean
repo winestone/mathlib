@@ -8,7 +8,7 @@ import data.set.countable
 import data.indicator_function
 import data.equiv.encodable.lattice
 import data.tprod
-import order.filter.basic
+import order.filter.lift
 
 /-!
 # Measurable spaces and measurable functions
@@ -1332,6 +1332,13 @@ lemma eventually.exists_measurable_mem {f : filter α} [is_measurably_generated 
   {p : α → Prop} (h : ∀ᶠ x in f, p x) :
   ∃ s ∈ f, is_measurable s ∧ ∀ x ∈ s, p x :=
 is_measurably_generated.exists_measurable_subset h
+
+lemma eventually.exists_measurable_mem_of_lift' {f : filter α} [is_measurably_generated f]
+  {p : set α → Prop} (h : ∀ᶠ s in f.lift' powerset, p s) :
+  ∃ s ∈ f, is_measurable s ∧ p s :=
+let ⟨s, hsf, hs⟩ := eventually_lift'_powerset.1 h,
+  ⟨t, htf, htm, hts⟩ := is_measurably_generated.exists_measurable_subset hsf
+in ⟨t, htf, htm, hs t hts⟩
 
 instance inf_is_measurably_generated (f g : filter α) [is_measurably_generated f]
   [is_measurably_generated g] :

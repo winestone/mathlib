@@ -132,6 +132,9 @@ tendsto_Ixx_class_of_subset (λ _ _, Ioc_subset_Icc_self)
 instance tendsto_Ioo_at_bot_at_bot : tendsto_Ixx_class Ioo (at_bot : filter α) at_bot :=
 tendsto_Ixx_class_of_subset (λ _ _, Ioo_subset_Icc_self)
 
+instance tendsto_Icc_Icc_Icc {a b : α} : tendsto_Ixx_class Icc (𝓟 (Icc a b)) (𝓟 (Icc a b)) :=
+tendsto_Ixx_class_principal.2 ord_connected_Icc
+
 instance tendsto_Icc_Ici_Ici {a : α} : tendsto_Ixx_class Icc (𝓟 (Ici a)) (𝓟 (Ici a)) :=
 tendsto_Ixx_class_principal.2 ord_connected_Ici
 

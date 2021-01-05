@@ -788,9 +788,12 @@ ext $ λ u hu, by simp [*, set.inter_assoc]
 lemma restrict_apply_eq_zero (ht : is_measurable t) : μ.restrict s t = 0 ↔ μ (t ∩ s) = 0 :=
 by rw [restrict_apply ht]
 
+lemma measure_inter_eq_zero_of_restrict (h : μ.restrict s t = 0) : μ (t ∩ s) = 0 :=
+le_zero_iff_eq.1 (h ▸ le_restrict_apply _ _)
+
 lemma restrict_apply_eq_zero' (hs : is_measurable s) : μ.restrict s t = 0 ↔ μ (t ∩ s) = 0 :=
 begin
-  refine ⟨λ h, le_zero_iff_eq.1 (h ▸ le_restrict_apply _ _), λ h, _⟩,
+  refine ⟨measure_inter_eq_zero_of_restrict, λ h, _⟩,
   rcases exists_is_measurable_superset_of_measure_eq_zero h with ⟨t', htt', ht', ht'0⟩,
   apply measure_mono_null ((inter_subset _ _ _).1 htt'),
   rw [restrict_apply (hs.compl.union ht'), union_inter_distrib_right, compl_inter_self,
@@ -1266,6 +1269,13 @@ begin
   congr' with x, simp [and_comm]
 end
 
+lemma ae_imp_of_ae_restrict {s : set α} {p : α → Prop} (h : ∀ᵐ x ∂(μ.restrict s), p x) :
+  ∀ᵐ x ∂μ, x ∈ s → p x :=
+begin
+  simp only [ae_iff] at h ⊢,
+  simpa [set_of_and, inter_comm] using  measure_inter_eq_zero_of_restrict h
+end
+
 lemma ae_restrict_iff' {s : set α} {p : α → Prop} (hp : is_measurable s) :
   (∀ᵐ x ∂(μ.restrict s), p x) ↔ ∀ᵐ x ∂μ, x ∈ s → p x :=
 begin
@@ -1291,6 +1301,9 @@ begin
   calc μ {x | g (f x) ≠ g' (f x)} ≤ μ (f⁻¹' t) : measure_mono (λ x hx, ht hx)
   ... = 0 : by rwa ← measure.map_apply hf tmeas
 end
+
+lemma le_ae_restrict : μ.ae ⊓ 𝓟 s ≤ (μ.restrict s).ae :=
+λ s hs, eventually_inf_principal.2 (ae_imp_of_ae_restrict hs)
 
 @[simp] lemma ae_restrict_eq (hs : is_measurable s) : (μ.restrict s).ae = μ.ae ⊓ 𝓟 s :=
 begin
@@ -1485,6 +1498,10 @@ lemma finite_at_filter.exists_mem_basis {μ : measure α} {f : filter α} (hμ :
 lemma finite_at_bot (μ : measure α) : μ.finite_at_filter ⊥ :=
 ⟨∅, mem_bot_sets, by simp only [measure_empty, with_top.zero_lt_top]⟩
 
+lemma finite_at_filter.mono {μ : measure α} {f g : filter α} (h : μ.finite_at_filter g)
+  (hfg : f ≤ g) : μ.finite_at_filter f :=
+h.imp $ λ s hs, ⟨hfg hs.fst, hs.snd⟩
+
 /-- `μ` has finite spanning sets in `C` if there is a countable sequence of sets in `C` that have
   finite measures. This structure is a type, which is useful if we want to record extra properties
   about the sets, such as that they are monotone.
@@ -1640,6 +1657,11 @@ lemma measure.finite_at_nhds [topological_space α] (μ : measure α)
   μ.finite_at_filter (𝓝 x) :=
 locally_finite_measure.finite_at_nhds x
 
+lemma measure.finite_at_nhds_within [topological_space α] (μ : measure α)
+  [locally_finite_measure μ] (s : set α) (x : α) :
+  μ.finite_at_filter (𝓝[s] x) :=
+(μ.finite_at_nhds x).mono inf_le_left
+
 lemma measure.exists_is_open_measure_lt_top [topological_space α] (μ : measure α)
   [locally_finite_measure μ] (x : α) :
   ∃ s : set α, x ∈ s ∧ is_open s ∧ μ s < ⊤ :=
@@ -1690,10 +1712,6 @@ inf_ae_iff.1 (hg.filter_mono h)
 protected lemma measure_mono (h : μ ≤ ν) : ν.finite_at_filter f → μ.finite_at_filter f :=
 λ ⟨s, hs, hν⟩, ⟨s, hs, (measure.le_iff'.1 h s).trans_lt hν⟩
 
-@[mono] protected lemma mono (hf : f ≤ g) (hμ : μ ≤ ν) :
-  ν.finite_at_filter g → μ.finite_at_filter f :=
-λ h, (h.filter_mono hf).measure_mono hμ
-
 protected lemma eventually (h : μ.finite_at_filter f) : ∀ᶠ s in f.lift' powerset, μ s < ⊤ :=
 (eventually_lift'_powerset' $ λ s t hst ht, (measure_mono hst).trans_lt ht).2 h
 
@@ -1702,11 +1720,6 @@ lemma filter_sup : μ.finite_at_filter f → μ.finite_at_filter g → μ.finite
  ⟨s ∪ t, union_mem_sup hsf htg, (measure_union_le s t).trans_lt (ennreal.add_lt_top.2 ⟨hsμ, htμ⟩)⟩
 
 end finite_at_filter
-
-lemma finite_at_nhds_within [topological_space α] (μ : measure α) [locally_finite_measure μ]
-  (x : α) (s : set α) :
-  μ.finite_at_filter (𝓝[s] x) :=
-(finite_at_nhds μ x).inf_of_left
 
 @[simp] lemma finite_at_principal : μ.finite_at_filter (𝓟 s) ↔ μ s < ⊤ :=
 ⟨λ ⟨t, ht, hμ⟩, (measure_mono ht).trans_lt hμ, λ h, ⟨s, mem_principal_self s, h⟩⟩
@@ -2082,6 +2095,18 @@ lemma congr (hf : ae_measurable f μ) (h : f =ᵐ[μ] g) : ae_measurable g μ :=
 
 lemma mono_measure (h : ae_measurable f μ) (h' : ν ≤ μ) : ae_measurable f ν :=
 ⟨h.mk f, h.measurable_mk, eventually.filter_mono (ae_mono h') h.ae_eq_mk⟩
+
+lemma mono_set {s t} (h : s ⊆ t) (ht : ae_measurable f (μ.restrict t)) :
+  ae_measurable f (μ.restrict s) :=
+ht.mono_measure (restrict_mono h le_rfl)
+
+lemma ae_mem_imp_eq_mk {s} (h : ae_measurable f (μ.restrict s)) :
+  ∀ᵐ x ∂μ, x ∈ s → f x = h.mk f x :=
+ae_imp_of_ae_restrict h.ae_eq_mk
+
+lemma ae_inf_principal_eq_mk {s} (h : ae_measurable f (μ.restrict s)) :
+  f =ᶠ[μ.ae ⊓ 𝓟 s] h.mk f :=
+le_ae_restrict h.ae_eq_mk
 
 lemma add_measure {f : α → β} (hμ : ae_measurable f μ) (hν : ae_measurable f ν) :
   ae_measurable f (μ + ν) :=
