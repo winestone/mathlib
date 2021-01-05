@@ -444,7 +444,7 @@ begin
   rw [ker_mk, range_subtype],
 end
 
-lemma prod_solvable (G' : Type*) [group G'] (h : is_solvable G) (h' : is_solvable G') :
+lemma solvable_prod {G' : Type*} [group G'] (h : is_solvable G) (h' : is_solvable G') :
   is_solvable (G × G') :=
 begin
   refine short_exact_sequence_solvable' (monoid_hom.inl G G') (monoid_hom.snd G G') _ h h',

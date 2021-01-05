@@ -133,7 +133,7 @@ lemma gal_prod_to_prod_gal_inj (p q : polynomial F) :
 
 lemma gal_prod_solvable (p q : polynomial F) (hp : is_solvable (Gal p)) (hq : is_solvable (Gal q)) :
   is_solvable (Gal (p * q)) :=
-solvable_of_solvable_injective (gal_prod_to_prod_gal_inj p q) (prod_solvable _ hp hq)
+solvable_of_solvable_injective (gal_prod_to_prod_gal_inj p q) (solvable_prod hp hq)
 
 variables (F)
 
@@ -216,8 +216,7 @@ begin
     rwa nat_degree_X_pow }
 end
 
-def P (α : SBR F E) : Prop :=
-is_solvable $ Gal $ minimal_polynomial (is_integral α)
+def P (α : SBR F E) : Prop := is_solvable $ Gal $ minimal_polynomial (is_integral α)
 
 lemma induction3 {α : SBR F E} {n : ℕ} (hn : n ≠ 0) (hα : P (α ^ n)) : P α :=
 begin
