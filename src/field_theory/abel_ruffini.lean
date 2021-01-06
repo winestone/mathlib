@@ -110,9 +110,9 @@ section abel_ruffini
 
 variables {F : Type*} [field F] {E : Type*} [field E] [algebra F E]
 
-def Gal (p : polynomial F) := p.splitting_field ≃ₐ[F] p.splitting_field
+def gal (p : polynomial F) := p.splitting_field ≃ₐ[F] p.splitting_field
 
-instance (p : polynomial F) : group (Gal p) := alg_equiv.aut
+instance (p : polynomial F) : group (gal p) := alg_equiv.aut
 
 instance (p q : polynomial F) : has_scalar p.splitting_field (p * q).splitting_field :=
 { smul := sorry,
@@ -132,7 +132,7 @@ instance (p q : polynomial F) : is_scalar_tower F p.splitting_field (p * q).spli
 { smul_assoc := sorry,
 }
 
-def swap {p q : polynomial F} (φ : Gal (p * q)) : Gal (q * p) :=
+def swap {p q : polynomial F} (φ : gal (p * q)) : gal (q * p) :=
 { to_fun := sorry,
   inv_fun := sorry,
   map_add' := sorry,
@@ -142,7 +142,7 @@ def swap {p q : polynomial F} (φ : Gal (p * q)) : Gal (q * p) :=
   left_inv := sorry,
 }
 
-def gal_prod_to_prod_gal (p q : polynomial F) : Gal (p * q) →* Gal p × Gal q :=
+def gal_prod_to_prod_gal (p q : polynomial F) : gal (p * q) →* gal p × gal q :=
 { to_fun := λ f, ⟨alg_equiv.restrict_is_splitting_field f p _, alg_equiv.restrict_is_splitting_field (swap f) q _⟩,
   map_one' := sorry,
   map_mul' := sorry,
@@ -151,8 +151,8 @@ def gal_prod_to_prod_gal (p q : polynomial F) : Gal (p * q) →* Gal p × Gal q 
 lemma gal_prod_to_prod_gal_inj (p q : polynomial F) :
   function.injective (gal_prod_to_prod_gal p q) := sorry
 
-lemma gal_prod_solvable (p q : polynomial F) (hp : is_solvable (Gal p)) (hq : is_solvable (Gal q)) :
-  is_solvable (Gal (p * q)) :=
+lemma gal_prod_solvable (p q : polynomial F) (hp : is_solvable (gal p)) (hq : is_solvable (gal q)) :
+  is_solvable (gal (p * q)) :=
 begin
   haveI := solvable_prod hp hq,
   exact solvable_of_solvable_injective (gal_prod_to_prod_gal_inj p q),
@@ -239,7 +239,7 @@ begin
     rwa nat_degree_X_pow }
 end
 
-def P (α : SBR F E) : Prop := is_solvable $ Gal $ minimal_polynomial (is_integral α)
+def P (α : SBR F E) : Prop := is_solvable $ gal $ minimal_polynomial (is_integral α)
 
 lemma induction3 {α : SBR F E} {n : ℕ} (hn : n ≠ 0) (hα : P (α ^ n)) : P α :=
 begin
@@ -284,6 +284,21 @@ begin
 end
 
 theorem thm (α : SBR F E) : P α :=
+begin
+  revert α,
+  apply SBR.induction,
+  { exact λ α, induction1 (algebra_map_mem _ _) induction0 },
+  { exact λ α β, induction2 (add_mem _ (subset_adjoin F _ (set.mem_insert α _))
+      (subset_adjoin F _ (set.mem_insert_of_mem α (set.mem_singleton β)))) },
+  { exact λ α, induction1 (neg_mem _ (mem_adjoin_simple_self F α)) },
+  { exact λ α β, induction2 (mul_mem _ (subset_adjoin F _ (set.mem_insert α _))
+      (subset_adjoin F _ (set.mem_insert_of_mem α (set.mem_singleton β)))) },
+  { exact λ α, induction1 (inv_mem _ (mem_adjoin_simple_self F α)) },
+  { exact λ α n, induction3 },
+end
+
+theorem solvable_gal_of_SBR (α : SBR F E) :
+  is_solvable (gal (minimal_polynomial (is_integral α))) :=
 begin
   revert α,
   apply SBR.induction,
