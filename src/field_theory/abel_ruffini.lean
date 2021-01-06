@@ -153,7 +153,10 @@ lemma gal_prod_to_prod_gal_inj (p q : polynomial F) :
 
 lemma gal_prod_solvable (p q : polynomial F) (hp : is_solvable (Gal p)) (hq : is_solvable (Gal q)) :
   is_solvable (Gal (p * q)) :=
-solvable_of_solvable_injective (gal_prod_to_prod_gal_inj p q) (solvable_prod hp hq)
+begin
+  haveI := solvable_prod hp hq,
+  exact solvable_of_solvable_injective (gal_prod_to_prod_gal_inj p q),
+end
 
 variables (F)
 
