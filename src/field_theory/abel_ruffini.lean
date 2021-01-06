@@ -2,6 +2,7 @@ import field_theory.galois
 import ring_theory.eisenstein_criterion
 import ring_theory.algebraic
 import field_theory.algebraic_closure
+import group_theory.solvable
 
 noncomputable theory
 open_locale classical
