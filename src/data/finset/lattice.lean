@@ -122,6 +122,10 @@ calc t.sup f = (s ∪ t).sup f : by rw [finset.union_eq_right_iff_subset.mpr hst
          ... = s.sup f ⊔ t.sup f : by rw finset.sup_union
          ... ≥ s.sup f : le_sup_left
 
+@[simp] lemma sup_image [decidable_eq γ] (s : finset β) (f : β → γ) (g : γ → α) :
+  (s.image f).sup g = s.sup (g ∘ f) :=
+eq_of_forall_ge_iff $ λ b, by simp [sup_le_iff]
+
 lemma sup_closed_of_sup_closed {s : set α} (t : finset α) (htne : t.nonempty) (h_subset : ↑t ⊆ s)
   (h : ∀⦃a b⦄, a ∈ s → b ∈ s → a ⊔ b ∈ s) : t.sup id ∈ s :=
 begin

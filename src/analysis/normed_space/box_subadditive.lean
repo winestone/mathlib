@@ -286,6 +286,35 @@ lemma box_additive_on_prod_edist [decidable_eq ι] [fintype ι] (s : set (ι →
 by simpa only [edist_nndist, ← ennreal.coe_finset_prod, box_additive_on.coe_ennreal]
   using box_additive_on_prod_nndist s
 
+lemma box_additive_on_sum_faces_fin {G n} [add_comm_group G] [preorder α]
+  (s : set (fin (n + 1) → α)) (f : fin (n + 1) → α → (fin n → α) → (fin n → α) → G)
+  (hf : ∀ i m, box_additive_on (f i m) ((fin.insert_nth i m) ⁻¹' s)) :
+  box_additive_on (λ (l r : fin (n + 1) → α),
+    ∑ i, (f i (r i) (l ∘ i.succ_above) (r ∘ i.succ_above) -
+      f i (l i) (l ∘ i.succ_above) (r ∘ i.succ_above))) s :=
+begin
+  intros l u hsub m hm i,
+  refine sum_add_distrib.symm.trans (sum_congr rfl $ λ j hj, _), clear hj,
+  rcases em (j = i) with rfl|hj,
+  { simp [(∘), update_noteq, fin.succ_above_ne] },
+  { have hle : l ≤ u := hm.1.trans hm.2,
+    suffices : ∀ x ∈ Icc (l j) (u j),
+      f j x (l ∘ j.succ_above) (update u i (m i) ∘ j.succ_above) +
+      f j x (update l i (m i) ∘ j.succ_above) (u ∘ j.succ_above) =
+      f j x (l ∘ j.succ_above) (u ∘ j.succ_above),
+    { simp only [update_noteq hj, ← this, set.left_mem_Icc, set.right_mem_Icc, hle j],
+      abel },
+    rintros x ⟨hxl, hxr⟩,
+    have : ∀ x, update x i (m i) ∘ j.succ_above =
+      update (x ∘ j.succ_above) (j.pred_above i $ ne.symm hj) (m i),
+    { intro x, convert update_comp _ fin.succ_above_right_injective _ _, simp },
+    simp only [this], clear this,
+    convert @hf j x (l ∘ j.succ_above) (u ∘ j.succ_above)
+      (λ y hy, hsub ⟨_, _⟩) (m ∘ j.succ_above) ⟨λ k, hm.1 _, λ k, hm.2 _⟩ _;
+      simp only [fin.succ_above_pred_above, fin.le_insert_nth_iff, fin.insert_nth_le_iff, *],
+    exacts [⟨trivial, hy.1⟩, ⟨trivial, hy.2⟩] }
+end
+
 end
 
 namespace box_subadditive_on
