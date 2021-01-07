@@ -1287,9 +1287,6 @@ src/order/zorn.lean : line 241 : ERR_LIN : Line has more than 100 characters
 src/order/zorn.lean : line 47 : ERR_LIN : Line has more than 100 characters
 src/ring_theory/algebra_tower.lean : line 103 : ERR_LIN : Line has more than 100 characters
 src/ring_theory/algebra_tower.lean : line 219 : ERR_LIN : Line has more than 100 characters
-src/ring_theory/dedekind_domain.lean : line 112 : ERR_LIN : Line has more than 100 characters
-src/ring_theory/dedekind_domain.lean : line 21 : ERR_LIN : Line has more than 100 characters
-src/ring_theory/dedekind_domain.lean : line 23 : ERR_LIN : Line has more than 100 characters
 src/ring_theory/dedekind_domain.lean : line 25 : ERR_LIN : Line has more than 100 characters
 src/ring_theory/derivation.lean : line 207 : ERR_LIN : Line has more than 100 characters
 src/ring_theory/free_comm_ring.lean : line 109 : ERR_LIN : Line has more than 100 characters
