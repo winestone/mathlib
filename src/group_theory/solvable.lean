@@ -228,14 +228,11 @@ lemma lift_commutator_eq_commutator_lift_lift {H : subgroup G} (K₁ K₂ : subg
   ⁅K₁, K₂⁆.lift = ⁅K₁.lift, K₂.lift⁆ :=
 map_commutator_eq_commutator_map _ _
 
-lemma commutator_le_commutator_map {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'} (h₁ : K₁ ≤ H₁.map f)
+lemma commutator_le_map_commutator {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'} (h₁ : K₁ ≤ H₁.map f)
   (h₂ : K₂ ≤ H₂.map f) : ⁅K₁, K₂⁆ ≤ ⁅H₁, H₂⁆.map f :=
-begin
-  rw map_commutator_eq_commutator_map,
-  exact general_commutator_mono h₁ h₂,
-end
+by { rw map_commutator_eq_commutator_map, exact general_commutator_mono h₁ h₂ }
 
-section nth_commutator_map
+section derived_series_map
 
 variables (f)
 
@@ -255,7 +252,7 @@ begin
   induction n with n ih,
   { rwa [derived_series_zero, derived_series_zero, top_le_iff, ← monoid_hom.range_eq_map,
     ← monoid_hom.range_top_iff_surjective.mpr], },
-  { simp only [*, derived_series_succ, commutator_le_commutator_map], }
+  { simp only [*, derived_series_succ, commutator_le_map_commutator], }
 end
 
 lemma derived_series_eq_map_derived_series (hf : function.surjective f) (n : ℕ) :
@@ -266,7 +263,11 @@ lemma nth_commutator_lift_le_nth_commutator (H : subgroup G) (n : ℕ) :
   (derived_series H n).lift ≤ derived_series G n :=
 map_derived_series_le_derived_series _ n
 
-end nth_commutator_map
+lemma map_derived_series_eq (hf : function.surjective f) (n : ℕ) :
+  (derived_series G n).map f = derived_series G' n :=
+le_antisymm (map_derived_series_le_derived_series f n) (derived_series_le_map_derived_series hf n)
+
+end derived_series_map
 
 section general_nth_commutator_map
 
@@ -295,7 +296,6 @@ begin
 end
 
 end general_nth_commutator_map
-
 end commutator_map
 
 section solvable
@@ -322,7 +322,8 @@ end
 lemma is_solvable_of_top_eq_bot (h : (⊤ : subgroup G) = ⊥) : is_solvable G :=
 ⟨⟨0, by simp *⟩⟩
 
-lemma is_solvable_of_subsingleton [subsingleton G] : is_solvable G :=
+@[priority 100]
+instance is_solvable_of_subsingleton [subsingleton G] : is_solvable G :=
 is_solvable_of_top_eq_bot G (by ext; simp at *)
 
 variables {G} {G' : Type*} [group G'] {f : G →* G'}
@@ -333,7 +334,7 @@ begin
   rw is_solvable_def at *,
   cases h with n hn,
   use n,
-  rw eq_bot_iff_map_eq_bot hf,
+  rw ← map_eq_bot_iff hf,
   rw eq_bot_iff at *,
   calc map f (derived_series G n) ≤ derived_series G' n : map_derived_series_le_derived_series f n
   ... ≤ ⊥ : hn,
@@ -348,7 +349,7 @@ begin
   rw is_solvable_def at *,
   cases h with n hn,
   use n,
-  calc derived_series G' n = (derived_series G n).map f : derived_series_eq_map_derived_series hf n
+  calc derived_series G' n = (derived_series G n).map f : eq.symm (map_derived_series_eq hf n)
     ... = (⊥ : subgroup G).map f : by rw hn
     ... = ⊥ : map_bot f,
 end
