@@ -326,13 +326,10 @@ protected theorem smul_add (r : R') (x y : M ⊗[R] N) :
   r • (x + y) = r • x + r • y :=
 add_monoid_hom.map_add _ _ _
 
-<<<<<<< HEAD
 theorem smul_tmul' (r : R') (m : M) (n : N) :
   r • (m ⊗ₜ[R] n) = (r • m) ⊗ₜ n :=
 rfl
 
-=======
->>>>>>> master
 -- Most of the time we want the instance below this one, which is easier for typeclass resolution
 -- to find.
 @[priority 900]

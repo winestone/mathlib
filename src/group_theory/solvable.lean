@@ -156,6 +156,59 @@ general_commutator_eq_commutator G
 
 end derived_series
 
+section general_nth_commutator
+
+variables {G} (H : subgroup G)
+
+def general_nth_commutator (n : ℕ) : subgroup G :=
+nat.rec_on n H (λ _ H, ⁅H, H⁆)
+
+lemma general_nth_commutator_succ (n : ℕ) : general_nth_commutator H (nat.succ n) =
+  ⁅general_nth_commutator H n, general_nth_commutator H n⁆ :=
+rfl
+
+lemma general_nth_commutator_zero : general_nth_commutator H 0 = H :=
+rfl
+
+lemma general_nth_commutator_one :
+  general_nth_commutator H 1 = ⁅H, H⁆ :=
+by rw [general_nth_commutator_succ, general_nth_commutator_zero]
+
+lemma additive_general_nth_commutator (n m : ℕ) :
+  general_nth_commutator H (n + m) = general_nth_commutator (general_nth_commutator H n) m :=
+begin
+  induction m with m ih,
+  { simp only [general_nth_commutator_zero, add_zero], },
+  { simp only [general_nth_commutator_succ, ih], },
+end
+
+lemma additive_general_nth_commutator' (n m : ℕ) :
+  general_nth_commutator H (n + m) = general_nth_commutator (general_nth_commutator H m) n :=
+begin
+  rw add_comm n m,
+  exact additive_general_nth_commutator H m n,
+end
+
+lemma general_nth_commutator_mono (K : subgroup G) (leq : H ≤ K) (n : ℕ) :
+  general_nth_commutator H n ≤ general_nth_commutator K n :=
+begin
+  induction n with n ih,
+  { simp only [general_nth_commutator_zero, leq] },
+  { rw [general_nth_commutator_succ, general_nth_commutator_succ],
+    exact general_commutator_mono ih ih },
+end
+
+lemma nth_commutator_eq_general_nth_commutator_top :
+  derived_series G = general_nth_commutator (⊤ : subgroup G) :=
+begin
+  funext n,
+  induction n with n ih,
+  { rw [derived_series_zero, general_nth_commutator_zero], },
+  { rw [derived_series_succ, general_nth_commutator_succ, ih], },
+end
+
+end general_nth_commutator
+
 section commutator_map
 
 variables {G} {G' : Type*} [group G'] {f : G →* G'}
@@ -170,6 +223,10 @@ begin
   { rintros x ⟨_, ⟨p, hp, rfl⟩, _, ⟨q, hq, rfl⟩, rfl⟩,
     refine ⟨p * q * p⁻¹ * q⁻¹, ⟨p, hp, q, hq, rfl⟩, by simp *⟩, },
 end
+
+lemma lift_commutator_eq_commutator_lift_lift {H : subgroup G} (K₁ K₂ : subgroup H) :
+  ⁅K₁, K₂⁆.lift = ⁅K₁.lift, K₂.lift⁆ :=
+map_commutator_eq_commutator_map _ _
 
 lemma commutator_le_map_commutator {H₁ H₂ : subgroup G} {K₁ K₂ : subgroup G'} (h₁ : K₁ ≤ H₁.map f)
   (h₂ : K₂ ≤ H₂.map f) : ⁅K₁, K₂⁆ ≤ ⁅H₁, H₂⁆.map f :=
@@ -198,11 +255,47 @@ begin
   { simp only [*, derived_series_succ, commutator_le_map_commutator], }
 end
 
+lemma derived_series_eq_map_derived_series (hf : function.surjective f) (n : ℕ) :
+  derived_series G' n = (derived_series G n).map f :=
+le_antisymm (derived_series_le_map_derived_series hf n) (map_derived_series_le_derived_series f n)
+
+lemma nth_commutator_lift_le_nth_commutator (H : subgroup G) (n : ℕ) :
+  (derived_series H n).lift ≤ derived_series G n :=
+map_derived_series_le_derived_series _ n
+
 lemma map_derived_series_eq (hf : function.surjective f) (n : ℕ) :
   (derived_series G n).map f = derived_series G' n :=
 le_antisymm (map_derived_series_le_derived_series f n) (derived_series_le_map_derived_series hf n)
 
 end derived_series_map
+
+section general_nth_commutator_map
+
+variables (f) (H : subgroup G)
+
+lemma map_nth_commutator_eq_nth_commutator_map (n : ℕ) :
+  (general_nth_commutator H n).map f = general_nth_commutator (H.map f) n :=
+begin
+  induction n with n ih,
+  { simp only [general_nth_commutator_zero], },
+  { rw [general_nth_commutator_succ,general_nth_commutator_succ,
+    map_commutator_eq_commutator_map, ih], },
+end
+
+lemma lift_nth_commutator_eq_nth_commutator_lift (K : subgroup H) (n : ℕ) :
+  (general_nth_commutator K n).lift = general_nth_commutator K.lift n :=
+map_nth_commutator_eq_nth_commutator_map _ _ _
+
+lemma nth_commutator_lift_eq_general_nth_commutator (n : ℕ) :
+  (derived_series H n).lift = general_nth_commutator H n:=
+begin
+  induction n with n ih,
+  { rw [derived_series_zero, general_nth_commutator_zero, lift_top], },
+  { rw [derived_series_succ, general_nth_commutator_succ,
+    lift_commutator_eq_commutator_lift_lift, ih], },
+end
+
+end general_nth_commutator_map
 end commutator_map
 
 section solvable
