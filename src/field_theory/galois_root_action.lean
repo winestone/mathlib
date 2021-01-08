@@ -7,16 +7,6 @@ open_locale classical
 
 open polynomial finite_dimensional
 
-def alg_hom.alg_equiv_range {A B C : Type*} [comm_semiring A] [semiring B] [semiring C]
-[algebra A B] [algebra A C] (f : B →ₐ[A] C) (hf : function.injective f) : B ≃ₐ[A] f.range :=
-alg_equiv.of_bijective (f.cod_restrict f.range (λ x, f.mem_range.mpr ⟨x, rfl⟩))
-⟨(f.injective_cod_restrict f.range (λ x, f.mem_range.mpr ⟨x, rfl⟩)).mpr hf,
-  λ x, Exists.cases_on (f.mem_range.mp (subtype.mem x)) (λ y hy, ⟨y, subtype.ext hy⟩)⟩
-
-def alg_hom.alg_equiv_range_field {A B C : Type*} [comm_semiring A] [field B] [field C]
-[algebra A B] [algebra A C] (f : B →ₐ[A] C) : B ≃ₐ[A] f.range :=
-f.alg_equiv_range f.to_ring_hom.injective
-
 section rational_field
 
 namespace rational_polynomial
@@ -121,8 +111,8 @@ alg_equiv.of_alg_hom (embedding_range_alg_hom p) (embedding_range_alg_hom p)
 (embedding_range_alg_hom_involution p) (embedding_range_alg_hom_involution p)
 
 def conjugation : gal p :=
-((embedding p).alg_equiv_range_field.trans (embedding_range_alg_equiv p)).trans
-  ((embedding p).alg_equiv_range_field.symm)
+((alg_hom.alg_equiv.of_injective_field (embedding p)).trans (embedding_range_alg_equiv p)).trans
+  (alg_hom.alg_equiv.of_injective_field (embedding p)).symm
 
 lemma conjugation_involution : (conjugation p) * (conjugation p) = 1 :=
 begin
@@ -190,7 +180,7 @@ instance gal_action : mul_action (gal p) (roots p) :=
 /- Used to show that gal has a transposition -/
 lemma conjugation_action {x : roots p} : ↑((conjugation p) • x) = complex.conj x :=
 begin
-  let ϕ := (embedding p).alg_equiv_range_field,
+  let ϕ := alg_hom.alg_equiv.of_injective_field (embedding p),
   change ↑(ϕ (ϕ.symm _)) = complex.conj x,
   rw alg_equiv.apply_symm_apply ϕ,
   change complex.conj (roots_aux_equiv_roots p ((roots_aux_equiv_roots p).symm x)) = complex.conj x,

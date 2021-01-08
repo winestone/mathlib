@@ -69,6 +69,27 @@ begin
   exact step4 y z,
 end
 
+lemma lem1 {α : Type*} [fintype α] [decidable_eq α] {n : ℕ} {σ : perm α} (hσ : is_cycle σ) :
+  order_of σ = σ.support.card :=
+begin
+  sorry,
+end
+
+lemma lem2 {G : Type*} [group G] [fintype G] [decidable_eq G] {n : ℕ} {g : G}
+  (h0 : nat.coprime n (order_of g)) : ∃ m : ℕ, (g ^ n) ^ m = g :=
+begin
+  use ((n.gcd_a (order_of g)) % (order_of g)).to_nat,
+  transitivity g ^ (↑n * (n.gcd_a (order_of g))),
+  { rw [←pow_mul, mul_comm, pow_mul, ←gpow_coe_nat, ←gpow_coe_nat, int.to_nat_of_nonneg,
+        ←gpow_eq_mod_order_of, ←gpow_mul, mul_comm],
+    exact int.mod_nonneg _ (int.coe_nat_ne_zero.mpr (ne_of_gt (order_of_pos g))) },
+  transitivity g ^ (↑n * (n.gcd_a (order_of g)) + (order_of g) * (n.gcd_b (order_of g))),
+  { rw [gpow_add, gpow_mul, gpow_mul, gpow_coe_nat, gpow_coe_nat,
+        pow_order_of_eq_one, one_gpow, mul_one] },
+  dsimp only [nat.coprime] at h0,
+  rw [←nat.gcd_eq_gcd_ab, h0, int.coe_nat_one, gpow_one],
+end
+
 lemma closure_cycle_coprime_swap {α : Type*} [fintype α] [linear_order α] {n : ℕ} {σ : perm α}
   (h0 : nat.coprime n (fintype.card α)) (h1 : is_cycle σ) (h2 : σ.support = ⊤) (x : α) :
 closure ({σ, swap x ((σ^n) x)} : set (perm α)) = ⊤ :=

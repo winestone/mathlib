@@ -128,6 +128,8 @@ instance (p q : polynomial F) : algebra p.splitting_field (p * q).splitting_fiel
   commutes' := sorry,
 }
 
+#print is_scalar_tower.of_ring_hom
+
 instance (p q : polynomial F) : is_scalar_tower F p.splitting_field (p * q).splitting_field :=
 { smul_assoc := sorry,
 }
