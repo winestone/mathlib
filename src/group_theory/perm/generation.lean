@@ -74,3 +74,16 @@ begin
   rw h6,
   exact step5 y z,
 end
+
+lemma closure_cycle_coprime_swap {α : Type*} [fintype α] [linear_order α] {n : ℕ} {σ : perm α}
+  (h0 : nat.coprime n (fintype.card α)) (h1 : is_cycle σ) (h2 : σ.support = ⊤) (x : α) :
+closure ({σ, swap x ((σ^n) x)} : set (perm α)) = ⊤ :=
+begin
+  have h1' : is_cycle (σ^n),
+  { sorry },
+  have h2' : (σ^n).support = ⊤,
+  { sorry },
+  rw [eq_top_iff, ←closure_cycle_adjacent_swap h1' h2' x, closure_le, set.insert_subset],
+  exact ⟨subgroup.pow_mem (closure _) (subset_closure (set.mem_insert σ _)) n,
+    set.singleton_subset_iff.mpr (subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)))⟩,
+end
