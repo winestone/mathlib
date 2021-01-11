@@ -6,7 +6,8 @@ Authors: Thomas Browning and Patrick Lutz
 
 import field_theory.intermediate_field
 import field_theory.splitting_field
-import field_theory.fixed
+import field_theory.separable
+import field_theory.normal--temporary!
 
 /-!
 # Adjoining Elements to Fields
@@ -561,6 +562,16 @@ begin
     simp_rw [mem_roots (map_ne_zero (minimal_polynomial.ne_zero H')), is_root, ←eval₂_eq_eval_map],
     exact map_root_of_splits (algebra_map L K) key (ne_of_gt (minimal_polynomial.degree_pos H')),
     exact is_scalar_tower.of_algebra_map_eq (λ x, rfl) },
+end
+
+/- Move to normal.lean -/
+theorem big_theorem {F E : Type*} [field F] [field E] [algebra F E] {p : polynomial F}
+  [is_splitting_field F E p] : normal F E :=
+begin
+  intro x,
+  haveI hFE : finite_dimensional F E := is_splitting_field.finite_dimensional E p,
+  have H : is_integral F x := is_integral_of_noetherian hFE x,
+  use H,
 end
 
 end main_theorem
