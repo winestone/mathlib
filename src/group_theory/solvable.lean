@@ -267,6 +267,42 @@ lemma map_derived_series_eq (hf : function.surjective f) (n : ℕ) :
   (derived_series G n).map f = derived_series G' n :=
 le_antisymm (map_derived_series_le_derived_series f n) (derived_series_le_map_derived_series hf n)
 
+lemma foo (n m : ℕ) : derived_series G (n + m) = lift (derived_series (derived_series G n) m) :=
+begin
+  induction m with m ih,
+  { simp only [derived_series_zero, add_zero, lift_top], },
+  { rw [nat.add_succ, derived_series_succ, derived_series_succ, ih,
+    lift_commutator_eq_commutator_lift_lift], }
+end
+
+lemma bar {H K : subgroup G} (h : H ≤ K) (n : ℕ) :
+  (derived_series H n).lift ≤ (derived_series K n).lift :=
+begin
+  induction n with n ih,
+  { simp only [derived_series_zero, lift_top, h], },
+  { simp only [derived_series_succ, lift_commutator_eq_commutator_lift_lift,
+    general_commutator_mono, ih], }
+end
+
+lemma baz {G' : Type*} [group G'] {H : subgroup G} {f : G' →* G} (h : H ≤ f.range) (n : ℕ) :
+  (derived_series H n).lift ≤ (derived_series G' n).map f :=
+begin
+  induction n with n ih,
+  { rw monoid_hom.range_eq_map at h,
+    rwa [derived_series_zero, derived_series_zero, lift_top], },
+  { rw [derived_series_succ, derived_series_succ, lift_commutator_eq_commutator_lift_lift],
+    exact commutator_le_map_commutator ih ih, },
+end
+
+lemma baz' {G' G'' : Type*} [group G'] [group G''] {f : G' →* G} {g : G'' →* G} (h : f.range ≤ g.range)
+  (n : ℕ) : (derived_series G' n).map f ≤ (derived_series G'' n).map g :=
+begin
+  induction n with n ih,
+  { rw [monoid_hom.range_eq_map, monoid_hom.range_eq_map] at h,
+    rwa [derived_series_zero, derived_series_zero], },
+  { simp only [derived_series_succ, map_commutator_eq_commutator_map, general_commutator_mono, ih], },
+end
+
 end derived_series_map
 
 section general_nth_commutator_map
@@ -401,6 +437,25 @@ calc general_nth_commutator K n
       ≤ general_nth_commutator (map f H) n : general_nth_commutator_mono _ _ h n
   ... = (general_nth_commutator H n).map f : by rw ← map_nth_commutator_eq_nth_commutator_map
 
+lemma range_subtype (H : subgroup G) : H.subtype.range = H :=
+by { ext, exact ⟨λ ⟨⟨x, hx⟩, rfl⟩, hx, λ hx, ⟨⟨x, hx⟩, rfl⟩⟩ }
+
+lemma short_exact_sequence_solvable_new {G' G'' : Type*} [group G'] [group G''] {f : G' →* G}
+  {g : G →* G''} (hfg : g.ker ≤ f.range) (hG' : is_solvable G') (hG'' : is_solvable G'') :
+  is_solvable G :=
+begin
+  rw is_solvable_def at hG' ⊢,
+  cases hG' with n hn,
+  obtain ⟨m, hm⟩ := nth_commutator_le_ker g hG'',
+  use m + n,
+  rw [foo, eq_bot_iff],
+  replace hm := calc derived_series G m ≤ g.ker : hm
+  ... ≤ f.range : hfg,
+  calc (derived_series (derived_series G m) n).lift ≤ map f (derived_series G' n) : baz hm n
+  ... = map f ⊥ : by rw hn
+  ... = ⊥ : map_bot f,
+end
+
 lemma short_exact_sequence_solvable' {G' G'' : Type*} [group G'] [group G''] (f : G' →* G)
   (g : G →* G'') (hfg : f.range = g.ker) (hG' : is_solvable G') (hG'' : is_solvable G'') :
   is_solvable G :=
@@ -408,8 +463,8 @@ begin
   rw is_solvable_def at hG' ⊢,
   cases hG' with n hn,
   obtain ⟨m, hm⟩ := nth_commutator_le_ker g hG'',
-  use n + m,
-  rw [eq_bot_iff, nth_commutator_eq_general_nth_commutator_top, additive_general_nth_commutator',
+  use m + n,
+  rw [eq_bot_iff, nth_commutator_eq_general_nth_commutator_top, additive_general_nth_commutator,
     ← nth_commutator_eq_general_nth_commutator_top],
   rw [← hfg, monoid_hom.range_eq_map] at hm,
   calc general_nth_commutator (derived_series G m) n
@@ -418,9 +473,6 @@ begin
   ... = (⊥ : subgroup G').map f : by rw hn
   ... = (⊥ : subgroup G) : map_bot f,
 end
-
-lemma range_subtype (H : subgroup G) : H.subtype.range = H :=
-by { ext, exact ⟨λ ⟨⟨x, hx⟩, rfl⟩, hx, λ hx, ⟨⟨x, hx⟩, rfl⟩⟩ }
 
 lemma short_exact_sequence_solvable'' (H : subgroup G) [H.normal] (h : is_solvable H)
   (h' : is_solvable (quotient_group.quotient H)) : is_solvable G :=
