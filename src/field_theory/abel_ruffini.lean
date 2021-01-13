@@ -260,10 +260,28 @@ begin
 end
 
 lemma gal_prod_solvable (p q : polynomial F) (hp : is_solvable (gal p)) (hq : is_solvable (gal q))
-  [fact (p ≠ 0)] [fact (q ≠ 0)] : is_solvable (gal (p * q)) :=
+  (hp' : fact (p ≠ 0)) (hq' : fact (q ≠ 0)) : is_solvable (gal (p * q)) :=
 begin
   haveI := solvable_prod hp hq,
   exact solvable_of_solvable_injective (gal_prod_to_prod_gal_inj p q),
+end
+
+
+instance alg1 (p q : polynomial F) [hpq : fact (splits (algebra_map F q.splitting_field) p)] :
+  algebra p.splitting_field q.splitting_field :=
+(splitting_field.lift p hpq).to_ring_hom.to_algebra
+
+instance tower1 (p q : polynomial F) [hpq : fact (splits (algebra_map F q.splitting_field) p)] :
+  is_scalar_tower F p.splitting_field q.splitting_field :=
+is_scalar_tower.of_ring_hom (splitting_field.lift p (hpq))
+
+lemma lemma2 (p q : polynomial F) (hpq : fact (splits (algebra_map F q.splitting_field) p))
+  (hq : is_solvable (gal q)) : is_solvable (gal p) :=
+begin
+  haveI : is_solvable (q.splitting_field ≃ₐ[F] q.splitting_field) := hq,
+  have := @alg_equiv.restrict_is_splitting_field_hom_surjective F q.splitting_field _ _ _ p p.splitting_field _ _ _ _ _ (sorry),
+  simp only [monoid_hom.to_fun_eq_coe] at this,
+  exact solvable_of_surjective this,
 end
 
 variables (F)
@@ -347,7 +365,7 @@ begin
     rwa nat_degree_X_pow }
 end
 
-def P (α : SBR F E) : Prop := is_solvable $ gal $ minimal_polynomial (is_integral α)
+def P (α : SBR F E) : Prop := is_solvable (gal (minimal_polynomial (is_integral α)))
 
 lemma induction3 {α : SBR F E} {n : ℕ} (hn : n ≠ 0) (hα : P (α ^ n)) : P α :=
 begin
@@ -359,6 +377,9 @@ begin
   let p := (minimal_polynomial (is_integral α)),
   let q := (minimal_polynomial (is_integral β)),
   let r := (minimal_polynomial (is_integral γ)),
+  have hr : splits (algebra_map F (p * q).splitting_field) r := sorry,
+  have hpq := gal_prod_solvable p q hα hβ (minimal_polynomial.ne_zero _) (minimal_polynomial.ne_zero _),
+  exact lemma2 r (p * q) hr hpq,
   -- (p * q).splitting_field.aut embeds into p.splitting_field.aut × q.splitting_field.aut ✓
   -- (p * q).splitting_field.aut surjects onto r.splitting_field.aut
   -- Define F(α, β) ↪ (p * q).splitting_field
@@ -366,7 +387,6 @@ begin
   -- By Galois, r splits
   -- So we get an embedding r.splitting_field ↪ (p * q).splitting_field
   -- So we can use a general theorem of galois theory to say that gal (p * q) surjects onto gal r
-  sorry,
 end
 
 lemma induction1 {α β : SBR F E} (hβ : β ∈ F⟮α⟯) (hα : P α) : P β :=
