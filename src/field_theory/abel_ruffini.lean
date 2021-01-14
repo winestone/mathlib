@@ -91,18 +91,61 @@ lemma alg_equiv.restrict_is_splitting_field_comp [hp : is_splitting_field F E p]
 alg_equiv.ext (λ _, (algebra_map E K).injective (by
 { simp only [alg_equiv.trans_apply, alg_equiv.restrict_is_splitting_field_commutes] }))
 
-def alg_equiv.restict_is_splitting_field_hom [hp : is_splitting_field F E p] :
+def alg_equiv.restrict_is_splitting_field_hom [hp : is_splitting_field F E p] :
 (K ≃ₐ[F] K) →* (E ≃ₐ[F] E) :=
 monoid_hom.mk' (λ χ, χ.restrict_is_splitting_field p E)
   (λ ω χ, (χ.restrict_is_splitting_field_comp ω p E).symm)
 
 lemma alg_equiv.restrict_is_splitting_field_hom_surjective [hp : is_splitting_field F E p]
   [finite_dimensional E K] : function.surjective
-  ((alg_equiv.restict_is_splitting_field_hom p E) : (K ≃ₐ[F] K) →* (E ≃ₐ[F] E)).to_fun :=
+  ((alg_equiv.restrict_is_splitting_field_hom p E) : (K ≃ₐ[F] K) →* (E ≃ₐ[F] E)).to_fun :=
 begin
   sorry,
 end
 
+lemma polynomial.comp_map {A B C : Type*} [semiring A] [semiring B] [semiring C] {f : A →+* B} {g : B →+* C}
+  (p : polynomial A) : map (g.comp f) p = map g (map f p) :=
+begin
+  rw polynomial.map,
+  rw polynomial.map,
+  rw polynomial.eval₂_map,
+  refl,
+end
+
+lemma mem_range_of_mem_roots [hp : is_splitting_field F E p] (x : K)
+  (hx : x ∈ (map (algebra_map F K) p).roots) : x ∈ (algebra_map E K).range :=
+begin
+  rw [is_scalar_tower.algebra_map_eq F E K, polynomial.comp_map,
+    roots_map _ (is_splitting_field.splits E (map (algebra_map F E) p)), multiset.mem_map] at hx,
+  rcases hx with ⟨x, -, rfl⟩,
+  exact (algebra_map E K).mem_range_self x,
+end
+
+lemma alg_hom.restrict_is_splitting_field_roots [hp : is_splitting_field F E p]
+  (h : ϕ.restrict_is_splitting_field p E = ψ.restrict_is_splitting_field p E) (x : K)
+  (hx : x ∈ (map (algebra_map F K) p).roots) :
+  ϕ x = ψ x :=
+begin
+  obtain ⟨x, -, rfl⟩ := mem_range_of_mem_roots p E x hx,
+  replace h : ϕ.restrict_is_splitting_field p E x = ψ.restrict_is_splitting_field p E x :=
+    congr_fun (congr_arg coe_fn h) x,
+  have : algebra_map E K (ϕ.restrict_is_splitting_field p E x) =
+    algebra_map E K (ψ.restrict_is_splitting_field p E x) := congr_arg ⇑(algebra_map E K) h,
+  simpa only [alg_hom.restrict_is_splitting_field_commutes],
+end
+
+lemma alg_equiv.restrict_is_splitting_field_roots [hp : is_splitting_field F E p]
+  (h : χ.restrict_is_splitting_field p E = ω.restrict_is_splitting_field p E) (x : K)
+  (hx : x ∈ (map (algebra_map F K) p).roots) :
+  χ x = ω x :=
+begin
+  obtain ⟨x, -, rfl⟩ := mem_range_of_mem_roots p E x hx,
+  replace h : χ.restrict_is_splitting_field p E x = ω.restrict_is_splitting_field p E x :=
+    congr_fun (congr_arg coe_fn h) x,
+  have : algebra_map E K (χ.restrict_is_splitting_field p E x) =
+    algebra_map E K (ω.restrict_is_splitting_field p E x) := congr_arg ⇑(algebra_map E K) h,
+  simpa only [alg_equiv.restrict_is_splitting_field_commutes],
+end
 
 end alg_equiv_restrict
 
@@ -114,50 +157,131 @@ def gal (p : polynomial F) := p.splitting_field ≃ₐ[F] p.splitting_field
 
 instance (p : polynomial F) : group (gal p) := alg_equiv.aut
 
-instance (p q : polynomial F) : has_scalar p.splitting_field (p * q).splitting_field :=
-{ smul := sorry,
-}
+lemma splits_lemma (p q : polynomial F) (hq : q ≠ 0) (hpq : p ∣ q) :
+  splits (algebra_map F q.splitting_field) p :=
+begin
+  rcases hpq with ⟨r, rfl⟩,
+  have hr : r ≠ 0 := right_ne_zero_of_mul hq,
+  have hp : p ≠ 0 := left_ne_zero_of_mul hq,
+  have key := splitting_field.splits (p * r),
+  rw splits_mul_iff _ hp hr at key,
+  exact key.left,
+end
 
-instance (p q : polynomial F) : algebra p.splitting_field (p * q).splitting_field :=
-{ to_fun := sorry,
-  map_zero' := sorry,
-  map_one' := sorry,
-  map_add' := sorry,
-  map_mul' := sorry,
-  smul_def' := sorry,
-  commutes' := sorry,
-}
+instance div_splitting_field_algebra (p q : polynomial F) [hq : fact (q ≠ 0)] [hpq : fact (p ∣ q)] :
+  algebra p.splitting_field q.splitting_field :=
+(splitting_field.lift p (splits_lemma p q hq hpq)).to_ring_hom.to_algebra
 
-#print is_scalar_tower.of_ring_hom
+instance div_splitting_field_tower (p q : polynomial F) [hq : fact (q ≠ 0)] [hpq : fact (p ∣ q)] :
+  is_scalar_tower F p.splitting_field q.splitting_field :=
+is_scalar_tower.of_ring_hom (splitting_field.lift p (splits_lemma p q hq hpq))
 
-instance (p q : polynomial F) : is_scalar_tower F p.splitting_field (p * q).splitting_field :=
-{ smul_assoc := sorry,
-}
+instance prod_splitting_field_algebra (p q : polynomial F) [hp : fact (p ≠ 0)] [hq : fact (q ≠ 0)] :
+  algebra p.splitting_field (p * q).splitting_field :=
+@div_splitting_field_algebra F _ p (p * q) (mul_ne_zero hp hq) (dvd_mul_right p q)
 
-def swap {p q : polynomial F} (φ : gal (p * q)) : gal (q * p) :=
-{ to_fun := sorry,
-  inv_fun := sorry,
-  map_add' := sorry,
-  map_mul' := sorry,
-  commutes' := sorry,
-  right_inv := sorry,
-  left_inv := sorry,
-}
+instance prod_splitting_field_tower (p q : polynomial F) [hp : fact (p ≠ 0)] [hq : fact (q ≠ 0)] :
+  is_scalar_tower F p.splitting_field (p * q).splitting_field :=
+@div_splitting_field_tower F _ p (p * q) (mul_ne_zero hp hq) (dvd_mul_right p q)
 
-def gal_prod_to_prod_gal (p q : polynomial F) : gal (p * q) →* gal p × gal q :=
-{ to_fun := λ f, ⟨alg_equiv.restrict_is_splitting_field f p _, alg_equiv.restrict_is_splitting_field (swap f) q _⟩,
-  map_one' := sorry,
-  map_mul' := sorry,
-}
+instance prod_splitting_field_algebra' (p q : polynomial F) [hp : fact (p ≠ 0)] [hq : fact (q ≠ 0)] :
+  algebra q.splitting_field (p * q).splitting_field :=
+@div_splitting_field_algebra F _ q (p * q) (mul_ne_zero hp hq) (dvd_mul_left q p)
 
-lemma gal_prod_to_prod_gal_inj (p q : polynomial F) :
-  function.injective (gal_prod_to_prod_gal p q) := sorry
+instance prod_splitting_field_tower' (p q : polynomial F) [hp : fact (p ≠ 0)] [hq : fact (q ≠ 0)] :
+  is_scalar_tower F q.splitting_field (p * q).splitting_field :=
+@div_splitting_field_tower F _ q (p * q) (mul_ne_zero hp hq) (dvd_mul_left q p)
 
-lemma gal_prod_solvable (p q : polynomial F) (hp : is_solvable (gal p)) (hq : is_solvable (gal q)) :
-  is_solvable (gal (p * q)) :=
+def gal_hom_of_divides (p q : polynomial F) (hq : fact (q ≠ 0)) (hpq : fact (p ∣ q)) :
+  gal q →* gal p := alg_equiv.restrict_is_splitting_field_hom p _
+
+def gal_prod_to_gal (p q : polynomial F) (hp : p ≠ 0) (hq : q ≠ 0) :
+  gal (p * q) →* gal p := gal_hom_of_divides p (p * q) (mul_ne_zero hp hq) (dvd_mul_right p q)
+
+def gal_prod_to_gal' (p q : polynomial F) (hp : p ≠ 0) (hq : q ≠ 0) :
+  gal (p * q) →* gal q := gal_hom_of_divides q (p * q) (mul_ne_zero hp hq) (dvd_mul_left q p)
+
+def gal_prod_to_prod_gal (p q : polynomial F) (hp : p ≠ 0) (hq : q ≠ 0) :
+  gal (p * q) →* gal p × gal q :=
+monoid_hom.prod (gal_prod_to_gal p q hp hq) (gal_prod_to_gal' p q hp hq)
+
+variables (R : Type*) {A B : Type*} [comm_semiring R] [semiring A] [semiring B] [algebra R A] [algebra R B]
+  (s : set A)
+
+lemma alg_hom.ext_iff_of_adjoin_eq_top (f g : A →ₐ[R] B) (h : algebra.adjoin R s = ⊤) :
+  f = g ↔ ∀ x ∈ s, f x = g x :=
+begin
+  split,
+  { rintros hfg x -,
+    rw hfg, },
+  { intro hfg,
+    have key : f.equalizer g = ⊤,
+    { rw [← top_le_iff, ← h],
+      apply algebra.adjoin_le,
+      exact hfg, },
+    rw algebra.eq_top_iff at key,
+    ext x,
+    exact key x, }
+end
+
+lemma alg_equiv.eq_iff_alg_hom_eq (f g : A ≃ₐ[R] B) : f = g ↔ f.to_alg_hom = g.to_alg_hom :=
+⟨λ h, by rw h, λ h, alg_equiv.ext $ λ x, alg_hom.ext_iff.mp h x⟩
+
+lemma alg_equiv.ext_iff_of_adjoin_eq_top (f g : A ≃ₐ[R] B) (h : algebra.adjoin R s = ⊤) :
+  f = g ↔ ∀ x ∈ s, f x = g x :=
+begin
+  rw alg_equiv.eq_iff_alg_hom_eq,
+  exact alg_hom.ext_iff_of_adjoin_eq_top R s _ _ h,
+end
+
+lemma alg_equiv.eq_one_iff_of_adjoin_eq_top (f : A ≃ₐ[R] A) (h : algebra.adjoin R s = ⊤) :
+  f = 1 ↔ ∀ x ∈ s, f x = x :=
+alg_equiv.ext_iff_of_adjoin_eq_top R s f 1 h
+
+lemma lemma1 (p : polynomial F) [h : is_splitting_field F E p] (f g : E ≃ₐ[F] E) :
+  f = g ↔ ∀ x ∈ (p.map (algebra_map F E)).roots.to_finset, f x = g x :=
+alg_equiv.ext_iff_of_adjoin_eq_top F _ f g h.adjoin_roots
+
+lemma gal_prod_to_prod_gal_inj (p q : polynomial F) [hp : fact (p ≠ 0)] [hq : fact (q ≠ 0)] :
+  function.injective (gal_prod_to_prod_gal p q hp hq) :=
+begin
+  intros f g hfg,
+  simp only [gal_prod_to_prod_gal, gal_prod_to_gal, gal_prod_to_gal', gal_hom_of_divides,
+    monoid_hom.prod_apply, prod.mk.inj_iff] at hfg,
+  cases hfg with h₁ h₂,
+  rw lemma1 (p * q) f g,
+  intros x hx,
+  rw [multiset.mem_to_finset, map_mul, polynomial.roots_mul, multiset.mem_add] at hx,
+  { cases hx,
+    refine alg_equiv.restrict_is_splitting_field_roots f g p _ h₁ x hx,
+    refine alg_equiv.restrict_is_splitting_field_roots f g q _ h₂ x hx, },
+  { simp only [map_eq_zero, ne.def, mul_eq_zero],
+    tauto, },
+end
+
+lemma gal_prod_solvable (p q : polynomial F) (hp : is_solvable (gal p)) (hq : is_solvable (gal q))
+  (hp' : fact (p ≠ 0)) (hq' : fact (q ≠ 0)) : is_solvable (gal (p * q)) :=
 begin
   haveI := solvable_prod hp hq,
   exact solvable_of_solvable_injective (gal_prod_to_prod_gal_inj p q),
+end
+
+
+instance alg1 (p q : polynomial F) [hpq : fact (splits (algebra_map F q.splitting_field) p)] :
+  algebra p.splitting_field q.splitting_field :=
+(splitting_field.lift p hpq).to_ring_hom.to_algebra
+
+instance tower1 (p q : polynomial F) [hpq : fact (splits (algebra_map F q.splitting_field) p)] :
+  is_scalar_tower F p.splitting_field q.splitting_field :=
+is_scalar_tower.of_ring_hom (splitting_field.lift p (hpq))
+
+lemma lemma2 (p q : polynomial F) (hpq : fact (splits (algebra_map F q.splitting_field) p))
+  (hq : is_solvable (gal q)) : is_solvable (gal p) :=
+begin
+  haveI : is_solvable (q.splitting_field ≃ₐ[F] q.splitting_field) := hq,
+  have := @alg_equiv.restrict_is_splitting_field_hom_surjective F q.splitting_field _ _ _ p p.splitting_field _ _ _ _ _ (sorry),
+  simp only [monoid_hom.to_fun_eq_coe] at this,
+  exact solvable_of_surjective this,
 end
 
 variables (F)
@@ -241,7 +365,7 @@ begin
     rwa nat_degree_X_pow }
 end
 
-def P (α : SBR F E) : Prop := is_solvable $ gal $ minimal_polynomial (is_integral α)
+def P (α : SBR F E) : Prop := is_solvable (gal (minimal_polynomial (is_integral α)))
 
 lemma induction3 {α : SBR F E} {n : ℕ} (hn : n ≠ 0) (hα : P (α ^ n)) : P α :=
 begin
@@ -253,14 +377,25 @@ begin
   let p := (minimal_polynomial (is_integral α)),
   let q := (minimal_polynomial (is_integral β)),
   let r := (minimal_polynomial (is_integral γ)),
-  -- (p * q).splitting_field.aut embeds into p.splitting_field.aut × q.splitting_field.aut
+  haveI h₁ : normal F (p * q).splitting_field := sorry,
+  have h₂ : ∃ x : (p * q).splitting_field, aeval x r = 0 := sorry,
+  cases h₂ with x hx,
+  have h₃ := normal.is_integral F _ x,
+  have h₄ : irreducible r := minimal_polynomial.irreducible (is_integral γ),
+  have h₅ := minimal_polynomial.monic (is_integral γ),
+  have h₆ : r = minimal_polynomial h₃ := minimal_polynomial.unique' h₃ h₄ hx h₅,
+  have hr : splits (algebra_map F (p * q).splitting_field) r,
+  { rw h₆,
+    exact normal.splits F (p * q).splitting_field x },
+  have hpq := gal_prod_solvable p q hα hβ (minimal_polynomial.ne_zero _) (minimal_polynomial.ne_zero _),
+  exact lemma2 r (p * q) hr hpq,
+  -- (p * q).splitting_field.aut embeds into p.splitting_field.aut × q.splitting_field.aut ✓
   -- (p * q).splitting_field.aut surjects onto r.splitting_field.aut
   -- Define F(α, β) ↪ (p * q).splitting_field
   -- F⟮α, β⟯ ↪ (p * q).splitting_field takes γ to a root of r
   -- By Galois, r splits
   -- So we get an embedding r.splitting_field ↪ (p * q).splitting_field
-  -- So we can use a general theorem of galois theory to say that Gal (p * q) surjects onto Gal r
-  sorry,
+  -- So we can use a general theorem of galois theory to say that gal (p * q) surjects onto gal r
 end
 
 lemma induction1 {α β : SBR F E} (hβ : β ∈ F⟮α⟯) (hα : P α) : P β :=
