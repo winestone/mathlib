@@ -6,7 +6,8 @@ Authors: Kenny Lau
 
 import field_theory.minimal_polynomial
 import field_theory.splitting_field
-import linear_algebra.finite_dimensional
+import field_theory.tower
+import ring_theory.power_basis
 
 /-!
 # Normal field extensions
@@ -91,5 +92,40 @@ end
 
 lemma alg_equiv.transfer_normal (f : E ≃ₐ[F] E') : normal F E ↔ normal F E' :=
 ⟨λ h, by exactI normal.of_alg_equiv f, λ h, by exactI normal.of_alg_equiv f.symm⟩
+
+/-https://leanprover.zulipchat.com/#narrow/stream/116395-maths/topic/Slow.20instance/near/222791565-/
+local attribute [irreducible] ideal.quotient.comm_ring
+/- Move to normal.lean -/
+theorem big_theorem {F E : Type*} [field F] [field E] [algebra F E] {p : polynomial F}
+  [is_splitting_field F E p] : normal F E :=
+begin
+  intro x,
+  haveI hFE : finite_dimensional F E := is_splitting_field.finite_dimensional E p,
+  have H : is_integral F x := is_integral_of_noetherian hFE x,
+  refine ⟨H, or.inr _⟩,
+  rintros q q_irred ⟨r, hr⟩,
+  let C := adjoin_root (minimal_polynomial H),
+  let D := adjoin_root q,
+  letI : algebra F D := ring_hom.to_algebra ((algebra_map E D).comp (algebra_map F E)),
+  haveI : is_scalar_tower F E D := is_scalar_tower.of_algebra_map_eq (λ _, rfl),
+  suffices : nonempty (D →ₐ[F] E),
+  { cases this with ϕ,
+    have key1 := finite_dimensional.findim_mul_findim F E D,
+    have key2 : finite_dimensional.findim E D = q.nat_degree :=
+      power_basis.findim (adjoin_root.power_basis q_irred.ne_zero),
+    sorry },
+  letI : algebra C D := ring_hom.to_algebra (adjoin_root.lift
+    (algebra_map F D) (adjoin_root.root q) $ by rw [is_scalar_tower.algebra_map_eq F E D,
+      ←eval₂_map, hr, adjoin_root.algebra_map_eq, eval₂_mul, adjoin_root.eval₂_root, zero_mul]),
+  letI : algebra C E := ring_hom.to_algebra
+    (adjoin_root.lift (algebra_map F E) x (minimal_polynomial.aeval H)),
+ -- haveI : is_scalar_tower F E D := sorry,
+  --letI := ring_hom.to_algebra ((algebra_map E D).comp (algebra_map F E)),
+  /-let S : finset D := (↑(p.map (algebra_map F E)).roots.to_finset : set E).map (algebra_map E D),
+  have key := main_theorem,
+  suffices : nonempty (D →ₐ[C] E),
+  { sorry },-/
+  sorry,
+end
 
 end normal_tower

@@ -564,27 +564,6 @@ begin
     exact is_scalar_tower.of_algebra_map_eq (λ x, rfl) },
 end
 
-/- Move to normal.lean -/
-theorem big_theorem {F E : Type*} [field F] [field E] [algebra F E] {p : polynomial F}
-  [is_splitting_field F E p] : normal F E :=
-begin
-  intro x,
-  haveI hFE : finite_dimensional F E := is_splitting_field.finite_dimensional E p,
-  have H : is_integral F x := is_integral_of_noetherian hFE x,
-  refine ⟨H, or.inr _⟩,
-  rintros q q_irred ⟨r, hr⟩,
-  let C := adjoin_root (minimal_polynomial H),
-  let D := adjoin_root q,
-  letI : algebra C D := ring_hom.to_algebra (adjoin_root.lift
-    ((algebra_map E D).comp (algebra_map F E)) (adjoin_root.root q) $ by
-    rw [←eval₂_map, hr, adjoin_root.algebra_map_eq, eval₂_mul, adjoin_root.eval₂_root, zero_mul]),
-  letI : algebra C E := ring_hom.to_algebra
-    (adjoin_root.lift (algebra_map F E) x (minimal_polynomial.aeval H)),
-  suffices : nonempty (D →ₐ[C] E),
-  { sorry },
-  sorry,
-end
-
 end main_theorem
 
 end intermediate_field
