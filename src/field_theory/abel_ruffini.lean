@@ -457,7 +457,7 @@ begin
 end
 
 theorem solvable_gal_of_SBR (α : SBR F E) :
-  is_solvable (gal (minimal_polynomial (is_integral α))) :=
+  is_solvable (gal (minimal_polynomial (SBR_is_integral α))) :=
 begin
   revert α,
   apply SBR.induction,
