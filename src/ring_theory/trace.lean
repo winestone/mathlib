@@ -1074,7 +1074,6 @@ calc algebra_map K F (trace_form K L (pb.gen ^ i) (pb.gen ^ j))
 ... = ((pb.minpoly_gen.map (algebra_map K F)).roots.map (λ x, x ^ i * x ^ j)).sum :
   pb.sum_embeddings_gen (polynomial.splits_of_is_alg_closed F _) (λ x, x ^ i * x ^ j)
 
-
 lemma conjugate_matrix_mul_conjugate_matrix [is_separable K L] :
   (pb.conjugate_matrix (algebraic_closure.splits _)) ⬝
     (pb.conjugate_matrix (algebraic_closure.splits _))ᵀ =
@@ -1082,7 +1081,10 @@ lemma conjugate_matrix_mul_conjugate_matrix [is_separable K L] :
       (algebra_map K (algebraic_closure K))) :=
 begin
   ext i k,
-  simp only [matrix.mul_apply, map_apply, trace_form_to_matrix_power_basis, transpose_apply],
+  simp only [matrix.mul_apply, map_apply, trace_form_to_matrix_power_basis, transpose_apply,
+             power_basis.conjugate_matrix],
+
+
   haveI := pb.finite_dimensional,
   rw trace_eq_sum_embeddings K (is_integral_pow (i + k) pb.is_integral_gen),
   { unfold power_basis.conjugate_matrix,

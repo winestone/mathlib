@@ -20,8 +20,6 @@ variables (K : Type*) [field K] [is_number_field K]
 
  lemma finite_dimensional_of_number_field : finite_dimensional ℚ K := is_number_field.fd
 
- instance algebra_of_number_field : algebra ℚ K := sorry
-
  lemma is_algebraic_of_number_field : algebra.is_algebraic ℚ K := sorry
 
 /- instance infinite_of_number_field : infinite K := begin
@@ -86,9 +84,7 @@ begin
   {
     apply is_scalar_tower.of_algebra_map_eq, simp, },
   { show finite_dimensional ℚ K,
-    --unfold finite_dimensional,
-    apply finite_dimensional_of_number_field K,
-    sorry, },
+    exact finite_dimensional_of_number_field K },
   { show is_separable ℚ K,
     refine @is_separable_of_char_zero ℚ K _ _ _ _ (is_algebraic_of_number_field K), },
   apply_instance,
