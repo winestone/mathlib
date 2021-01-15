@@ -99,12 +99,14 @@ lemma nat_lemma {a b c : ℕ} (h1 : a * b = c) (h2 : c ≤ a) (h3 : 0 < c) : b =
 local attribute [irreducible] ideal.quotient.comm_ring
 /- Move to normal.lean -/
 theorem big_theorem {F E : Type*} [field F] [field E] [algebra F E] {p : polynomial F}
-  [is_splitting_field F E p] : normal F E :=
+  [hFEp : is_splitting_field F E p] : normal F E :=
 begin
+  by_cases hp : p = 0,
+  { sorry },
   intro x,
   haveI hFE : finite_dimensional F E := is_splitting_field.finite_dimensional E p,
-  have H : is_integral F x := is_integral_of_noetherian hFE x,
-  refine ⟨H, or.inr _⟩,
+  have Hx : is_integral F x := is_integral_of_noetherian hFE x,
+  refine ⟨Hx, or.inr _⟩,
   rintros q q_irred ⟨r, hr⟩,
   let D := adjoin_root q,
   let pbED := adjoin_root.power_basis q_irred.ne_zero,
@@ -119,22 +121,34 @@ begin
     exact nat_lemma (finite_dimensional.findim_mul_findim F E D)
       (linear_map.findim_le_findim_of_injective (show function.injective ϕ.to_linear_map,
         from ϕ.to_ring_hom.injective)) finite_dimensional.findim_pos },
-  let C := adjoin_root (minimal_polynomial H),
+  let C := adjoin_root (minimal_polynomial Hx),
+  have Hx_irred := minimal_polynomial.irreducible Hx,
   letI : algebra C D := ring_hom.to_algebra (adjoin_root.lift
     (algebra_map F D) (adjoin_root.root q) (by rw [is_scalar_tower.algebra_map_eq F E D,
       ←eval₂_map, hr, adjoin_root.algebra_map_eq, eval₂_mul, adjoin_root.eval₂_root, zero_mul])),
   letI : algebra C E := ring_hom.to_algebra
-    (adjoin_root.lift (algebra_map F E) x (minimal_polynomial.aeval H)),
+    (adjoin_root.lift (algebra_map F E) x (minimal_polynomial.aeval Hx)),
   haveI : is_scalar_tower F C D :=
     is_scalar_tower.of_algebra_map_eq (λ x, adjoin_root.lift_of.symm),
   haveI : is_scalar_tower F C E :=
     is_scalar_tower.of_algebra_map_eq (λ x, adjoin_root.lift_of.symm),
   suffices : nonempty (D →ₐ[C] E),
   { exact nonempty.map (is_scalar_tower.restrict_base F) this },
-  let S : finset E := sorry,
-  have key : adjoin C S = ⊤,
+  let S : finset D := ((p.map (algebra_map F E)).roots.map (algebra_map E D)).to_finset,
+  have adjoin_S_eq_top : intermediate_field.adjoin C ↑S = ⊤,
   { sorry },
-  sorry,
+  refine intermediate_field.main_theorem' adjoin_S_eq_top (λ y hy, _),
+  rcases multiset.mem_map.mp (multiset.mem_to_finset.mp hy) with ⟨z, hz1, hz2⟩,
+  have Hz : is_integral F z := is_integral_of_noetherian hFE z,
+  use (show is_integral C y, from is_integral_of_noetherian (finite_dimensional.right F C D) y),
+  apply splits_of_splits_of_dvd (algebra_map C E) (map_ne_zero (minimal_polynomial.ne_zero Hz)),
+  { rw [splits_map_iff, ←is_scalar_tower.algebra_map_eq F C E],
+    exact splits_of_splits_of_dvd _ hp hFEp.splits (minimal_polynomial.dvd Hz
+      (eq.trans (eval₂_eq_eval_map _) ((mem_roots (map_ne_zero hp)).mp hz1))) },
+  { apply minimal_polynomial.dvd,
+    rw [←hz2, aeval_def, eval₂_map, ←is_scalar_tower.algebra_map_eq F C D,
+        is_scalar_tower.algebra_map_eq F E D, ←hom_eval₂, ←aeval_def,
+        minimal_polynomial.aeval Hz, ring_hom.map_zero] },
 end
 
 end normal_tower
