@@ -114,27 +114,23 @@ begin
   haveI : is_scalar_tower F E D := is_scalar_tower.of_algebra_map_eq (λ _, rfl),
   haveI : finite_dimensional F D := finite_dimensional.trans F E D,
   suffices : nonempty (D →ₐ[F] E),
-  {cases this with ϕ,
+  { cases this with ϕ,
     rw [←with_bot.coe_one, degree_eq_iff_nat_degree_eq q_irred.ne_zero, ←findimED],
     exact nat_lemma (finite_dimensional.findim_mul_findim F E D)
       (linear_map.findim_le_findim_of_injective (show function.injective ϕ.to_linear_map,
         from ϕ.to_ring_hom.injective)) finite_dimensional.findim_pos },
   let C := adjoin_root (minimal_polynomial H),
   letI : algebra C D := ring_hom.to_algebra (adjoin_root.lift
-    (algebra_map F D) (adjoin_root.root q) $ by rw [is_scalar_tower.algebra_map_eq F E D,
-      ←eval₂_map, hr, adjoin_root.algebra_map_eq, eval₂_mul, adjoin_root.eval₂_root, zero_mul]),
+    (algebra_map F D) (adjoin_root.root q) (by rw [is_scalar_tower.algebra_map_eq F E D,
+      ←eval₂_map, hr, adjoin_root.algebra_map_eq, eval₂_mul, adjoin_root.eval₂_root, zero_mul])),
   letI : algebra C E := ring_hom.to_algebra
     (adjoin_root.lift (algebra_map F E) x (minimal_polynomial.aeval H)),
-  haveI : is_scalar_tower F C E := sorry,
-  haveI : is_scalar_tower F C D := sorry,
+  haveI : is_scalar_tower F C D :=
+    is_scalar_tower.of_algebra_map_eq (λ x, adjoin_root.lift_of.symm),
+  haveI : is_scalar_tower F C E :=
+    is_scalar_tower.of_algebra_map_eq (λ x, adjoin_root.lift_of.symm),
   suffices : nonempty (D →ₐ[C] E),
-  { exact nonempty.map (is_scalar_tower.restrict_base F) this, },
- -- haveI : is_scalar_tower F E D := sorry,
-  --letI := ring_hom.to_algebra ((algebra_map E D).comp (algebra_map F E)),
-  /-let S : finset D := (↑(p.map (algebra_map F E)).roots.to_finset : set E).map (algebra_map E D),
-  have key := main_theorem,
-  suffices : nonempty (D →ₐ[C] E),
-  { sorry },-/
+  { exact nonempty.map (is_scalar_tower.restrict_base F) this },
   sorry,
 end
 
