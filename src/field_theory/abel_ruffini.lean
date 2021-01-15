@@ -106,9 +106,7 @@ end
 lemma polynomial.comp_map {A B C : Type*} [semiring A] [semiring B] [semiring C] {f : A →+* B} {g : B →+* C}
   (p : polynomial A) : map (g.comp f) p = map g (map f p) :=
 begin
-  rw polynomial.map,
-  rw polynomial.map,
-  rw polynomial.eval₂_map,
+  rw [polynomial.map, polynomial.map, polynomial.eval₂_map],
   refl,
 end
 
@@ -279,6 +277,7 @@ lemma lemma2 (p q : polynomial F) (hpq : fact (splits (algebra_map F q.splitting
   (hq : is_solvable (gal q)) : is_solvable (gal p) :=
 begin
   haveI : is_solvable (q.splitting_field ≃ₐ[F] q.splitting_field) := hq,
+  -- Need to know q.splitting_field is finite dimensional over p.splitting_field
   have := @alg_equiv.restrict_is_splitting_field_hom_surjective F q.splitting_field _ _ _ p p.splitting_field _ _ _ _ _ (sorry),
   simp only [monoid_hom.to_fun_eq_coe] at this,
   exact solvable_of_surjective this,
@@ -346,7 +345,7 @@ begin
     exact subtype.ext (eq.trans ((SBR F E).coe_pow _ n) hα₀.symm) }
 end
 
-theorem is_integral (α : SBR F E) : is_integral F α :=
+theorem SBR_is_integral (α : SBR F E) : is_integral F α :=
 begin
   revert α,
   apply SBR.induction,
@@ -365,7 +364,7 @@ begin
     rwa nat_degree_X_pow }
 end
 
-def P (α : SBR F E) : Prop := is_solvable (gal (minimal_polynomial (is_integral α)))
+def P (α : SBR F E) : Prop := is_solvable (gal (minimal_polynomial (SBR_is_integral α)))
 
 lemma induction3 {α : SBR F E} {n : ℕ} (hn : n ≠ 0) (hα : P (α ^ n)) : P α :=
 begin
@@ -374,15 +373,38 @@ end
 
 lemma induction2 {α β γ : SBR F E} (hγ : γ ∈ F⟮α, β⟯) (hα : P α) (hβ : P β) : P γ :=
 begin
-  let p := (minimal_polynomial (is_integral α)),
-  let q := (minimal_polynomial (is_integral β)),
-  let r := (minimal_polynomial (is_integral γ)),
+  let p := (minimal_polynomial (SBR_is_integral α)),
+  let q := (minimal_polynomial (SBR_is_integral β)),
+  let r := (minimal_polynomial (SBR_is_integral γ)),
+  have hp : p ≠ 0 := minimal_polynomial.ne_zero (SBR_is_integral α),
+  have hq : q ≠ 0 := minimal_polynomial.ne_zero (SBR_is_integral β),
+  have hpq : p * q ≠ 0 := mul_ne_zero hp hq,
+  have hpq' := splitting_field.splits (p * q),
+  -- to fill in this sorry we need to know that p * q is separable. Maybe just assume char. 0?
   haveI h₁ : normal F (p * q).splitting_field := sorry,
-  have h₂ : ∃ x : (p * q).splitting_field, aeval x r = 0 := sorry,
+  have key : ∀ x : SBR F E, x ∈ ({α, β} : finset (SBR F E)) →
+    ∃ (H : is_integral F x), splits (algebra_map F (p * q).splitting_field) (minimal_polynomial H),
+  { intros x hx,
+    simp only [finset.mem_insert, finset.mem_singleton] at hx,
+    cases hx; rw hx,
+    exact ⟨SBR_is_integral α, (polynomial.splits_of_splits_mul _ hpq hpq').left⟩,
+    exact ⟨SBR_is_integral β, (polynomial.splits_of_splits_mul _ hpq hpq').right⟩, },
+  replace key := main_theorem key,
+  have h₁₂ : adjoin F ↑({α, β} : finset (SBR F E)) = F⟮α, β⟯,
+  { simpa only [finset.coe_insert, finset.coe_singleton], },
+  rw h₁₂ at key,
+  have f : F⟮α, β⟯ →ₐ[F] (p * q).splitting_field := classical.choice key,
+  have h₈ : ((⟨γ, hγ⟩ : F⟮α, β⟯.to_subalgebra) : SBR F E) = γ := rfl,
+  have h₉ : aeval γ r = 0 := minimal_polynomial.aeval (SBR_is_integral γ),
+  have h₇ : aeval (⟨γ, hγ⟩ : F⟮α, β⟯) r = 0,
+  { rwa [← h₈, subalgebra.aeval_coe, submodule.coe_eq_zero] at h₉, },
+  have h₂ : ∃ x : (p * q).splitting_field, aeval x r = 0,
+  { use f ⟨γ, hγ⟩,
+    rw [aeval_alg_hom, alg_hom.comp_apply, h₇, alg_hom.map_zero] },
   cases h₂ with x hx,
   have h₃ := normal.is_integral F _ x,
-  have h₄ : irreducible r := minimal_polynomial.irreducible (is_integral γ),
-  have h₅ := minimal_polynomial.monic (is_integral γ),
+  have h₄ : irreducible r := minimal_polynomial.irreducible (SBR_is_integral γ),
+  have h₅ := minimal_polynomial.monic (SBR_is_integral γ),
   have h₆ : r = minimal_polynomial h₃ := minimal_polynomial.unique' h₃ h₄ hx h₅,
   have hr : splits (algebra_map F (p * q).splitting_field) r,
   { rw h₆,
@@ -435,7 +457,7 @@ begin
 end
 
 theorem solvable_gal_of_SBR (α : SBR F E) :
-  is_solvable (gal (minimal_polynomial (is_integral α))) :=
+  is_solvable (gal (minimal_polynomial (SBR_is_integral α))) :=
 begin
   revert α,
   apply SBR.induction,
