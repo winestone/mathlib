@@ -131,6 +131,9 @@ begin
     is_scalar_tower.of_algebra_map_eq (λ x, adjoin_root.lift_of.symm),
   suffices : nonempty (D →ₐ[C] E),
   { exact nonempty.map (is_scalar_tower.restrict_base F) this },
+  let S : finset E := sorry,
+  have key : adjoin C S = ⊤,
+  { sorry },
   sorry,
 end
 
