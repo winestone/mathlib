@@ -106,9 +106,7 @@ end
 lemma polynomial.comp_map {A B C : Type*} [semiring A] [semiring B] [semiring C] {f : A →+* B} {g : B →+* C}
   (p : polynomial A) : map (g.comp f) p = map g (map f p) :=
 begin
-  rw polynomial.map,
-  rw polynomial.map,
-  rw polynomial.eval₂_map,
+  rw [polynomial.map, polynomial.map, polynomial.eval₂_map],
   refl,
 end
 
@@ -279,6 +277,7 @@ lemma lemma2 (p q : polynomial F) (hpq : fact (splits (algebra_map F q.splitting
   (hq : is_solvable (gal q)) : is_solvable (gal p) :=
 begin
   haveI : is_solvable (q.splitting_field ≃ₐ[F] q.splitting_field) := hq,
+  -- Need to know q.splitting_field is finite dimensional over p.splitting_field
   have := @alg_equiv.restrict_is_splitting_field_hom_surjective F q.splitting_field _ _ _ p p.splitting_field _ _ _ _ _ (sorry),
   simp only [monoid_hom.to_fun_eq_coe] at this,
   exact solvable_of_surjective this,
@@ -377,7 +376,9 @@ begin
   let p := (minimal_polynomial (is_integral α)),
   let q := (minimal_polynomial (is_integral β)),
   let r := (minimal_polynomial (is_integral γ)),
+  -- to fill in this sorry we need to know that p * q is separable. Maybe just assume char. 0?
   haveI h₁ : normal F (p * q).splitting_field := sorry,
+  -- This is the part where we need to construct an embedding F(α, β) ↪ (p * q).splitting_field
   have h₂ : ∃ x : (p * q).splitting_field, aeval x r = 0 := sorry,
   cases h₂ with x hx,
   have h₃ := normal.is_integral F _ x,
