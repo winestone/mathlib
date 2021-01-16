@@ -93,15 +93,31 @@ end
 lemma alg_equiv.transfer_normal (f : E ≃ₐ[F] E') : normal F E ↔ normal F E' :=
 ⟨λ h, by exactI normal.of_alg_equiv f, λ h, by exactI normal.of_alg_equiv f.symm⟩
 
-theorem small_theorem (C D E F : Type*) [comm_semiring C] [comm_semiring D] [comm_semiring E]
-  [semiring F] [algebra C D] [algebra C E] [algebra C F] [algebra D F] [algebra E F]
+theorem small_theorem (C D E : Type*) [comm_semiring C] [comm_semiring D] [comm_semiring E]
+  [algebra C D] [algebra C E] [algebra D E] [is_scalar_tower C D E] (S : set E) :
+(algebra.adjoin D S).res C = ((⊤ : subalgebra C D).map (is_scalar_tower.to_alg_hom C D E)).under
+  (algebra.adjoin ((⊤ : subalgebra C D).map (is_scalar_tower.to_alg_hom C D E)) S) :=
+begin
+  suffices : set.range (algebra_map D E) =
+    set.range (algebra_map ((⊤ : subalgebra C D).map (is_scalar_tower.to_alg_hom C D E)) E),
+  { ext x, change x ∈ subsemiring.closure (_ ∪ S) ↔ x ∈ subsemiring.closure (_ ∪ S), rw this },
+  ext x,
+  split,
+  { rintros ⟨y, hy⟩,
+    exact ⟨⟨algebra_map D E y, ⟨y, ⟨algebra.mem_top, rfl⟩⟩⟩, hy⟩ },
+  { rintros ⟨⟨y, ⟨z, ⟨h0, h1⟩⟩⟩, h2⟩,
+    exact ⟨z, eq.trans h1 h2⟩ },
+end
+
+theorem medium_theorem (C D E F : Type*) [comm_semiring C] [comm_semiring D] [comm_semiring E]
+  [comm_semiring F] [algebra C D] [algebra C E] [algebra C F] [algebra D F] [algebra E F]
   [is_scalar_tower C D F] [is_scalar_tower C E F] {S : set D} {T : set E}
   (hS : algebra.adjoin C S = ⊤) (hT : algebra.adjoin C T = ⊤) :
 (algebra.adjoin E (algebra_map D F '' S)).res C =
   (algebra.adjoin D (algebra_map E F '' T)).res C :=
-begin
-  sorry,
-end
+by { rw [small_theorem, small_theorem, ←hS, ←hT, ←algebra.adjoin_image, ←algebra.adjoin_image,
+  ←alg_hom.coe_to_ring_hom, ←alg_hom.coe_to_ring_hom, is_scalar_tower.coe_to_alg_hom,
+  is_scalar_tower.coe_to_alg_hom, ←algebra.adjoin_union, ←algebra.adjoin_union, set.union_comm] }
 
 instance normal.of_is_splitting_field {F E : Type*} [field F] [field E] [algebra F E]
   {p : polynomial F} [hFEp : is_splitting_field F E p] : normal F E :=
@@ -159,12 +175,13 @@ begin
           minimal_polynomial.aeval Hz, ring_hom.map_zero] } },
   rw [eq_top_iff, ←intermediate_field.to_subalgebra_le_iff, intermediate_field.top_to_subalgebra],
   apply ge_trans (intermediate_field.algebra_adjoin_le_adjoin C ↑S),
-  suffices : (algebra.adjoin C ↑S).res F = (algebra.adjoin E ({adjoin_root.root q} : set D)).res F,
+  suffices : (algebra.adjoin C (S : set D)).res F = (algebra.adjoin E {adjoin_root.root q}).res F,
   { rw [adjoin_root.adjoin_root_eq_top, subalgebra.res_top, ←@subalgebra.res_top F C] at this,
     exact top_le_iff.mpr (subalgebra.res_inj F this) },
-  convert (small_theorem F E C D hFEp.adjoin_roots adjoin_root.adjoin_root_eq_top),
-  { rw [←finset.coe_image, finset.image_to_finset] },
-  { rw [set.image_singleton, set.singleton_eq_singleton_iff], exact adjoin_root.lift_root.symm },
+  dsimp only [S],
+  rw [←finset.image_to_finset, finset.coe_image],
+  apply eq.trans (medium_theorem F E C D hFEp.adjoin_roots adjoin_root.adjoin_root_eq_top),
+  rw [set.image_singleton, ring_hom.algebra_map_to_algebra, adjoin_root.lift_root]
 end
 
 end normal_tower
