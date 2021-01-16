@@ -214,6 +214,9 @@ instance : canonically_ordered_add_monoid ℝ≥0 :=
   ..nnreal.order_bot,
   ..nnreal.linear_order }
 
+instance : canonically_linear_ordered_add_monoid ℝ≥0 :=
+{ .. nnreal.canonically_ordered_add_monoid, .. nnreal.linear_order}
+
 instance : distrib_lattice ℝ≥0 := by apply_instance
 
 instance : semilattice_inf_bot ℝ≥0 :=
@@ -232,8 +235,7 @@ instance : linear_ordered_semiring ℝ≥0 :=
   mul_lt_mul_of_pos_right    := assume a b c, @mul_lt_mul_of_pos_right ℝ _ a b c,
   zero_le_one                := @zero_le_one ℝ _,
   exists_pair_ne             := ⟨0, 1, ne_of_lt (@zero_lt_one ℝ _ _)⟩,
-  .. nnreal.linear_order,
-  .. nnreal.canonically_ordered_add_monoid,
+  .. nnreal.canonically_linear_ordered_add_monoid,
   .. nnreal.comm_semiring, }
 
 instance : linear_ordered_comm_group_with_zero ℝ≥0 :=
@@ -306,11 +308,7 @@ instance : archimedean ℝ≥0 :=
   ⟨n, show (x:ℝ) ≤ (n •ℕ y : ℝ≥0), by simp [*, -nsmul_eq_mul, nsmul_coe]⟩ ⟩
 
 lemma le_of_forall_pos_le_add {a b : ℝ≥0} (h : ∀ε, 0 < ε → a ≤ b + ε) : a ≤ b :=
-le_of_forall_le_of_dense $ assume x hxb,
-begin
-  rcases le_iff_exists_add.1 (le_of_lt hxb) with ⟨ε, rfl⟩,
-  exact h _ ((lt_add_iff_pos_right b).1 hxb)
-end
+le_of_forall_pos_le_add' h
 
 lemma lt_iff_exists_rat_btwn (a b : ℝ≥0) :
   a < b ↔ (∃q:ℚ, 0 ≤ q ∧ a < nnreal.of_real q ∧ nnreal.of_real q < b) :=
