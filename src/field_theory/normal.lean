@@ -93,8 +93,6 @@ end
 lemma alg_equiv.transfer_normal (f : E ≃ₐ[F] E') : normal F E ↔ normal F E' :=
 ⟨λ h, by exactI normal.of_alg_equiv f, λ h, by exactI normal.of_alg_equiv f.symm⟩
 
-lemma nat_lemma {a b c : ℕ} (h1 : a * b = c) (h2 : c ≤ a) (h3 : 0 < c) : b = 1 := sorry
-
 theorem small_theorem (C D E F : Type*) [comm_semiring C] [comm_semiring D] [comm_semiring E]
   [semiring F] [algebra C D] [algebra C E] [algebra C F] [algebra D F] [algebra E F]
   [is_scalar_tower C D F] [is_scalar_tower C E F] {S : set D} {T : set E}
@@ -102,16 +100,16 @@ theorem small_theorem (C D E F : Type*) [comm_semiring C] [comm_semiring D] [com
 (algebra.adjoin E (algebra_map D F '' S)).res C =
   (algebra.adjoin D (algebra_map E F '' T)).res C :=
 begin
+  sorry,
 end
 
-/-https://leanprover.zulipchat.com/#narrow/stream/116395-maths/topic/Slow.20instance/near/222791565-/
---local attribute [irreducible] ideal.quotient.comm_ring
-/- Move to normal.lean -/
-theorem big_theorem {F E : Type*} [field F] [field E] [algebra F E] {p : polynomial F}
-  [hFEp : is_splitting_field F E p] : normal F E :=
+instance normal.of_is_splitting_field {F E : Type*} [field F] [field E] [algebra F E]
+  {p : polynomial F} [hFEp : is_splitting_field F E p] : normal F E :=
 begin
   by_cases hp : p = 0,
-  { sorry },
+  { haveI : is_splitting_field F F p := by { rw hp, exact ⟨splits_zero _, subsingleton.elim _ _⟩ },
+    exactI (alg_equiv.transfer_normal ((is_splitting_field.alg_equiv F p).trans
+      (is_splitting_field.alg_equiv E p).symm)).mp (normal_self F) },
   intro x,
   haveI hFE : finite_dimensional F E := is_splitting_field.finite_dimensional E p,
   have Hx : is_integral F x := is_integral_of_noetherian hFE x,
@@ -127,7 +125,9 @@ begin
   suffices : nonempty (D →ₐ[F] E),
   { cases this with ϕ,
     rw [←with_bot.coe_one, degree_eq_iff_nat_degree_eq q_irred.ne_zero, ←findimED],
-    exact nat_lemma (finite_dimensional.findim_mul_findim F E D)
+    have nat_lemma : ∀ a b c : ℕ, a * b = c → c ≤ a → 0 < c → b = 1,
+    { intros a b c h1 h2 h3, nlinarith },
+    exact nat_lemma _ _ _ (finite_dimensional.findim_mul_findim F E D)
       (linear_map.findim_le_findim_of_injective (show function.injective ϕ.to_linear_map,
         from ϕ.to_ring_hom.injective)) finite_dimensional.findim_pos },
   let C := adjoin_root (minimal_polynomial Hx),
