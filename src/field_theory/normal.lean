@@ -119,8 +119,8 @@ by { rw [small_theorem, small_theorem, ←hS, ←hT, ←algebra.adjoin_image, �
   ←alg_hom.coe_to_ring_hom, ←alg_hom.coe_to_ring_hom, is_scalar_tower.coe_to_alg_hom,
   is_scalar_tower.coe_to_alg_hom, ←algebra.adjoin_union, ←algebra.adjoin_union, set.union_comm] }
 
-instance normal.of_is_splitting_field {F E : Type*} [field F] [field E] [algebra F E]
-  {p : polynomial F} [hFEp : is_splitting_field F E p] : normal F E :=
+instance normal.of_is_splitting_field {p : polynomial F} [hFEp : is_splitting_field F E p] :
+  normal F E :=
 begin
   by_cases hp : p = 0,
   { haveI : is_splitting_field F F p := by { rw hp, exact ⟨splits_zero _, subsingleton.elim _ _⟩ },
