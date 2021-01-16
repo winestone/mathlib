@@ -687,6 +687,13 @@ instance with_top.canonically_linear_ordered_add_monoid {α : Type u}
   decidable_le := @with_top.decidable_le α _ canonically_linear_ordered_add_monoid.decidable_le,
   .. with_top.canonically_ordered_add_monoid, }
 
+instance with_top.canonically_linear_ordered_add_monoid.bounded_lattice {α : Type*}
+  [canonically_linear_ordered_add_monoid α] :
+  bounded_lattice (with_top α) :=
+{ .. with_top.order_top,
+  .. lattice_of_linear_order,
+  .. canonically_linear_ordered_add_monoid.semilattice_sup_bot, }
+
 lemma le_of_forall_pos_le_add' [canonically_linear_ordered_add_monoid α] [densely_ordered α]
   {a b : α} (h : ∀ε:α, 0 < ε → a ≤ b + ε) :
   a ≤ b :=
