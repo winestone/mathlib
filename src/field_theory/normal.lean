@@ -95,8 +95,17 @@ lemma alg_equiv.transfer_normal (f : E ≃ₐ[F] E') : normal F E ↔ normal F E
 
 lemma nat_lemma {a b c : ℕ} (h1 : a * b = c) (h2 : c ≤ a) (h3 : 0 < c) : b = 1 := sorry
 
+theorem small_theorem (C D E F : Type*) [comm_semiring C] [comm_semiring D] [comm_semiring E]
+  [semiring F] [algebra C D] [algebra C E] [algebra C F] [algebra D F] [algebra E F]
+  [is_scalar_tower C D F] [is_scalar_tower C E F] {S : set D} {T : set E}
+  (hS : algebra.adjoin C S = ⊤) (hT : algebra.adjoin C T = ⊤) :
+(algebra.adjoin E (algebra_map D F '' S)).res C =
+  (algebra.adjoin D (algebra_map E F '' T)).res C :=
+begin
+end
+
 /-https://leanprover.zulipchat.com/#narrow/stream/116395-maths/topic/Slow.20instance/near/222791565-/
-local attribute [irreducible] ideal.quotient.comm_ring
+--local attribute [irreducible] ideal.quotient.comm_ring
 /- Move to normal.lean -/
 theorem big_theorem {F E : Type*} [field F] [field E] [algebra F E] {p : polynomial F}
   [hFEp : is_splitting_field F E p] : normal F E :=
@@ -150,9 +159,12 @@ begin
           minimal_polynomial.aeval Hz, ring_hom.map_zero] } },
   rw [eq_top_iff, ←intermediate_field.to_subalgebra_le_iff, intermediate_field.top_to_subalgebra],
   apply ge_trans (intermediate_field.algebra_adjoin_le_adjoin C ↑S),
-  have key := hFEp.adjoin_roots,
-  let ϕ := is_scalar_tower.to_alg_hom F E D,
-  sorry,
+  suffices : (algebra.adjoin C ↑S).res F = (algebra.adjoin E ({adjoin_root.root q} : set D)).res F,
+  { rw [adjoin_root.adjoin_root_eq_top, subalgebra.res_top, ←@subalgebra.res_top F C] at this,
+    exact top_le_iff.mpr (subalgebra.res_inj F this) },
+  convert (small_theorem F E C D hFEp.adjoin_roots adjoin_root.adjoin_root_eq_top),
+  { rw [←finset.coe_image, finset.image_to_finset] },
+  { rw [set.image_singleton, set.singleton_eq_singleton_iff], exact adjoin_root.lift_root.symm },
 end
 
 end normal_tower
