@@ -676,6 +676,27 @@ instance canonically_linear_ordered_monoid.semilattice_sup_bot
   [canonically_linear_ordered_monoid α] : semilattice_sup_bot α :=
 { ..lattice_of_linear_order, ..canonically_ordered_monoid.to_order_bot α }
 
+instance with_top.canonically_linear_ordered_add_monoid {α : Type u}
+  [canonically_linear_ordered_add_monoid α] :
+  canonically_linear_ordered_add_monoid (with_top α) :=
+{ le_total := λ o₁ o₂, begin
+    cases o₁ with a, {exact or.inr le_top},
+    cases o₂ with b, {exact or.inl le_top},
+    simp [le_total]
+  end,
+  decidable_le := @with_top.decidable_le α _ canonically_linear_ordered_add_monoid.decidable_le,
+  .. with_top.canonically_ordered_add_monoid, }
+
+lemma le_of_forall_pos_le_add' [canonically_linear_ordered_add_monoid α] [densely_ordered α]
+  {a b : α} (h : ∀ε:α, 0 < ε → a ≤ b + ε) :
+  a ≤ b :=
+begin
+  refine le_of_forall_le_of_dense (λ c hc, _),
+  rcases exists_pos_add_of_lt hc with ⟨ε, hε_pos, hcε⟩,
+  rw ←hcε,
+  exact h ε hε_pos,
+end
+
 end canonically_linear_ordered_monoid
 
 /-- An ordered cancellative additive commutative monoid
