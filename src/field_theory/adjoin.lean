@@ -536,8 +536,8 @@ end induction
 
 section main_theorem
 
-theorem main_theorem {F E K : Type*} [field F] [field E] [field K] [algebra F E] [algebra F K]
-{S : finset E}
+theorem alg_hom_mk_adjoin_splits {F E K : Type*} [field F] [field E] [field K] [algebra F E]
+[algebra F K] {S : finset E}
 (hK : ∀ x ∈ S, ∃ H : is_integral F (x : E), (minimal_polynomial H).splits (algebra_map F K)) :
 nonempty ((adjoin F (S : set E)) →ₐ[F] K) :=
 begin
@@ -563,12 +563,12 @@ begin
     exact is_scalar_tower.of_algebra_map_eq (λ x, rfl) },
 end
 
-theorem main_theorem' {F E K : Type*} [field F] [field E] [field K] [algebra F E] [algebra F K]
-{S : finset E} (hS : adjoin F (S : set E) = ⊤)
+theorem alg_hom_mk_adjoin_splits' {F E K : Type*} [field F] [field E] [field K] [algebra F E]
+[algebra F K] {S : finset E} (hS : adjoin F (S : set E) = ⊤)
 (hK : ∀ x ∈ S, ∃ H : is_integral F (x : E), (minimal_polynomial H).splits (algebra_map F K)) :
 nonempty (E →ₐ[F] K) :=
 begin
-  cases main_theorem hK with ϕ,
+  cases alg_hom_mk_adjoin_splits hK with ϕ,
   rw hS at ϕ,
   exact ⟨ϕ.comp top_equiv.symm.to_alg_hom⟩,
 end

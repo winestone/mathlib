@@ -135,7 +135,7 @@ begin
   { exact nonempty.map (is_scalar_tower.restrict_base F) this },
   let S : finset D := ((p.map (algebra_map F E)).roots.map (algebra_map E D)).to_finset,
   suffices : intermediate_field.adjoin C ↑S = ⊤,
-  { refine intermediate_field.main_theorem' this (λ y hy, _),
+  { refine intermediate_field.alg_hom_mk_adjoin_splits' this (λ y hy, _),
     rcases multiset.mem_map.mp (multiset.mem_to_finset.mp hy) with ⟨z, hz1, hz2⟩,
     have Hz : is_integral F z := is_integral_of_noetherian hFE z,
     use (show is_integral C y, from is_integral_of_noetherian (finite_dimensional.right F C D) y),
