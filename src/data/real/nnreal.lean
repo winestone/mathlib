@@ -222,8 +222,7 @@ instance : distrib_lattice ℝ≥0 := by apply_instance
 instance : semilattice_inf_bot ℝ≥0 :=
 { .. nnreal.order_bot, .. nnreal.distrib_lattice }
 
-instance : semilattice_sup_bot ℝ≥0 :=
-{ .. nnreal.order_bot, .. nnreal.distrib_lattice }
+instance : semilattice_sup_bot ℝ≥0 := canonically_linear_ordered_add_monoid.semilattice_sup_bot
 
 instance : linear_ordered_semiring ℝ≥0 :=
 { add_left_cancel            := assume a b c h, nnreal.eq $
