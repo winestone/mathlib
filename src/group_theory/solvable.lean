@@ -585,275 +585,109 @@ inductive weekday : Type
 | thursday : weekday
 | friday : weekday
 
-lemma weekday_exhaustive: ∀ x:weekday, (x= weekday.monday∨ x=weekday.tuesday ∨
- x=weekday.wednesday ∨ x=weekday.thursday ∨ x=weekday.friday):=
+open weekday
+
+def g : weekday → weekday
+| monday := monday
+| tuesday := tuesday
+| wednesday := thursday
+| thursday := friday
+| friday := wednesday
+
+def g_inv : weekday → weekday
+| monday := monday
+| tuesday := tuesday
+| wednesday := friday
+| thursday := wednesday
+| friday := thursday
+
+def cycle : weekday ≃ weekday :=
+{ to_fun := g,
+  inv_fun := g_inv,
+  left_inv := λ x, by { cases x, all_goals { refl } },
+  right_inv := λ x, by { cases x, all_goals { refl } } }
+
+def g' : weekday → weekday
+| monday := tuesday
+| tuesday := wednesday
+| wednesday := monday
+| thursday := thursday
+| friday := friday
+
+def g'_inv : weekday → weekday
+| monday := wednesday
+| tuesday := monday
+| wednesday := tuesday
+| thursday := thursday
+| friday := friday
+
+def cycle' : weekday ≃ weekday :=
+{ to_fun := g',
+  inv_fun := g'_inv,
+  left_inv := λ x, by { cases x, all_goals { refl } },
+  right_inv := λ x, by { cases x, all_goals { refl } } }
+
+def h : weekday → weekday
+| monday := thursday
+| tuesday := friday
+| wednesday := wednesday
+| thursday := monday
+| friday := tuesday
+
+def third_permutation : weekday ≃ weekday :=
+{ to_fun := h,
+  inv_fun := h,
+  left_inv := λ x, by { cases x, all_goals { refl } },
+  right_inv := λ x, by { cases x, all_goals { refl } } }
+
+lemma third_permutation_own_inverse : third_permutation⁻¹ = third_permutation :=
+by { ext, refl }
+
+lemma conjugate_relationship : third_permutation * cycle * third_permutation = cycle' :=
+by { ext, cases x, all_goals { refl } }
+
+def h': weekday → weekday
+| monday := wednesday
+| tuesday := tuesday
+| wednesday := friday
+| thursday := thursday
+| friday := monday
+
+def h'_inv : weekday → weekday
+| monday := friday
+| tuesday := tuesday
+| wednesday := monday
+| thursday := thursday
+| friday := wednesday
+
+def fourth_permutation : weekday ≃ weekday :=
+{ to_fun := h',
+  inv_fun := h'_inv,
+  left_inv := λ x, by { cases x, all_goals { refl } },
+  right_inv := λ x, by { cases x, all_goals { refl } } }
+
+lemma alternating_stability (m : ℕ) : cycle ∈ derived_series (equiv.perm weekday) m :=
 begin
-  intro x,
-  induction x,
-  apply or.intro_left,
-  refl,
-  apply or.intro_right,
-  apply or.intro_left,
-  refl,
-  apply or.intro_right,
-  apply or.intro_right,
-  apply or.intro_left,
-  refl,
-  apply or.intro_right,
-  apply or.intro_right,
-  apply or.intro_right,
-  apply or.intro_left,
-  refl,
-  apply or.intro_right,
-  apply or.intro_right,
-  apply or.intro_right,
-  apply or.intro_right,
-  refl,
+  induction m with m ih,
+  { exact mem_top cycle },
+  have h1 : cycle = fourth_permutation * (cycle' * cycle * cycle'⁻¹ * cycle⁻¹) * fourth_permutation⁻¹,
+  { ext, cases x, all_goals { refl } },
+  have h2 : cycle' = third_permutation * cycle * third_permutation⁻¹,
+  { ext, cases x, all_goals { refl } },
+  rw [h1, h2],
+  exact (derived_series_normal _ _).conj_mem _ (general_commutator_containment _ _ _
+    ((derived_series_normal _ _).conj_mem _ ih _) _ ih) _,
 end
 
-def g: weekday→ weekday:=
-begin
-  intro x,
-  induction x,
-  exact weekday.monday,
-  exact weekday.tuesday,
-  exact weekday.thursday,
-  exact weekday.friday,
-  exact weekday.wednesday,
-end
+lemma not_solvable_of_mem_derived_series {g : G} (h1 : g ≠ 1)
+  (h2 : ∀ n : ℕ, g ∈ derived_series G n) : ¬ is_solvable G :=
+mt (is_solvable_def _).mp (not_exists_of_forall_not (λ n, mt subgroup.ext'_iff.mp
+  (mt set.ext_iff.mp (not_forall_of_exists_not
+    ⟨g, λ h, (not_congr (iff.symm h)).mp (mt subgroup.mem_bot.mp h1) (h2 n)⟩))))
 
-def g_inv:weekday→ weekday:=
-begin
-  intro x,
-  induction x,
-  exact weekday.monday,
-  exact weekday.tuesday,
-  exact weekday.friday,
-  exact weekday.wednesday,
-  exact weekday.thursday,
-end
-
-def g_left_inv: function.left_inverse g_inv g:=
-begin
-  intro x,
-  induction x,
-  all_goals{refl},
-
-end
-
-def g_right_inv: function.right_inverse g_inv g:=
-begin
-  intro x,
-  induction x,
-  all_goals{refl},
-
-
-end
-
-
-def cycle : weekday ≃ weekday := {to_fun:=g,inv_fun:=g_inv,
-left_inv:=g_left_inv, right_inv:=g_right_inv}
-
-def g': weekday→ weekday:=
-begin
-  intro x,
-  induction x,
-  exact weekday.tuesday,
-  exact weekday.wednesday,
-  exact weekday.monday,
-  exact weekday.thursday,
-  exact weekday.friday,
-end
-
-def g'_inv:weekday→ weekday:=
-begin
-  intro x,
-  induction x,
-  exact weekday.wednesday,
-  exact weekday.monday,
-  exact weekday.tuesday,
-  exact weekday.thursday,
-  exact weekday.friday,
-end
-
-def g'_left_inv: function.left_inverse g'_inv g':=
-begin
-  intro x,
-  induction x,
-  all_goals{refl},
-
-end
-
-def g'_right_inv: function.right_inverse g'_inv g':=
-begin
-  intro x,
-  induction x,
-  all_goals{refl},
-
-end
-
-def cycle' : weekday ≃ weekday := {to_fun:=g',inv_fun:=g'_inv,
-left_inv:=g'_left_inv, right_inv:=g'_right_inv}
-
-def h: weekday→ weekday:=
-begin
-  intro x,
-  induction x,
-  exact weekday.thursday,
-  exact weekday.friday,
-  exact weekday.wednesday,
-  exact weekday.monday,
-  exact weekday.tuesday,
-
-
-
-end
-
-def h_inv: function.left_inverse h h:=
-begin
-  intro x,
-  induction x,
-  all_goals{refl},
-
-end
-
-def third_permutation: weekday ≃ weekday := {to_fun:=h,inv_fun:=h,
-left_inv:=h_inv, right_inv:=h_inv}
-
-lemma third_permutation_own_inverse: third_permutation⁻¹ =third_permutation:=
-begin
-  ext,
-  all_goals{refl},
-end
-
-lemma conjugate_relationship : third_permutation * cycle * third_permutation = cycle':=
-begin
-  rw [equiv.perm.mul_def,equiv.perm.mul_def],
-  ext,
-  induction x,
-  all_goals{refl},
-end
-
-def h': weekday→ weekday:=
-begin
-  intro x,
-  induction x,
-  exact weekday.wednesday,
-  exact weekday.tuesday,
-  exact weekday.friday,
-  exact weekday.thursday,
-  exact weekday.monday,
-end
-
-def h'_inv: weekday→ weekday:=
-begin
-  intro x,
-  induction x,
-  exact weekday.friday,
-  exact weekday.tuesday,
-  exact weekday.monday,
-  exact weekday.thursday,
-  exact weekday.wednesday,
-end
-
-def h'_left_inv: function.left_inverse h'_inv h':=
-begin
-  intro x,
-  induction x,
-  all_goals{refl},
-
-end
-
-def h'_right_inv: function.right_inverse h'_inv h':=
-begin
-  intro x,
-  induction x,
-  all_goals{refl},
-
-end
-
-def fourth_permutation: weekday ≃ weekday := {to_fun:=h',inv_fun:=h'_inv,
-left_inv:=h'_left_inv, right_inv:=h'_right_inv}
-
-
-
-lemma alternating_stability:∀ n:ℕ , cycle ∈ derived_series (equiv.perm weekday) n:=
-
-begin
-  intro m,
-  induction m,
-  {rw derived_series_zero,
-  exact mem_top cycle},
-
-  rw derived_series_succ,
-  have u:=(derived_series_normal (equiv.perm weekday) m_n).conj_mem cycle m_ih,
-
-  have ξ: cycle' ∈ derived_series (equiv.perm weekday) m_n,
-  {specialize u third_permutation,
-  rwa [third_permutation_own_inverse,conjugate_relationship] at u},
-
-  have β: cycle' * cycle * cycle'⁻¹ *cycle⁻¹  ∈
-  ⁅derived_series (equiv.perm weekday) m_n,derived_series (equiv.perm weekday) m_n⁆,
-  {apply general_commutator_containment,
-  exact ξ,
-  exact m_ih},
-
-  have ρ: cycle' * cycle * cycle'⁻¹ *cycle⁻¹  ∈ derived_series (equiv.perm weekday) m_n,
-  have r:= @general_commutator_le_left (equiv.perm weekday) _ (derived_series (equiv.perm weekday) m_n) (derived_series (equiv.perm weekday) m_n)(derived_series_normal (equiv.perm weekday) m_n),
-  exact r β,
-  -- (derived_series (equiv.perm weekday) m_n) (derived_series (equiv.perm weekday) m_n) (derived_series_normal (equiv.perm weekday) m_n),
-
-  have δ: cycle=fourth_permutation * (cycle' * cycle * cycle'⁻¹ *cycle⁻¹) * fourth_permutation⁻¹,
-  ext,
-  induction x,
-  any_goals{refl},
-
-  have σ: (cycle' * cycle * cycle'⁻¹ *cycle⁻¹)∈ ⁅derived_series (equiv.perm weekday) m_n,derived_series (equiv.perm weekday) m_n⁆,
-  apply general_commutator_containment,
-  exact ξ ,
-  exact m_ih,
-
-  rw δ,
-  --apply general_commutator_containment (derived_series_normal (equiv.perm weekday) m_n) (derived_series_normal (equiv.perm weekday) m_n),
-
-
-  exact (derived_series_normal (equiv.perm weekday) (m_n.succ)).conj_mem (cycle' * cycle * cycle'⁻¹ *cycle⁻¹) σ fourth_permutation,
-
-
-
-end
-
-lemma nontrivial_cycle: cycle ≠ (1:(equiv.perm weekday)):=
-begin
-  rw equiv.perm.one_def,
-  have y:=(@equiv.ext_iff weekday weekday cycle (equiv.refl weekday)).1,
-  have z:( ¬ ∀ (x : weekday), cycle x = (equiv.refl weekday) x)→ cycle ≠ equiv.refl weekday,
-  {contrapose,
-  push_neg,
-  exact y},
-  apply z,
-  push_neg,
-  use weekday.wednesday,
-end
-
-lemma weekday_perm_unsolvable : ¬ is_solvable(equiv.perm weekday):=
-begin
-  rw is_solvable_def,
-  push_neg,
-  intro n,
-  have u:  (¬ ∀ (x:(equiv.perm weekday)),x∈ (derived_series (equiv.perm weekday) n) → x=1)→ (derived_series (equiv.perm weekday) n ≠ ⊥),
-  {contrapose,
-  push_neg,
-  exact  (subgroup.eq_bot_iff_forall (derived_series (equiv.perm weekday) n)).1},
-  apply u,
-  push_neg,
-  use cycle,
-  split,
-  {exact alternating_stability n},
-  exact nontrivial_cycle,
-
-end
-
+lemma weekday_perm_unsolvable : ¬ is_solvable (equiv.perm weekday) :=
+ not_solvable_of_mem_derived_series (mt equiv.ext_iff.mp
+  (not_forall_of_exists_not ⟨wednesday, by trivial⟩)) alternating_stability
 
 end  symmetric_unsolvable
 
