@@ -587,94 +587,65 @@ inductive weekday : Type
 
 open weekday
 
-def g : weekday → weekday
+def g1 : weekday → weekday
 | monday := monday
 | tuesday := tuesday
 | wednesday := thursday
 | thursday := friday
 | friday := wednesday
 
-def g_inv : weekday → weekday
+def g2 : weekday → weekday
 | monday := monday
 | tuesday := tuesday
 | wednesday := friday
 | thursday := wednesday
 | friday := thursday
 
-def cycle : weekday ≃ weekday :=
-{ to_fun := g,
-  inv_fun := g_inv,
-  left_inv := λ x, by { cases x, all_goals { refl } },
-  right_inv := λ x, by { cases x, all_goals { refl } } }
-
-def g' : weekday → weekday
-| monday := tuesday
-| tuesday := wednesday
-| wednesday := monday
-| thursday := thursday
-| friday := friday
-
-def g'_inv : weekday → weekday
-| monday := wednesday
-| tuesday := monday
-| wednesday := tuesday
-| thursday := thursday
-| friday := friday
-
-def cycle' : weekday ≃ weekday :=
-{ to_fun := g',
-  inv_fun := g'_inv,
-  left_inv := λ x, by { cases x, all_goals { refl } },
-  right_inv := λ x, by { cases x, all_goals { refl } } }
-
-def h : weekday → weekday
+def g3 : weekday → weekday
 | monday := thursday
 | tuesday := friday
 | wednesday := wednesday
 | thursday := monday
 | friday := tuesday
 
-def third_permutation : weekday ≃ weekday :=
-{ to_fun := h,
-  inv_fun := h,
-  left_inv := λ x, by { cases x, all_goals { refl } },
-  right_inv := λ x, by { cases x, all_goals { refl } } }
-
-lemma third_permutation_own_inverse : third_permutation⁻¹ = third_permutation :=
-by { ext, refl }
-
-lemma conjugate_relationship : third_permutation * cycle * third_permutation = cycle' :=
-by { ext, cases x, all_goals { refl } }
-
-def h': weekday → weekday
+def g4 : weekday → weekday
 | monday := wednesday
 | tuesday := tuesday
 | wednesday := friday
 | thursday := thursday
 | friday := monday
 
-def h'_inv : weekday → weekday
+def g5 : weekday → weekday
 | monday := friday
 | tuesday := tuesday
 | wednesday := monday
 | thursday := thursday
 | friday := wednesday
 
-def fourth_permutation : weekday ≃ weekday :=
-{ to_fun := h',
-  inv_fun := h'_inv,
+def σ1 : weekday ≃ weekday :=
+{ to_fun := g1,
+  inv_fun := g2,
   left_inv := λ x, by { cases x, all_goals { refl } },
   right_inv := λ x, by { cases x, all_goals { refl } } }
 
-lemma alternating_stability (m : ℕ) : cycle ∈ derived_series (equiv.perm weekday) m :=
+def σ2 : weekday ≃ weekday :=
+{ to_fun := g3,
+  inv_fun := g3,
+  left_inv := λ x, by { cases x, all_goals { refl } },
+  right_inv := λ x, by { cases x, all_goals { refl } } }
+
+def σ3 : weekday ≃ weekday :=
+{ to_fun := g4,
+  inv_fun := g5,
+  left_inv := λ x, by { cases x, all_goals { refl } },
+  right_inv := λ x, by { cases x, all_goals { refl } } }
+
+lemma alternating_stability (n : ℕ) : σ1 ∈ derived_series (equiv.perm weekday) n :=
 begin
-  induction m with m ih,
-  { exact mem_top cycle },
-  have h1 : cycle = fourth_permutation * (cycle' * cycle * cycle'⁻¹ * cycle⁻¹) * fourth_permutation⁻¹,
-  { ext, cases x, all_goals { refl } },
-  have h2 : cycle' = third_permutation * cycle * third_permutation⁻¹,
-  { ext, cases x, all_goals { refl } },
-  rw [h1, h2],
+  induction n with n ih,
+  { exact mem_top σ1 },
+  rw (show σ1 = σ3 * ((σ2 * σ1 * σ2) * σ1 * (σ2 * σ1 * σ2⁻¹)⁻¹ * σ1⁻¹) * σ3⁻¹,
+      by { ext, cases x, all_goals { refl } }),
   exact (derived_series_normal _ _).conj_mem _ (general_commutator_containment _ _ _
     ((derived_series_normal _ _).conj_mem _ ih _) _ ih) _,
 end
