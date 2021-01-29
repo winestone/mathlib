@@ -52,7 +52,7 @@ begin
     rw [←h2, mem_support] at hx,
     have hy : y ∈ (⊤ : finset α) := finset.mem_univ y,
     rw [←h2, mem_support] at hy,
-    cases exists_pow_eq_of_is_cycle h1 hx hy with n hn,
+    cases is_cycle.exists_pow_eq h1 hx hy with n hn,
     rw ← hn,
     exact step2 n },
   have step4 : ∀ (y z : α), swap y z ∈ H,
