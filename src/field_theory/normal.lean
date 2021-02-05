@@ -7,6 +7,7 @@ Authors: Kenny Lau
 import field_theory.minpoly
 import field_theory.splitting_field
 import field_theory.tower
+import group_theory.solvable
 import ring_theory.power_basis
 
 /-!
@@ -279,5 +280,22 @@ alg_equiv.ext (λ x, (algebra_map K E).injective
 lemma alg_equiv.restrict_normal_hom_surjective [normal F K] [normal F E] :
   function.surjective (alg_equiv.restrict_normal_hom K : (E ≃ₐ[F] E) → (K ≃ₐ[F] K)) :=
 λ χ, ⟨χ.lift_normal E, χ.restrict_lift_normal E⟩
+
+lemma tada [normal F K] [normal F E] [h1 : is_solvable (K ≃ₐ[F] K)]
+  [h2 : is_solvable (E ≃ₐ[K] E)] : is_solvable (E ≃ₐ[F] E) :=
+begin
+  let f : (E ≃ₐ[K] E) →* (E ≃ₐ[F] E) :=
+  { to_fun := λ ϕ, alg_equiv.of_alg_hom (restrict_base F ϕ.to_alg_hom)
+      (restrict_base F ϕ.symm.to_alg_hom)
+      (alg_hom.ext (λ x, ϕ.apply_symm_apply x))
+      (alg_hom.ext (λ x, ϕ.symm_apply_apply x)),
+    map_one' := alg_equiv.ext (λ _, rfl),
+    map_mul' := λ _ _, alg_equiv.ext (λ _, rfl) },
+  let g : (E ≃ₐ[F] E) →* (K ≃ₐ[F] K) := alg_equiv.restrict_normal_hom K,
+  have key : g.ker ≤ f.range := λ ϕ hϕ, ⟨alg_equiv.mk ϕ ϕ.symm ϕ.symm_apply_apply
+    ϕ.apply_symm_apply ϕ.map_mul ϕ.map_add (λ x, eq.trans (ϕ.restrict_normal_commutes K x).symm
+    (congr_arg (algebra_map K E) (alg_equiv.ext_iff.mp hϕ x))), alg_equiv.ext (λ _, rfl)⟩,
+  exact short_exact_sequence_solvable_new key h2 h1,
+end
 
 end lift
