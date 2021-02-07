@@ -30,18 +30,18 @@ begin
   let H := closure ({σ, swap x (σ x)} : set (perm α)),
   have h3 : σ ∈ H := subset_closure (set.mem_insert σ _),
   have h4 : swap x (σ x) ∈ H := subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)),
-  have step1 : ∀ (n : ℕ), swap ((σ^n) x) ((σ^(n+1)) x) ∈ H,
+  have step1 : ∀ (n : ℕ), swap ((σ ^ n) x) ((σ^(n+1)) x) ∈ H,
   { intro n,
     induction n with n ih,
     { exact subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)) },
     { convert H.mul_mem (H.mul_mem h3 ih) (H.inv_mem h3),
       rw [mul_swap_eq_swap_mul, mul_inv_cancel_right], refl } },
-  have step2 : ∀ (n : ℕ), swap x ((σ^n) x) ∈ H,
+  have step2 : ∀ (n : ℕ), swap x ((σ ^ n) x) ∈ H,
   { intro n,
     induction n with n ih,
     { convert H.one_mem,
       exact swap_self x },
-    { by_cases h5 : x = (σ^n) x,
+    { by_cases h5 : x = (σ ^ n) x,
       { rw [pow_succ, mul_apply, ←h5], exact h4 },
       by_cases h6 : x = (σ^(n+1)) x,
       { rw [←h6, swap_self], exact H.one_mem },
@@ -70,8 +70,8 @@ begin
   exact step4 y z,
 end
 
-lemma lem1 {α : Type*} [fintype α] [decidable_eq α] {σ : perm α} (hσ : is_cycle σ) :
-  order_of σ = σ.support.card :=
+lemma order_of_is_cycle {α : Type*} [fintype α] [decidable_eq α] {σ : perm α}
+  (hσ : is_cycle σ) : order_of σ = σ.support.card :=
 begin
   obtain ⟨x, hx, hσ⟩ := hσ,
   rw [order_eq_card_gpowers, support, ←fintype.card_coe],
@@ -85,17 +85,7 @@ begin
     ext y,
     change (σ ^ m) y = (σ ^ n) y,
     by_cases hy : σ y = y,
-    { suffices : ∀ k : ℤ, (σ ^ k) y = y,
-      { rw [this, this] },
-      suffices : ∀ k : ℕ, (σ ^ k) y = y,
-      { intro k,
-        cases k,
-        { exact this k },
-        { rw [gpow_neg_succ_of_nat, inv_eq_iff_eq, this] } },
-      intro k,
-      induction k with k ih,
-      { rw [pow_zero, one_apply] },
-      { rwa [pow_succ, mul_apply, ih] } },
+    { simp only [gpow_apply_eq_self_of_apply_eq_self hy] },
     { obtain ⟨i, rfl⟩ := hσ y hy,
       rw [←mul_apply, ←gpow_add, add_comm, gpow_add, mul_apply, (show (σ ^ m) x = (σ ^ n) x,
         from subtype.ext_iff.mp h), ←mul_apply, ←gpow_add, add_comm, gpow_add, mul_apply] } },
@@ -124,14 +114,39 @@ begin
   exact int.mod_nonneg _ (int.coe_nat_ne_zero.mpr (ne_of_gt (order_of_pos g))),
 end
 
-lemma closure_cycle_coprime_swap {α : Type*} [fintype α] [linear_order α] {n : ℕ} {σ : perm α}
-  (h0 : nat.coprime n (fintype.card α)) (h1 : is_cycle σ) (h2 : σ.support = ⊤) (x : α) :
-closure ({σ, swap x ((σ^n) x)} : set (perm α)) = ⊤ :=
+lemma lem4 {α : Type*} [fintype α] [decidable_eq α] (σ : perm α) (n : ℤ) :
+  (σ ^ n).support ≤ σ.support :=
+λ x h1, finset.mem_filter.mpr ⟨finset.mem_univ x,
+  λ h2, (finset.mem_filter.mp h1).2 (gpow_apply_eq_self_of_apply_eq_self h2 n)⟩
+
+lemma is_cycle_of_is_cycle_pow {α : Type*} [fintype α] [decidable_eq α] {σ : perm α} {n : ℤ}
+  (h1 : is_cycle (σ ^ n)) (h2 : σ.support.card ≤ (σ ^ n).support.card) : is_cycle σ :=
 begin
-  have h2' : (σ^n).support = ⊤,
-  { sorry },
-  have h1' : is_cycle (σ^n),
-  { sorry },
+  have key : ∀ x : α, (σ ^ n) x ≠ x ↔ σ x ≠ x,
+  { simp only [←mem_support],
+    exact finset.ext_iff.mp (finset.eq_of_subset_of_card_le (lem4 σ n) h2) },
+  obtain ⟨x, hx1, hx2⟩ := h1,
+  exact ⟨x, (key x).mp hx1,
+    λ y hy, Exists.cases_on (hx2 y ((key y).mpr hy)) (λ i _, ⟨n * i, by rwa gpow_mul⟩)⟩,
+end
+
+lemma support_pow_coprime {α : Type*} [fintype α] [decidable_eq α] {σ : perm α} {n : ℕ}
+  (h : nat.coprime n (order_of σ)) : (σ ^ n).support = σ.support :=
+begin
+  cases lem3 h with m hm,
+  exact le_antisymm (lem4 σ n) (le_trans (ge_of_eq (congr_arg support hm)) (lem4 (σ ^ n) m)),
+end
+
+lemma closure_cycle_coprime_swap {α : Type*} [fintype α] [linear_order α] {n : ℕ} {σ : perm α}
+  (h0 : nat.coprime n (fintype.card α)) (h1 : is_cycle σ) (h2 : σ.support = finset.univ) (x : α) :
+closure ({σ, swap x ((σ ^ n) x)} : set (perm α)) = ⊤ :=
+begin
+  rw [←finset.card_univ, ←h2, ←order_of_is_cycle h1] at h0,
+  cases lem3 h0 with m hm,
+  have h2' : (σ ^ n).support = ⊤ := eq.trans (support_pow_coprime h0) h2,
+  have h1' : is_cycle ((σ ^ n) ^ (m : ℤ)) := by rwa ← hm at h1,
+  replace h1' : is_cycle (σ ^ n) := is_cycle_of_is_cycle_pow h1'
+    (finset.card_le_of_subset (le_trans (lem4 σ n) (ge_of_eq (congr_arg support hm)))),
   rw [eq_top_iff, ←closure_cycle_adjacent_swap h1' h2' x, closure_le, set.insert_subset],
   exact ⟨subgroup.pow_mem (closure _) (subset_closure (set.mem_insert σ _)) n,
     set.singleton_subset_iff.mpr (subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)))⟩,
