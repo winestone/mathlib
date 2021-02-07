@@ -1,4 +1,5 @@
 import group_theory.perm.cycles
+import group_theory.group_action.basic
 
 open subgroup equiv equiv.perm
 
@@ -69,10 +70,25 @@ begin
   exact step4 y z,
 end
 
-lemma lem1 {α : Type*} [fintype α] [decidable_eq α] {n : ℕ} {σ : perm α} (hσ : is_cycle σ) :
+lemma lem1 {α : Type*} [fintype α] [decidable_eq α] {σ : perm α} (hσ : is_cycle σ) :
   order_of σ = σ.support.card :=
 begin
-  sorry,
+  obtain ⟨x, hx, hσ⟩ := hσ,
+  rw [order_eq_card_gpowers, support, ←fintype.card_coe],
+  apply fintype.card_congr,
+  refine equiv.of_bijective (λ τ, ⟨τ x, _⟩) ⟨_, _⟩,
+  { obtain ⟨τ, n, rfl⟩ := τ,
+    rw [finset.mem_coe, finset.mem_filter],
+    exact ⟨finset.mem_univ _, (λ h, hx
+      ((σ ^ n).injective (by rwa [←mul_apply, mul_gpow_self, ←mul_self_gpow, mul_apply])))⟩ },
+  { sorry },
+  { rintros ⟨y, hy⟩,
+    rw [finset.mem_coe, finset.mem_filter] at hy,
+    cases hσ y hy.2 with n h,
+    use σ ^ n,
+    use n,
+    ext,
+    exact h },
 end
 
 lemma lem2 {G : Type*} [group G] [fintype G] [decidable_eq G] {n : ℕ} {g : G}
