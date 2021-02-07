@@ -1,5 +1,6 @@
 import group_theory.perm.cycles
 import group_theory.group_action.basic
+import group_theory.sylow
 
 open subgroup equiv equiv.perm
 
@@ -64,7 +65,7 @@ begin
     { rw [h6, swap_self], exact H.one_mem },
     rw [←swap_mul_swap_mul_swap h5 h6, swap_comm z x],
     exact H.mul_mem (H.mul_mem (step3 y) (step3 z)) (step3 y) },
-  rw [eq_top_iff ,←closure_is_swap, closure_le],
+  rw [eq_top_iff, ←closure_is_swap, closure_le],
   rintros τ ⟨y, z, h5, h6⟩,
   rw h6,
   exact step4 y z,
@@ -153,7 +154,7 @@ begin
     set.singleton_subset_iff.mpr (subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)))⟩,
 end
 
-lemma closure_prime_cycle_swap {α : Type*} [fintype α] [linear_order α] {n : ℕ} {σ τ : perm α}
+lemma closure_prime_cycle_swap {α : Type*} [fintype α] [linear_order α] {σ τ : perm α}
   (h0 : (fintype.card α).prime) (h1 : is_cycle σ) (h2 : σ.support = finset.univ) (h3 : is_swap τ) :
 closure ({σ, τ} : set (perm α)) = ⊤ :=
 begin
@@ -167,4 +168,28 @@ begin
   cases h with m hm,
   rwa [hm, pow_mul, ←finset.card_univ, ←h2, ←order_of_is_cycle h1,
     pow_order_of_eq_one, one_pow, one_apply] at hi,
+end
+
+lemma lem5 {α : Type*} [fintype α] [linear_order α] {σ τ : perm α}
+  (h0 : (fintype.card α).prime) (h1 : order_of σ = fintype.card α) (h2 : is_swap τ) :
+closure ({σ, τ} : set (perm α)) = ⊤ :=
+begin
+  suffices : is_cycle σ,
+  { refine closure_prime_cycle_swap h0 this (finset.eq_univ_of_card σ.support _) h2,
+    rwa ← order_of_is_cycle this },
+  sorry,
+end
+
+noncomputable instance tada' {G : Type*} [group G] [fintype G] (H : subgroup G) : fintype H :=
+  fintype.of_injective coe subtype.coe_injective
+
+lemma lem6 {α : Type*} [fintype α] [linear_order α] {H : subgroup (perm α)} {τ : perm α}
+  (h0 : (fintype.card α).prime) (h1 : fintype.card α ∣ fintype.card H) (h2 : τ ∈ H) (h3 : is_swap τ) :
+H = ⊤ :=
+begin
+  haveI : fact (fintype.card α).prime := h0,
+  obtain ⟨σ, hσ⟩ := sylow.exists_prime_order_of_dvd_card (fintype.card α) h1,
+  replace hσ : order_of (σ : (perm α)) = fintype.card α := sorry,
+  rw [eq_top_iff, ←lem5 h0 hσ h3, closure_le, set.insert_subset, set.singleton_subset_iff],
+  exact ⟨subtype.mem σ, h2⟩,
 end

@@ -5,6 +5,8 @@ Authors: Thomas Browning and Patrick Lutz
 -/
 
 import field_theory.galois
+import group_theory.perm.generation
+import field_theory.algebraic_closure
 
 /-!
 # Galois Groups of Polynomials
@@ -238,6 +240,32 @@ begin
     { exact nat_degree_le_of_dvd key (minpoly.ne_zero hα) } },
   apply minpoly.dvd F α,
   rw [aeval_def, map_root_of_splits _ (splitting_field.splits p) hp],
+end
+
+instance {p : polynomial ℚ} : fact (p.splits (algebra_map ℚ ℂ)) :=
+begin
+  have alg_closed := complex.is_alg_closed.splits,
+  exact (splits_id_iff_splits (algebra_map ℚ ℂ)).mp (alg_closed (p.map (algebra_map ℚ ℂ))),
+end
+
+lemma tada'' {p : polynomial ℚ} (p_irr : irreducible p) (p_deg : p.nat_degree.prime) :
+  function.surjective (gal_action_hom p ℂ) :=
+begin
+  rw ← monoid_hom.range_top_iff_surjective,
+  haveI : fintype (p.root_set ℂ) := finset_coe.fintype _,
+  haveI : linear_order (p.root_set ℂ) := sorry,
+  have num_roots : fintype.card (p.root_set ℂ) = p.nat_degree := sorry,
+  let conj : ℂ ≃ₐ[ℚ] ℂ := alg_equiv.mk complex.conj complex.conj complex.conj_conj
+    complex.conj_conj complex.conj.map_mul complex.conj.map_add (λ x,
+    by { rw is_scalar_tower.algebra_map_eq ℚ ℝ ℂ, exact complex.conj_of_real x }),
+  apply lem6,
+  { rwa num_roots },
+  { rw num_roots,
+    have key := prime_degree_dvd_card p_irr p_deg,
+    -- monoid_hom.card_range_of_injective ?
+    sorry, },
+  { exact monoid_hom.mem_range.mpr ⟨restrict p ℂ conj, rfl⟩ },
+  -- add root assumption
 end
 
 end gal
