@@ -126,8 +126,9 @@ begin
   { simp only [←mem_support],
     exact finset.ext_iff.mp (finset.eq_of_subset_of_card_le (lem4 σ n) h2) },
   obtain ⟨x, hx1, hx2⟩ := h1,
-  exact ⟨x, (key x).mp hx1,
-    λ y hy, Exists.cases_on (hx2 y ((key y).mpr hy)) (λ i _, ⟨n * i, by rwa gpow_mul⟩)⟩,
+  refine ⟨x, (key x).mp hx1, λ y hy, _⟩,
+  cases (hx2 y ((key y).mpr hy)) with i _,
+  exact ⟨n * i, by rwa gpow_mul⟩,
 end
 
 lemma support_pow_coprime {α : Type*} [fintype α] [decidable_eq α] {σ : perm α} {n : ℕ}
@@ -150,4 +151,20 @@ begin
   rw [eq_top_iff, ←closure_cycle_adjacent_swap h1' h2' x, closure_le, set.insert_subset],
   exact ⟨subgroup.pow_mem (closure _) (subset_closure (set.mem_insert σ _)) n,
     set.singleton_subset_iff.mpr (subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)))⟩,
+end
+
+lemma closure_prime_cycle_swap {α : Type*} [fintype α] [linear_order α] {n : ℕ} {σ τ : perm α}
+  (h0 : (fintype.card α).prime) (h1 : is_cycle σ) (h2 : σ.support = finset.univ) (h3 : is_swap τ) :
+closure ({σ, τ} : set (perm α)) = ⊤ :=
+begin
+  obtain ⟨x, y, h4, h5⟩ := h3,
+  obtain ⟨i, hi⟩ := h1.exists_pow_eq (mem_support.mp
+  ((finset.ext_iff.mp h2 x).mpr (finset.mem_univ x)))
+    (mem_support.mp ((finset.ext_iff.mp h2 y).mpr (finset.mem_univ y))),
+  rw [h5, ←hi],
+  refine closure_cycle_coprime_swap (nat.coprime.symm
+    ((nat.prime.coprime_iff_not_dvd h0).mpr (λ h, h4 _))) h1 h2 x,
+  cases h with m hm,
+  rwa [hm, pow_mul, ←finset.card_univ, ←h2, ←order_of_is_cycle h1,
+    pow_order_of_eq_one, one_pow, one_apply] at hi,
 end
