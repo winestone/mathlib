@@ -223,22 +223,6 @@ begin
     exact splits_comp_of_splits _ _ h₂, },
 end
 
-lemma comp_eq_zero_iff {R : Type*} [integral_domain R] {p q : polynomial R} :
-  p.comp q = 0 ↔ p = 0 ∨ (p.eval (q.coeff 0) = 0 ∧ q = C (q.coeff 0)) :=
-begin
-  split,
-  { intro h,
-    have key : p.nat_degree = 0 ∨ q.nat_degree = 0,
-    { rw [←mul_eq_zero, ←nat_degree_comp, h, nat_degree_zero] },
-    replace key := or.imp eq_C_of_nat_degree_eq_zero eq_C_of_nat_degree_eq_zero key,
-    cases key,
-    { rw [key, C_comp] at h,
-      exact or.inl (key.trans h) },
-    { rw [key, comp_C, C_eq_zero] at h,
-      exact or.inr ⟨h, key⟩ }, },
-  { exact λ h, or.rec (λ h, by rw [h, zero_comp]) (λ h, by rw [h.2, comp_C, h.1, C_0]) h },
-end
-
 example (hq : q.nat_degree ≠ 0) : p.splits (algebra_map F (p.comp q).splitting_field) :=
 begin
   let P : polynomial F → Prop := λ r, r.splits (algebra_map F (r.comp q).splitting_field),
