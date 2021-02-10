@@ -59,7 +59,10 @@ lemma support_sup
   {f g : α →₀ γ} : (f ⊔ g).support = f.support ∪ g.support :=
 begin
   ext, simp only [finset.mem_union, mem_support_iff, sup_apply, ne.def, ← bot_eq_zero],
-  rw sup_eq_bot_iff, tauto,
+  --haveI h : semilattice_sup_bot γ := canonically_linear_ordered_add_monoid.semilattice_sup_bot,
+  --rw sup_eq_bot_iff,
+  rw [eq_bot_iff, sup_le_iff, eq_bot_iff, eq_bot_iff],
+  tauto,
 end
 
 instance lattice [lattice β] : lattice (α →₀ β) :=
