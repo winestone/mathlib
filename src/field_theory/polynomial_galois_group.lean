@@ -210,6 +210,67 @@ begin
   { rwa [ne.def, mul_eq_zero, map_eq_zero, map_eq_zero, ←mul_eq_zero] }
 end
 
+lemma key_lemma {p₁ q₁ p₂ q₂ : polynomial F} (h₁ : p₁.splits (algebra_map F q₁.splitting_field))
+  (h₂ : p₂.splits (algebra_map F q₂.splitting_field)) (hq₁ : q₁ ≠ 0) (hq₂ : q₂ ≠ 0) :
+  (p₁ * p₂).splits (algebra_map F (q₁ * q₂).splitting_field) :=
+begin
+  apply splits_mul,
+  { rw ← (splitting_field.lift q₁ (splits_of_splits_of_dvd _
+      (mul_ne_zero hq₁ hq₂) (splitting_field.splits _) (dvd_mul_right q₁ q₂))).comp_algebra_map,
+    exact splits_comp_of_splits _ _ h₁, },
+  { rw ← (splitting_field.lift q₂ (splits_of_splits_of_dvd _
+      (mul_ne_zero hq₁ hq₂) (splitting_field.splits _) (dvd_mul_left q₂ q₁))).comp_algebra_map,
+    exact splits_comp_of_splits _ _ h₂, },
+end
+
+lemma comp_eq_zero_iff {R : Type*} [integral_domain R] {p q : polynomial R} :
+  p.comp q = 0 ↔ p = 0 ∨ (p.eval (q.coeff 0) = 0 ∧ q = C (q.coeff 0)) :=
+begin
+  split,
+  { intro h,
+    have key : p.nat_degree = 0 ∨ q.nat_degree = 0,
+    { rw [←mul_eq_zero, ←nat_degree_comp, h, nat_degree_zero] },
+    replace key := or.imp eq_C_of_nat_degree_eq_zero eq_C_of_nat_degree_eq_zero key,
+    cases key,
+    { rw [key, C_comp] at h,
+      exact or.inl (key.trans h) },
+    { rw [key, comp_C, C_eq_zero] at h,
+      exact or.inr ⟨h, key⟩ }, },
+  { exact λ h, or.rec (λ h, by rw [h, zero_comp]) (λ h, by rw [h.2, comp_C, h.1, C_0]) h },
+end
+
+example (hq : q.nat_degree ≠ 0) : p.splits (algebra_map F (p.comp q).splitting_field) :=
+begin
+  let P : polynomial F → Prop := λ r, r.splits (algebra_map F (r.comp q).splitting_field),
+  have key1 : ∀ {r : polynomial F}, irreducible r → P r,
+  { intros r hr,
+    by_cases hr' : nat_degree r = 0,
+    { exact splits_of_nat_degree_le_one _ (le_trans (le_of_eq hr') zero_le_one) },
+    obtain ⟨x, hx⟩ := exists_root_of_splits _ (splitting_field.splits (r.comp q))
+      (λ h, hr' (or.resolve_right (mul_eq_zero.mp (eq.trans nat_degree_comp.symm
+      (nat_degree_eq_zero_iff_degree_le_zero.mpr (le_of_eq h)))) hq)),
+    rw [←aeval_def, aeval_comp] at hx,
+    exact splits_of_splits_of_dvd _ (minpoly.ne_zero (normal.is_integral F _))
+      (normal.splits F _) (dvd_symm_of_irreducible (minpoly.irreducible
+      (normal.is_integral F _)) hr (minpoly.dvd F _ hx)) },
+  have key2 : ∀ {p₁ p₂ : polynomial F}, P p₁ → P p₂ → P (p₁ * p₂),
+  { intros p₁ p₂ hp₁ hp₂,
+    by_cases h₁ : p₁.comp q = 0,
+    { cases comp_eq_zero_iff.mp h₁ with h h,
+      { rw [h, zero_mul],
+        exact splits_zero _ },
+      { exact false.rec _ (hq (by rw [h.2, nat_degree_C])) } },
+    by_cases h₂ : p₂.comp q = 0,
+    { cases comp_eq_zero_iff.mp h₂ with h h,
+      { rw [h, mul_zero],
+        exact splits_zero _ },
+      { exact false.rec _ (hq (by rw [h.2, nat_degree_C])) } },
+    have key := key_lemma hp₁ hp₂ h₁ h₂,
+    rwa ← mul_comp at key },
+  exact wf_dvd_monoid.induction_on_irreducible p (splits_zero _)
+    (λ _, splits_of_is_unit _) (λ _ _ _ h, key2 (key1 h)),
+end
+
 variables {p q}
 
 lemma card_of_separable (hp : p.separable) :
