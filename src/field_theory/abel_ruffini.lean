@@ -14,11 +14,22 @@ section abel_ruffini
 
 variables {F : Type*} [field F] {E : Type*} [field E] [algebra F E]
 
-lemma gal_prod_solvable {p q : polynomial F}
+lemma gal_C_solvable (x : F) : is_solvable (gal (C x)) :=
+begin
+  sorry,
+end
+
+lemma gal_mul_solvable {p q : polynomial F}
   (hp : is_solvable (gal p)) (hq : is_solvable (gal q)) : is_solvable (gal (p * q)) :=
 begin
   haveI := solvable_prod hp hq,
   exact solvable_of_solvable_injective (gal.restrict_prod_injective p q),
+end
+
+lemma gal_prod_solvable {s : multiset (polynomial F)}
+  (hs : ∀ p ∈ s, is_solvable (gal p)) : is_solvable (gal s.prod) :=
+begin
+  sorry,
 end
 
 lemma lemma2 {p q : polynomial F} (hpq : fact (splits (algebra_map F q.splitting_field) p))
@@ -111,9 +122,52 @@ end
 
 def P (α : SBR F E) : Prop := is_solvable (minpoly F α).gal
 
-lemma induction3 {α : SBR F E} {n : ℕ} (hn : n ≠ 0) (hα : P (α ^ n)) : P α :=
+lemma gal_X_pow_sub_C_is_solvable {n : ℕ} (hn : n ≠ 0) (x : F) : is_solvable (X ^ n - C x).gal :=
 begin
   sorry,
+end
+
+lemma induction3 {α : SBR F E} {n : ℕ} (hn : n ≠ 0) (hα : P (α ^ n)) : P α :=
+begin
+  let p := minpoly F (α ^ n),
+  let K := p.splitting_field,
+  let L := (p.comp (X ^ n)).splitting_field,
+  let f : K →ₐ[F] L := splitting_field.lift p
+    (gal.splits_in_splitting_field_of_comp p (X ^ n) (by rwa [nat_degree_X_pow])),
+  letI : algebra K L := f.to_ring_hom.to_algebra,
+  haveI : is_scalar_tower F K L := is_scalar_tower.of_ring_hom f,
+  haveI : normal F K := splitting_field.normal p,
+  haveI nFL  : normal F L := splitting_field.normal (p.comp (X ^ n)),
+  haveI : is_solvable (K ≃ₐ[F] K) := hα,
+  suffices : is_solvable (L ≃ₐ[K] L),
+  { haveI := this,
+    refine lemma2 (splits_of_splits_of_dvd _ (λ h, _) (splitting_field.splits (p.comp (X ^ n)))
+    (minpoly.dvd F α (by rw [aeval_comp, aeval_X_pow, minpoly.aeval]))) (tada F K L),
+    cases (comp_eq_zero_iff.mp h) with h' h',
+    { exact minpoly.ne_zero (SBR_is_integral (α ^ n)) h' },
+    { exact hn (by rw [←nat_degree_C _, ←h'.2, nat_degree_X_pow]) } },
+  /-have h1 : is_splitting_field K L ((p.comp (X ^ n)).map (algebra_map F K)),
+  { exact is_splitting_field.map (p.comp (X ^ n)) },-/
+  have h2 : L ≃ₐ[K] ((p.comp (X ^ n)).map (algebra_map F K)).splitting_field,
+  { exact is_splitting_field.alg_equiv L ((p.comp (X ^ n)).map (algebra_map F K)) },
+  suffices : is_solvable ((p.comp (X ^ n)).map (algebra_map F K)).gal,
+  { /- transfer solvable along the isomorphism -/
+    sorry },
+  obtain ⟨s, hs⟩ := (splits_iff_exists_multiset (algebra_map F K)).mp (splitting_field.splits p),
+  rw [map_comp, map_pow, map_X, hs, mul_comp, C_comp],
+  apply gal_mul_solvable,
+  { exact gal_C_solvable _ },
+  rw ← (show _ = (s.map (λ a, X - C a)).prod.comp (X ^ n), from multiset.prod_hom _
+    (monoid_hom.mk (λ (q : polynomial K), q.comp (X ^ n)) one_comp (λ q r, mul_comp q r (X ^ n)))),
+  apply gal_prod_solvable,
+  intros q hq,
+  rw multiset.mem_map at hq,
+  rcases hq with ⟨q, hq, rfl⟩,
+  rw multiset.mem_map at hq,
+  rcases hq with ⟨q, hq, rfl⟩,
+  change is_solvable ((X - C q).comp (X ^ n)).gal,
+  rw [sub_comp, C_comp, X_comp],
+  exact gal_X_pow_sub_C_is_solvable hn _,
 end
 
 lemma induction2 {α β γ : SBR F E} (hγ : γ ∈ F⟮α, β⟯) (hα : P α) (hβ : P β) : P γ :=
@@ -131,8 +185,8 @@ begin
     cases hx,
     exact ⟨SBR_is_integral β, hpq.2⟩,
   end),
-  have key : minpoly F γ = minpoly F (f ⟨γ, hγ⟩) := minpoly.unique' (normal.is_integral F _)
-    (minpoly.irreducible (SBR_is_integral γ)) begin
+  have key : minpoly F γ = minpoly F (f ⟨γ, hγ⟩) := minpoly.unique' (normal.is_integral
+    (splitting_field.normal _) _) (minpoly.irreducible (SBR_is_integral γ)) begin
       suffices : aeval (⟨γ, hγ⟩ : F ⟮α, β⟯) (minpoly F γ) = 0,
       { rw [aeval_alg_hom_apply, this, alg_hom.map_zero] },
       apply (algebra_map F⟮α, β⟯ (SBR F E)).injective,
@@ -141,9 +195,9 @@ begin
     end (minpoly.monic (SBR_is_integral γ)),
   rw [P, key],
   haveI : fact (splits (algebra_map F (p * q).splitting_field) (minpoly F (f ⟨γ, hγ⟩))) :=
-    normal.splits F _,
+    normal.splits (splitting_field.normal _) _,
   haveI hpq1 : is_solvable ((p * q).splitting_field ≃ₐ[F] (p * q).splitting_field) :=
-    gal_prod_solvable hα hβ,
+    gal_mul_solvable hα hβ,
   exact solvable_of_surjective (alg_equiv.restrict_normal_hom_surjective (p * q).splitting_field),
 end
 

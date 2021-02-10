@@ -295,6 +295,8 @@ lemma alg_equiv.restrict_normal_hom_surjective [normal F K] [normal F E] :
   function.surjective (alg_equiv.restrict_normal_hom K : (E ≃ₐ[F] E) → (K ≃ₐ[F] K)) :=
 λ χ, ⟨χ.lift_normal E, χ.restrict_lift_normal E⟩
 
+variables (F) (K) (E)
+
 lemma tada [normal F K] [normal F E] [h1 : is_solvable (K ≃ₐ[F] K)]
   [h2 : is_solvable (E ≃ₐ[K] E)] : is_solvable (E ≃ₐ[F] E) :=
 begin
