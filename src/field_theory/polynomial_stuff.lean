@@ -10,6 +10,7 @@ lemma key_lemma (f g h : polynomial ℤ) (h1 : f.eval 0 ≠ 0) (h2 : is_coprime 
 ∃ k : polynomial ℤ, k.nat_degree = f.nat_degree ∧ f * f.reverse = k * k.reverse
 ∧ k ≠ f ∧ k ≠ - f ∧ k ≠ f.reverse ∧ k ≠ - f.reverse :=
 begin
+  sorry,
 end
 
 noncomputable def selmer (n : ℕ) : polynomial ℤ := X ^ n - X - 1
@@ -24,5 +25,17 @@ end
 lemma reverse_selmer {n : ℕ} (hn : 1 < n) : (selmer n).reverse = 1 - X ^ (n - 1) - X ^ n :=
 begin
   rw [reverse, nat_degree_selmer hn, selmer],
+  rw (show X ^ n - X - (1 : polynomial ℤ) = X ^ n - X ^ 1 - X ^ 0, by rw [pow_zero, pow_one]),
+  rw [reflect_sub, reflect_sub, reflect_monomial, reflect_monomial, reflect_monomial],
+  rw [rev_at_le (le_refl n), rev_at_le (le_of_lt hn), rev_at_le (nat.zero_le n)],
+  rw [nat.sub_self, pow_zero, nat.sub_zero],
+end
+
+lemma selmer_coprime_reverse_selmer {n : ℕ} (hn : 1 < n) :
+  is_coprime (selmer n) (selmer n).reverse :=
+begin
+  rw [reverse_selmer hn, selmer],
   sorry,
 end
+
+end polynomial
