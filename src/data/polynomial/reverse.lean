@@ -21,6 +21,8 @@ namespace polynomial
 open polynomial finsupp finset
 open_locale classical
 
+section semiring
+
 variables {R : Type*} [semiring R] {f : polynomial R}
 
 /-- If `i ≤ N`, then `rev_at_fun N i` returns `N - i`, otherwise it returns `i`.
@@ -209,5 +211,21 @@ begin
   { rw rev_at_le,
     exact nat.succ_le_iff.2 (pos_iff_ne_zero.2 hf) }
 end
+
+end semiring
+
+section ring
+
+variables {R : Type*} [ring R]
+
+@[simp] lemma reflect_neg (f : polynomial R) (N : ℕ) :
+  reflect N (- f) = - reflect N f :=
+by rw [neg_eq_neg_one_mul, ←C_1, ←C_neg, reflect_C_mul, C_neg, C_1, ←neg_eq_neg_one_mul]
+
+@[simp] lemma reflect_sub (f g : polynomial R) (N : ℕ) :
+  reflect N (f - g) = reflect N f - reflect N g :=
+by rw [sub_eq_add_neg, sub_eq_add_neg, reflect_add, reflect_neg]
+
+end ring
 
 end polynomial

@@ -124,6 +124,14 @@ def P (α : SBR F E) : Prop := is_solvable (minpoly F α).gal
 
 lemma gal_X_pow_sub_C_is_solvable {n : ℕ} (hn : n ≠ 0) (x : F) : is_solvable (X ^ n - C x).gal :=
 begin
+  let K := (X ^ n - C (1 : F)).splitting_field,
+  let L := (X ^ n - C x).splitting_field,
+  have key : (X ^ n - C (1 : F)).splits (algebra_map F (X ^ n - C x).splitting_field) := sorry,
+  let f : K →ₐ[F] L := splitting_field.lift (X ^ n - C (1 : F)) key,
+  letI : algebra K L := f.to_ring_hom.to_algebra,
+  haveI : is_scalar_tower F K L := is_scalar_tower.of_ring_hom f,
+  --haveI : normal F K := splitting_field.normal (X ^ n - C (1 : F)),
+  --haveI : normal F L := splitting_field.normal (X ^ n - C x),
   sorry,
 end
 
@@ -137,7 +145,7 @@ begin
   letI : algebra K L := f.to_ring_hom.to_algebra,
   haveI : is_scalar_tower F K L := is_scalar_tower.of_ring_hom f,
   haveI : normal F K := splitting_field.normal p,
-  haveI nFL  : normal F L := splitting_field.normal (p.comp (X ^ n)),
+  haveI nFL : normal F L := splitting_field.normal (p.comp (X ^ n)),
   haveI : is_solvable (K ≃ₐ[F] K) := hα,
   suffices : is_solvable (L ≃ₐ[K] L),
   { haveI := this,
