@@ -671,8 +671,8 @@ class canonically_linear_ordered_monoid (α : Type*)
 section canonically_linear_ordered_monoid
 variables
 
-@[priority 100, to_additive]  -- see Note [lower instance priority]
-instance canonically_linear_ordered_monoid.semilattice_sup_bot
+@[to_additive]
+lemma canonically_linear_ordered_monoid.semilattice_sup_bot
   [canonically_linear_ordered_monoid α] : semilattice_sup_bot α :=
 { ..lattice_of_linear_order, ..canonically_ordered_monoid.to_order_bot α }
 
@@ -681,13 +681,6 @@ instance with_top.canonically_linear_ordered_add_monoid
     canonically_linear_ordered_add_monoid (with_top α) :=
 { .. (infer_instance : canonically_ordered_add_monoid (with_top α)),
   .. (infer_instance : linear_order (with_top α)) }
-
-instance with_top.canonically_linear_ordered_add_monoid.bounded_lattice {α : Type*}
-  [canonically_linear_ordered_add_monoid α] :
-  bounded_lattice (with_top α) :=
-{ .. with_top.order_top,
-  .. lattice_of_linear_order,
-  .. canonically_linear_ordered_add_monoid.semilattice_sup_bot, }
 
 @[to_additive] lemma min_mul_distrib [canonically_linear_ordered_monoid α] (a b c : α) :
   min a (b * c) = min a (min a b * min a c) :=
