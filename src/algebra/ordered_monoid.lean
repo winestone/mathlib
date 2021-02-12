@@ -669,11 +669,10 @@ class canonically_linear_ordered_monoid (α : Type*)
       extends canonically_ordered_monoid α, linear_order α
 
 section canonically_linear_ordered_monoid
-variables
+variables [canonically_linear_ordered_monoid α]
 
 @[priority 100, to_additive]  -- see Note [lower instance priority]
-instance canonically_linear_ordered_monoid.semilattice_sup_bot
-  [canonically_linear_ordered_monoid α] : semilattice_sup_bot α :=
+instance canonically_linear_ordered_monoid.semilattice_sup_bot : semilattice_sup_bot α :=
 { ..lattice_of_linear_order, ..canonically_ordered_monoid.to_order_bot α }
 
 instance with_top.canonically_linear_ordered_add_monoid
@@ -682,7 +681,7 @@ instance with_top.canonically_linear_ordered_add_monoid
 { .. (infer_instance : canonically_ordered_add_monoid (with_top α)),
   .. (infer_instance : linear_order (with_top α)) }
 
-@[to_additive] lemma min_mul_distrib [canonically_linear_ordered_monoid α] (a b c : α) :
+@[to_additive] lemma min_mul_distrib (a b c : α) :
   min a (b * c) = min a (min a b * min a c) :=
 begin
   cases le_total a b with hb hb,
@@ -692,12 +691,14 @@ begin
     { simp [hb, hc] } }
 end
 
-@[to_additive] lemma min_mul_distrib' [canonically_linear_ordered_monoid α] (a b c : α) :
+@[to_additive] lemma min_mul_distrib' (a b c : α) :
   min (a * b) c = min (min a c * min b c) c :=
 by simpa [min_comm _ c] using min_mul_distrib c a b
 
-@[to_additive] lemma le_of_forall_pos_le_mul' [canonically_linear_ordered_monoid α]
-  [densely_ordered α] {a b : α} (h : ∀ε:α, 1 < ε → a ≤ b * ε) :
+/-- Named with a prime to differentiate from `le_of_forall_pos_le_add`, which is the same
+conclucion, but with a `linear_ordered_add_comm_group` hypothesis. -/
+@[to_additive] lemma le_of_forall_pos_le_mul' [densely_ordered α] {a b : α}
+  (h : ∀ε:α, 1 < ε → a ≤ b * ε) :
   a ≤ b :=
 begin
   refine le_of_forall_le_of_dense (λ c hc, _),
