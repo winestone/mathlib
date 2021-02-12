@@ -380,6 +380,18 @@ le_antisymm
   (Sup_le $ assume b h, le_supr_of_le b $ le_supr _ h)
   (supr_le $ assume b, supr_le $ assume h, le_Sup h)
 
+lemma Sup_sUnion {s : set (set α)} :
+  Sup (⋃₀ s) = ⨆ (t ∈ s), Sup t :=
+begin
+  apply le_antisymm,
+  { apply Sup_le (λ b hb, _),
+    rcases hb with ⟨t, ts, bt⟩,
+    apply le_trans _ (le_supr _ t),
+    exact le_trans (le_Sup bt) (le_supr _ ts), },
+  { apply supr_le (λ t, _),
+    exact supr_le (λ ts, Sup_le_Sup (λ x xt, ⟨t, ts, xt⟩)) }
+end
+
 lemma le_supr_iff : (a ≤ supr s) ↔ (∀ b, (∀ i, s i ≤ b) → a ≤ b) :=
 ⟨λ h b hb, le_trans h (supr_le hb), λ h, h _ $ λ i, le_supr s i⟩
 
@@ -653,6 +665,12 @@ by simpa only [inf_comm] using binfi_inf h
 
 theorem supr_sup_eq {f g : β → α} : (⨆ x, f x ⊔ g x) = (⨆ x, f x) ⊔ (⨆ x, g x) :=
 @infi_inf_eq (order_dual α) β _ _ _
+
+lemma supr_sup [h : nonempty ι] {f : ι → α} {a : α} : (⨆ x, f x) ⊔ a = (⨆ x, f x ⊔ a) :=
+@infi_inf (order_dual α) _ _ _ _ _
+
+lemma sup_supr [nonempty ι] {f : ι → α} {a : α} : a ⊔ (⨆ x, f x) = (⨆ x, a ⊔ f x) :=
+@inf_infi (order_dual α) _ _ _ _ _
 
 /- supr and infi under Prop -/
 
@@ -1000,3 +1018,34 @@ instance [complete_lattice α] [complete_lattice β] : complete_lattice (α × �
   .. prod.has_Inf α β }
 
 end prod
+
+section complete_lattice
+variables [complete_lattice α] {a : α} {s : set α}
+
+lemma sup_Inf_le_infi_sup :
+  a ⊔ Inf s ≤ (⨅ b ∈ s, a ⊔ b) :=
+le_infi $ assume i, le_infi $ assume h, sup_le_sup_left (Inf_le h) _
+
+lemma supr_inf_le_inf_Sup :
+  (⨆ b ∈ s, a ⊓ b) ≤ a ⊓ Sup s :=
+supr_le $ assume i, supr_le $ assume h, inf_le_inf_left _ (le_Sup h)
+
+end complete_lattice
+
+section complete_lattice
+variables [complete_lattice α]
+
+/-- An independent set of elements in a complete lattice is one in which every element is disjoint
+  from the `Sup` of the rest. -/
+def complete_lattice.independent (s : set α) : Prop := ∀ a ∈ s, disjoint a (Sup (s \ {a}))
+
+@[simp]
+lemma complete_lattice.independent_empty : complete_lattice.independent (∅ : set α) :=
+λ x hx, (set.not_mem_empty x hx).elim
+
+theorem complete_lattice.independent.mono {s t : set α}
+  (ht : complete_lattice.independent t) (hst : s ⊆ t) :
+  complete_lattice.independent s :=
+λ a ha, (ht a (hst ha)).mono_right (Sup_le_Sup (diff_subset_diff_left hst))
+
+end complete_lattice

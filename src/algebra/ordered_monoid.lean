@@ -676,30 +676,32 @@ instance canonically_linear_ordered_monoid.semilattice_sup_bot
   [canonically_linear_ordered_monoid α] : semilattice_sup_bot α :=
 { ..lattice_of_linear_order, ..canonically_ordered_monoid.to_order_bot α }
 
-instance with_top.canonically_linear_ordered_add_monoid {α : Type u}
-  [canonically_linear_ordered_add_monoid α] :
-  canonically_linear_ordered_add_monoid (with_top α) :=
-{ le_total := λ o₁ o₂, begin
-    cases o₁ with a, {exact or.inr le_top},
-    cases o₂ with b, {exact or.inl le_top},
-    simp [le_total]
-  end,
-  decidable_le := @with_top.decidable_le α _ canonically_linear_ordered_add_monoid.decidable_le,
-  .. with_top.canonically_ordered_add_monoid, }
+instance with_top.canonically_linear_ordered_add_monoid
+  (α : Type*) [canonically_linear_ordered_add_monoid α] :
+    canonically_linear_ordered_add_monoid (with_top α) :=
+{ .. (infer_instance : canonically_ordered_add_monoid (with_top α)),
+  .. (infer_instance : linear_order (with_top α)) }
 
-instance with_top.canonically_linear_ordered_add_monoid.bounded_lattice {α : Type*}
-  [canonically_linear_ordered_add_monoid α] :
-  bounded_lattice (with_top α) :=
-{ .. with_top.order_top,
-  .. lattice_of_linear_order,
-  .. canonically_linear_ordered_add_monoid.semilattice_sup_bot, }
+@[to_additive] lemma min_mul_distrib [canonically_linear_ordered_monoid α] (a b c : α) :
+  min a (b * c) = min a (min a b * min a c) :=
+begin
+  cases le_total a b with hb hb,
+  { simp [hb, le_mul_right] },
+  { cases le_total a c with hc hc,
+    { simp [hc, le_mul_left] },
+    { simp [hb, hc] } }
+end
 
-lemma le_of_forall_pos_le_add' [canonically_linear_ordered_add_monoid α] [densely_ordered α]
-  {a b : α} (h : ∀ε:α, 0 < ε → a ≤ b + ε) :
+@[to_additive] lemma min_mul_distrib' [canonically_linear_ordered_monoid α] (a b c : α) :
+  min (a * b) c = min (min a c * min b c) c :=
+by simpa [min_comm _ c] using min_mul_distrib c a b
+
+@[to_additive] lemma le_of_forall_pos_le_mul' [canonically_linear_ordered_monoid α]
+  [densely_ordered α] {a b : α} (h : ∀ε:α, 1 < ε → a ≤ b * ε) :
   a ≤ b :=
 begin
   refine le_of_forall_le_of_dense (λ c hc, _),
-  rcases exists_pos_add_of_lt hc with ⟨ε, hε_pos, hcε⟩,
+  rcases exists_pos_mul_of_lt hc with ⟨ε, hε_pos, hcε⟩,
   rw ←hcε,
   exact h ε hε_pos,
 end

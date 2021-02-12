@@ -32,12 +32,6 @@ open_locale topological_space filter
 variables {α : Type*} {β : Type*} {γ : Type*} {δ : Type*}
 variables [topological_space α]
 
-/-- The "neighborhood within" filter. Elements of `𝓝[s] a` are sets containing the
-intersection of `s` and a neighborhood of `a`. -/
-def nhds_within (a : α) (s : set α) : filter α := 𝓝 a ⊓ 𝓟 s
-
-localized "notation `𝓝[` s `] ` x:100 := nhds_within x s" in topological_space
-
 @[simp] lemma nhds_bind_nhds_within {a : α} {s : set α} :
   (𝓝 a).bind (λ x, 𝓝[s] x) = 𝓝[s] a :=
 bind_inf_principal.trans $ congr_arg2 _ nhds_bind_nhds rfl
@@ -313,7 +307,8 @@ tendsto f (𝓝[s] x) (𝓝 (f x))
 /-- If a function is continuous within `s` at `x`, then it tends to `f x` within `s` by definition.
 We register this fact for use with the dot notation, especially to use `tendsto.comp` as
 `continuous_within_at.comp` will have a different meaning. -/
-lemma continuous_within_at.tendsto {f : α → β} {s : set α} {x : α} (h : continuous_within_at f s x) :
+lemma continuous_within_at.tendsto {f : α → β} {s : set α} {x : α}
+  (h : continuous_within_at f s x) :
   tendsto f (𝓝[s] x) (𝓝 (f x)) := h
 
 /-- A function between topological spaces is continuous on a subset `s`
@@ -328,7 +323,8 @@ theorem continuous_within_at_univ (f : α → β) (x : α) :
   continuous_within_at f set.univ x ↔ continuous_at f x :=
 by rw [continuous_at, continuous_within_at, nhds_within_univ]
 
-theorem continuous_within_at_iff_continuous_at_restrict (f : α → β) {x : α} {s : set α} (h : x ∈ s) :
+theorem continuous_within_at_iff_continuous_at_restrict (f : α → β) {x : α} {s : set α}
+  (h : x ∈ s) :
   continuous_within_at f s x ↔ continuous_at (s.restrict f) ⟨x, h⟩ :=
 tendsto_nhds_within_iff_subtype h f _
 
@@ -475,16 +471,10 @@ theorem is_open_map.continuous_on_image_of_left_inv_on {f : α → β} {s : set 
   (h : is_open_map (s.restrict f)) {finv : β → α} (hleft : left_inv_on finv f s) :
   continuous_on finv (f '' s) :=
 begin
-  rintros _ ⟨x, xs, rfl⟩ t ht,
-  rw [hleft xs] at ht,
-  replace h := h.nhds_le ⟨x, xs⟩,
-  apply mem_nhds_within_of_mem_nhds,
-  apply h,
-  erw [map_compose.symm, function.comp, mem_map, ← nhds_within_eq_map_subtype_coe],
-  apply mem_sets_of_superset (inter_mem_nhds_within _ ht),
-  assume y hy,
-  rw [mem_set_of_eq, mem_preimage, hleft hy.1],
-  exact hy.2
+  refine continuous_on_iff'.2 (λ t ht, ⟨f '' (t ∩ s), _, _⟩),
+  { rw ← image_restrict, exact h _ (ht.preimage continuous_subtype_coe) },
+  { rw [inter_eq_self_of_subset_left (image_subset f (inter_subset_right t s)),
+      hleft.image_inter'] },
 end
 
 theorem is_open_map.continuous_on_range_of_left_inverse {f : α → β} (hf : is_open_map f)
@@ -715,7 +705,7 @@ lemma continuous_within_at_of_not_mem_closure {f : α → β} {s : set α} {x : 
   x ∉ closure s → continuous_within_at f s x :=
 begin
   intros hx,
-  rw [mem_closure_iff_nhds_within_ne_bot, ne_bot, not_not] at hx,
+  rw [mem_closure_iff_nhds_within_ne_bot, ne_bot_iff, not_not] at hx,
   rw [continuous_within_at, hx],
   exact tendsto_bot,
 end
