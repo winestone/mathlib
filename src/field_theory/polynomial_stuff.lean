@@ -1,5 +1,6 @@
 import data.polynomial.reverse
 import field_theory.polynomial_galois_group
+import analysis.complex.polynomial
 
 namespace polynomial
 
@@ -29,9 +30,9 @@ begin
   rw [reverse, reverse_nat_degree_eq hp, reverse, coeff_reflect, coeff_reflect, rev_at_invol],
 end
 
-lemma my_lemma_1 {R : Type*} [integral_domain R] (f : polynomial R)
-  (h1 : f.eval 0 ≠ 0) /- do we just use this for hg hh ? -/
-  (h2 : ¬ is_unit f) /- do we need this, or just ≠ 0 ? -/
+lemma key_lemma {R : Type*} [integral_domain R] {f : polynomial R}
+  (h1 : f.eval 0 ≠ 0)
+  (h2 : ¬ is_unit f)
   (h3 : ∀ k, f * f.reverse = k * k.reverse → k = f ∨ k = -f ∨ k = f.reverse ∨ k = -(f.reverse))
   (h4 : ∀ g, g ∣ f → g ∣ f.reverse → is_unit g) : irreducible f :=
 begin
@@ -43,22 +44,60 @@ begin
     have key : f * f.reverse = k * k.reverse,
     { rw [fgh, reverse_mul_of_domain, reverse_mul_of_domain, mul_assoc, mul_comm h,
           mul_comm g.reverse, mul_assoc, ←mul_assoc, reverse_reverse h1.2] },
+    have g_dvd_f : g ∣ f,
+    { rw fgh,
+      exact dvd_mul_right g h },
+    have g_dvd_k : g ∣ k,
+    { exact dvd_mul_right g h.reverse },
+    have h_dvd_f : h ∣ f,
+    { rw fgh,
+      exact dvd_mul_left h g },
+    have h_dvd_k_rev : h ∣ k.reverse,
+    { rw [reverse_mul_of_domain, reverse_reverse h1.2],
+      exact dvd_mul_left h g.reverse },
     have hk := h3 k key,
     cases hk with hk hk,
-    { apply or.inr,
-      apply h4,
-      rw fgh,
-      exact dvd_mul_left h g,
-      rw [←hk, reverse_mul_of_domain, reverse_reverse h1.2],
-      exact dvd_mul_left h g.reverse },
+    { exact or.inr (h4 h h_dvd_f (by rwa ← hk)) },
     cases hk with hk hk,
-    { apply or.inr,
-      apply h4,
-      rw fgh,
-      exact dvd_mul_left h g,
-      rw [eq_neg_iff_eq_neg.mp hk, reverse_neg], },
-    {},
-    {},
+    { exact or.inr (h4 h h_dvd_f (by rwa [eq_neg_iff_eq_neg.mp hk, reverse_neg, dvd_neg])) },
+    cases hk with hk hk,
+    { exact or.inl (h4 g g_dvd_f (by rwa ← hk)) },
+    { exact or.inl (h4 g g_dvd_f (by rwa [eq_neg_iff_eq_neg.mp hk, dvd_neg])) } },
+end
+
+lemma is_unit_neg {R : Type*} [ring R] (u : R) : is_unit (-u) ↔ is_unit u :=
+⟨λ h, Exists.cases_on h (λ v hv, ⟨-v, v.coe_neg.trans (neg_eq_iff_neg_eq.mp hv.symm)⟩),
+  λ h, Exists.cases_on h (λ v hv, ⟨-v, v.coe_neg.trans (congr_arg _ hv)⟩)⟩
+
+theorem selmer_irreducible (n : ℕ) (hn1 : n ≠ 1) :
+  irreducible (X ^ n - X - 1 : polynomial ℤ) :=
+begin
+  by_cases hn0 : n = 0,
+  { exact irreducible_of_associated ⟨-1, by rw [units.coe_neg_one, mul_neg_one,
+      hn0, pow_zero, sub_sub, add_comm, ←sub_sub, sub_self, zero_sub]⟩ irreducible_X },
+  have hn := nat.one_lt_iff_ne_zero_and_ne_one.mpr ⟨hn0, hn1⟩,
+  have hn' := zero_lt_one.trans hn,
+  have h0 : (X ^ n - X - 1 : polynomial ℤ).eval 0 = -1,
+  { rw [eval_sub, eval_sub, eval_one, eval_pow, eval_X, zero_pow hn', sub_self, zero_sub] },
+  have h1 : (X ^ n - X - 1 : polynomial ℤ).eval 0 ≠ 0,
+  { exact ne_of_eq_of_ne h0 (neg_ne_zero.mpr one_ne_zero) },
+  have h2 : ¬ is_unit (X ^ n - X - 1 : polynomial ℤ),
+  { sorry },
+  apply key_lemma h1 h2,
+  { intros k hk,
+    sorry },
+  { intros g hg1 hg2,
+    suffices : ¬ (0 < g.nat_degree),
+    { rw [eq_C_of_nat_degree_eq_zero (not_not.mp (mt zero_lt_iff.mpr this)), is_unit_C],
+      cases hg1 with h fgh,
+      have key := (is_unit_neg _).mpr is_unit_one,
+      rw [←h0, fgh, eval_mul, ←coeff_zero_eq_eval_zero] at key,
+      exact is_unit_of_mul_is_unit_left key },
+    intro h,
+    have inj : function.injective (algebra_map ℤ ℂ) := int.cast_injective,
+    rw [lt_iff_not_ge, ge_iff_le, nat_degree_le_iff_degree_le, ←ge_iff_le, ←lt_iff_not_ge,
+        with_bot.coe_zero, ←degree_map' inj] at h,
+    cases complex.exists_root h with z hz,
     sorry, },
 end
 
@@ -108,10 +147,6 @@ end
 
 lemma leading_coeff_neg {R : Type*} [ring R] (f : polynomial R) : leading_coeff (-f) = - (leading_coeff f) :=
 by rw [leading_coeff, leading_coeff, coeff_neg, nat_degree_neg]
-
-lemma is_unit_neg {R : Type*} [ring R] (u : R) : is_unit (-u) ↔ is_unit u :=
-⟨λ h, Exists.cases_on h (λ v hv, ⟨-v, v.coe_neg.trans (neg_eq_iff_neg_eq.mp hv.symm)⟩),
-  λ h, Exists.cases_on h (λ v hv, ⟨-v, v.coe_neg.trans (congr_arg _ hv)⟩)⟩
 
 lemma selmer_irreducible {n : ℕ} (hn : 1 < n) : irreducible (selmer n) :=
 begin
