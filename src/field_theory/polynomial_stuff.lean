@@ -1,6 +1,7 @@
 import data.polynomial.reverse
 import field_theory.polynomial_galois_group
 import analysis.complex.polynomial
+import algebra.big_operators.nat_antidiagonal
 
 namespace polynomial
 
@@ -186,6 +187,18 @@ begin
   exact sub_lemma n z ⟨hg1, hg2⟩,
 end
 
+lemma mul_reverse_coeff {R : Type*} [ring R] (p : polynomial R) :
+  (p * p.reverse).coeff (p.nat_degree) =
+    (finset.range p.nat_degree.succ).sum (λ k, (p.coeff k) ^ 2) :=
+begin
+  rw [coeff_mul, finset.nat.sum_antidiagonal_eq_sum_range_succ_mk,
+      ←sub_eq_zero, ←finset.sum_sub_distrib],
+  apply finset.sum_eq_zero,
+  intros x hx,
+  rw [pow_two, ←mul_sub, reverse, coeff_reflect, rev_at_le (nat.sub_le_self _ _),
+      nat.sub_sub_self (finset.mem_range_succ_iff.mp hx), sub_self, mul_zero],
+end
+
 theorem selmer.irreducible (n : ℕ) (hn1 : n ≠ 1) : irreducible (selmer n) :=
 begin
   by_cases hn0 : n = 0,
@@ -196,33 +209,12 @@ begin
   refine key_lemma (ne_of_eq_of_ne (selmer.eval_zero hn') (neg_ne_zero.mpr one_ne_zero))
     (selmer.not_is_unit hn1) _ (λ _, selmer.coprime_reverse),
   intros k hk,
+  -- mul_reverse_coeff
+  -- sum of squares equals three → trinomial!
   sorry,
 end
 
 --https://math.stackexchange.com/a/800835
-
-noncomputable def selmer (n : ℕ) : polynomial ℤ := X ^ n - X - 1
-
-lemma selmer_nat_degree {n : ℕ} (hn : 1 < n) : (selmer n).nat_degree = n :=
-begin
-  rw [selmer, sub_sub, ←degree_eq_iff_nat_degree_eq_of_pos (zero_lt_one.trans hn)],
-  refine eq.trans (degree_sub_eq_left_of_degree_lt _) (degree_X_pow n),
-  rwa [degree_X_pow, ←C_1, degree_X_add_C, ←with_bot.coe_one, with_bot.coe_lt_coe],
-end
-
-lemma selmer_monic {n : ℕ} (hn : 1 < n) : (selmer n).monic :=
-by rw [monic, leading_coeff, selmer_nat_degree hn, selmer, coeff_sub, coeff_sub, coeff_X_pow_self,
-  coeff_X, coeff_one, if_neg (ne_of_lt hn), if_neg (ne_zero_of_lt hn).symm, sub_zero, sub_zero]
-
-lemma selmer_eval_zero {n : ℕ} (hn : 0 < n) : (selmer n).eval 0 = -1 :=
-by rw [selmer, eval_sub, eval_sub, eval_one, eval_pow, eval_X, zero_pow hn, sub_self, zero_sub]
-
-lemma selmer_reverse {n : ℕ} (hn : 1 < n) : (selmer n).reverse = 1 - X ^ (n - 1) - X ^ n :=
-by rw [reverse, selmer_nat_degree hn, selmer,
-  (show X ^ n - X - (1 : polynomial ℤ) = X ^ n - X ^ 1 - X ^ 0, by rw [pow_zero, pow_one]),
-  reflect_sub, reflect_sub, reflect_monomial, reflect_monomial, reflect_monomial,
-  rev_at_le (le_refl n), rev_at_le (le_of_lt hn), rev_at_le (nat.zero_le n),
-  nat.sub_self, pow_zero, nat.sub_zero]
 
 lemma int.mul_eq_one_iff {a b : ℤ} (hab : a * b = 1) : (a = 1 ∧ b = 1) ∨ (a = -1 ∧ b = -1) :=
 begin
@@ -249,13 +241,13 @@ by rw [leading_coeff, leading_coeff, coeff_neg, nat_degree_neg]
 lemma selmer_irreducible {n : ℕ} (hn : 1 < n) : irreducible (selmer n) :=
 begin
   split,
-  { exact λ h, ne_zero_of_lt hn ((selmer_nat_degree hn).symm.trans
+  { exact λ h, ne_zero_of_lt hn ((selmer.nat_degree hn).symm.trans
       (nat_degree_eq_zero_iff_degree_le_zero.mpr (le_of_eq (degree_eq_zero_of_is_unit h)))) },
   suffices : ∀ f g : polynomial ℤ, selmer n = f * g → f.monic → g.monic → is_unit f ∨ is_unit g,
   { intros f g hfg,
     have key : f.leading_coeff * g.leading_coeff = 1,
     { rw [←leading_coeff_mul, ←hfg],
-      exact selmer_monic hn },
+      exact selmer.monic hn },
     cases int.mul_eq_one_iff key with h h,
     { exact this f g hfg h.1 h.2 },
     { have key := this (-f) (-g) (hfg.trans (neg_mul_neg f g).symm)
@@ -265,7 +257,7 @@ begin
   suffices : ∀ f g : polynomial ℤ, selmer n = f * g → f.monic → g.monic →
     f.eval 0 = 1 → g.eval 0 = -1 → f = 1 ∨ g = -1,
   { intros f g hfg hf hg,
-    have key := selmer_eval_zero (zero_lt_one.trans hn),
+    have key := selmer.eval_zero (zero_lt_one.trans hn),
     rw [hfg, eval_mul] at key,
     cases int.mul_eq_neg_one_iff key with h h,
     { refine or.imp _ _ (this f g hfg hf hg h.1 h.2),
