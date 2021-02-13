@@ -226,6 +226,10 @@ by rw [neg_eq_neg_one_mul, ←C_1, ←C_neg, reflect_C_mul, C_neg, C_1, ←neg_e
   reflect N (f - g) = reflect N f - reflect N g :=
 by rw [sub_eq_add_neg, sub_eq_add_neg, reflect_add, reflect_neg]
 
+@[simp] lemma reverse_neg (f : polynomial R) :
+  reverse (- f) = - reverse f :=
+by rw [reverse, reverse, reflect_neg, nat_degree_neg]
+
 end ring
 
 end polynomial
