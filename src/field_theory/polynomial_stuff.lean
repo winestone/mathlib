@@ -66,11 +66,9 @@ begin
     { rw [reverse_mul_of_domain, reverse_reverse h1.2],
       exact dvd_mul_left h g.reverse },
     have hk := h3 k key,
-    cases hk with hk hk,
+    rcases hk with hk | hk | hk | hk,
     { exact or.inr (h4 h h_dvd_f (by rwa ← hk)) },
-    cases hk with hk hk,
     { exact or.inr (h4 h h_dvd_f (by rwa [eq_neg_iff_eq_neg.mp hk, reverse_neg, dvd_neg])) },
-    cases hk with hk hk,
     { exact or.inl (h4 g g_dvd_f (by rwa ← hk)) },
     { exact or.inl (h4 g g_dvd_f (by rwa [eq_neg_iff_eq_neg.mp hk, dvd_neg])) } },
 end
@@ -119,21 +117,6 @@ by rw [reverse, selmer.nat_degree hn, selmer,
   rev_at_le (le_refl n), rev_at_le (le_of_lt hn), rev_at_le (nat.zero_le n),
   nat.sub_self, pow_zero, nat.sub_zero]
 
-lemma cases_mod_three (n : ℕ) : (n % 3 = 0) ∨ (n % 3 = 1) ∨ (n % 3 = 2) :=
-begin
-  induction n with n hn,
-  exact or.inl (nat.zero_mod 3),
-  rw [nat.succ_eq_add_one, nat.add_mod],
-  cases hn with hn hn,
-  { rw hn,
-    exact or.inr (or.inl rfl) },
-  cases hn with hn hn,
-  { rw hn,
-    exact or.inr (or.inr rfl) },
-  { rw hn,
-    exact or.inl rfl },
-end
-
 lemma sub_lemma (n : ℕ) (z : ℂ) : ¬ (z ^ n = z + 1 ∧ z ^ n + z ^ 2 = 0) :=
 begin
   rintros ⟨h1, h2⟩,
@@ -145,8 +128,9 @@ begin
     ring },
   have key : z ^ n = 1 ∨ z ^ n = z ∨ z ^ n = z ^ 2,
   { rw [←nat.mod_add_div n 3, pow_add, pow_mul, h3, one_pow, mul_one],
-    refine or.elim3 (cases_mod_three n) _ _ _,
-    all_goals { intro h, rw h },
+    have : n % 3 < 3 := nat.mod_lt n zero_lt_three,
+    interval_cases n % 3,
+    all_goals { rw h },
     { exact or.inl (pow_zero z) },
     { exact or.inr (or.inl (pow_one z)) },
     { exact or.inr (or.inr rfl) } },
@@ -154,15 +138,12 @@ begin
   { intro h,
     rw [h, zero_pow (zero_lt_three)] at h3,
     exact zero_ne_one h3 },
-  refine or.elim3 key _ _ _,
-  { intro h,
-    rw [h, right_eq_add_iff] at h1,
+  rcases key with key | key | key,
+  { rw [key, right_eq_add_iff] at h1,
     exact z_ne_zero h1 },
-  { intro h,
-    rw [h, left_eq_add_iff] at h1,
+  { rw [key, left_eq_add_iff] at h1,
     exact one_ne_zero h1 },
-  { intro h,
-    rw [←h, h1, add_self_eq_zero, ←h1] at h2,
+  { rw [←key, h1, add_self_eq_zero, ←h1] at h2,
     exact z_ne_zero (pow_eq_zero h2) },
 end
 
