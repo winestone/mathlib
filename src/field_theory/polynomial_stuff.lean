@@ -119,6 +119,21 @@ by rw [reverse, selmer.nat_degree hn, selmer,
   rev_at_le (le_refl n), rev_at_le (le_of_lt hn), rev_at_le (nat.zero_le n),
   nat.sub_self, pow_zero, nat.sub_zero]
 
+lemma cases_mod_three (n : ℕ) : (n % 3 = 0) ∨ (n % 3 = 1) ∨ (n % 3 = 2) :=
+begin
+  induction n with n hn,
+  exact or.inl (nat.zero_mod 3),
+  rw [nat.succ_eq_add_one, nat.add_mod],
+  cases hn with hn hn,
+  { rw hn,
+    exact or.inr (or.inl rfl) },
+  cases hn with hn hn,
+  { rw hn,
+    exact or.inr (or.inr rfl) },
+  { rw hn,
+    exact or.inl rfl },
+end
+
 lemma sub_lemma (n : ℕ) (z : ℂ) : ¬ (z ^ n = z + 1 ∧ z ^ n + z ^ 2 = 0) :=
 begin
   rintros ⟨h1, h2⟩,
@@ -129,7 +144,12 @@ begin
   { rw [←sub_eq_zero, ←h3],
     ring },
   have key : z ^ n = 1 ∨ z ^ n = z ∨ z ^ n = z ^ 2,
-  { sorry },
+  { rw [←nat.mod_add_div n 3, pow_add, pow_mul, h3, one_pow, mul_one],
+    refine or.elim3 (cases_mod_three n) _ _ _,
+    all_goals { intro h, rw h },
+    { exact or.inl (pow_zero z) },
+    { exact or.inr (or.inl (pow_one z)) },
+    { exact or.inr (or.inr rfl) } },
   have z_ne_zero : z ≠ 0,
   { intro h,
     rw [h, zero_pow (zero_lt_three)] at h3,
