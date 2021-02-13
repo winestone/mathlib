@@ -30,6 +30,16 @@ begin
   rw [reverse, reverse_nat_degree_eq hp, reverse, coeff_reflect, coeff_reflect, rev_at_invol],
 end
 
+lemma reverse_X {R : Type*} [semiring R] : (X : polynomial R).reverse = 1 :=
+begin
+  by_cases h : nontrivial R,
+  { haveI := h,
+    rw [reverse, nat_degree_X, ←pow_one X, reflect_monomial,
+        rev_at_le (le_refl 1), nat.sub_self, pow_zero] },
+  haveI := (not_nontrivial_iff_subsingleton.mp h),
+  exact polynomial.ext (λ n, subsingleton.elim _ _),
+end
+
 lemma key_lemma {R : Type*} [integral_domain R] {f : polynomial R}
   (h1 : f.eval 0 ≠ 0)
   (h2 : ¬ is_unit f)
@@ -69,36 +79,123 @@ lemma is_unit_neg {R : Type*} [ring R] (u : R) : is_unit (-u) ↔ is_unit u :=
 ⟨λ h, Exists.cases_on h (λ v hv, ⟨-v, v.coe_neg.trans (neg_eq_iff_neg_eq.mp hv.symm)⟩),
   λ h, Exists.cases_on h (λ v hv, ⟨-v, v.coe_neg.trans (congr_arg _ hv)⟩)⟩
 
-theorem selmer_irreducible (n : ℕ) (hn1 : n ≠ 1) :
-  irreducible (X ^ n - X - 1 : polynomial ℤ) :=
+noncomputable def selmer (n : ℕ) : polynomial ℤ := X ^ n - X - 1
+
+lemma selmer.zero : selmer 0 = -X :=
+by rw [selmer, pow_zero, sub_sub, add_comm, ←sub_sub, sub_self, zero_sub]
+
+lemma selmer.one : selmer 1 = -1 :=
+by rw [selmer, pow_one, sub_self, zero_sub]
+
+lemma selmer.degree {n : ℕ} (hn : 1 < n) : (selmer n).degree = n :=
+begin
+  rw [selmer, sub_sub, degree_sub_eq_left_of_degree_lt, degree_X_pow],
+  rwa [degree_X_pow, ←C_1, degree_X_add_C, ←with_bot.coe_one, with_bot.coe_lt_coe],
+end
+
+lemma selmer.nat_degree {n : ℕ} (hn : 1 < n) : (selmer n).nat_degree = n :=
+by rwa [←degree_eq_iff_nat_degree_eq_of_pos (zero_lt_one.trans hn), selmer.degree]
+
+lemma selmer.monic {n : ℕ} (hn : 1 < n) : (selmer n).monic :=
+by rw [monic, leading_coeff, selmer.nat_degree hn, selmer, coeff_sub, coeff_sub, coeff_X_pow_self,
+  coeff_X, coeff_one, if_neg (ne_of_lt hn), if_neg (ne_zero_of_lt hn).symm, sub_zero, sub_zero]
+
+lemma selmer.eval_zero {n : ℕ} (hn : 0 < n) : (selmer n).eval 0 = -1 :=
+by rw [selmer, eval_sub, eval_sub, eval_one, eval_pow, eval_X, zero_pow hn, sub_self, zero_sub]
+
+lemma selmer.not_is_unit {n : ℕ} (hn1 : n ≠ 1) : ¬ is_unit (selmer n) :=
 begin
   by_cases hn0 : n = 0,
-  { exact irreducible_of_associated ⟨-1, by rw [units.coe_neg_one, mul_neg_one,
-      hn0, pow_zero, sub_sub, add_comm, ←sub_sub, sub_self, zero_sub]⟩ irreducible_X },
+  { rw [hn0, selmer.zero, is_unit_neg],
+    exact not_is_unit_X },
+  apply mt degree_eq_zero_of_is_unit,
+  rwa [selmer.degree (nat.one_lt_iff_ne_zero_and_ne_one.mpr ⟨hn0, hn1⟩), with_bot.coe_eq_zero],
+end
+
+lemma selmer.reverse {n : ℕ} (hn : 1 < n) : (selmer n).reverse = 1 - X ^ (n - 1) - X ^ n :=
+by rw [reverse, selmer.nat_degree hn, selmer,
+  (show X ^ n - X - (1 : polynomial ℤ) = X ^ n - X ^ 1 - X ^ 0, by rw [pow_zero, pow_one]),
+  reflect_sub, reflect_sub, reflect_monomial, reflect_monomial, reflect_monomial,
+  rev_at_le (le_refl n), rev_at_le (le_of_lt hn), rev_at_le (nat.zero_le n),
+  nat.sub_self, pow_zero, nat.sub_zero]
+
+lemma sub_lemma (n : ℕ) (z : ℂ) : ¬ (z ^ n = z + 1 ∧ z ^ n + z ^ 2 = 0) :=
+begin
+  rintros ⟨h1, h2⟩,
+  rw h1 at h2,
+  have h3 : (z - 1) * (z + 1 + z ^ 2) = 0,
+  { rw [h2, mul_zero] },
+  replace h3 : z ^ 3 = 1,
+  { rw [←sub_eq_zero, ←h3],
+    ring },
+  have key : z ^ n = 1 ∨ z ^ n = z ∨ z ^ n = z ^ 2,
+  { sorry },
+  have z_ne_zero : z ≠ 0,
+  { intro h,
+    rw [h, zero_pow (zero_lt_three)] at h3,
+    exact zero_ne_one h3 },
+  refine or.elim3 key _ _ _,
+  { intro h,
+    rw [h, right_eq_add_iff] at h1,
+    exact z_ne_zero h1 },
+  { intro h,
+    rw [h, left_eq_add_iff] at h1,
+    exact one_ne_zero h1 },
+  { intro h,
+    rw [←h, h1, add_self_eq_zero, ←h1] at h2,
+    exact z_ne_zero (pow_eq_zero h2) },
+end
+
+lemma selmer.coprime_reverse {n : ℕ} {g : polynomial ℤ}
+  (hg1 : g ∣ selmer n) (hg2 : g ∣ (selmer n).reverse) : is_unit g :=
+begin
+  by_cases hn0 : n = 0,
+  { rw [hn0, selmer.zero, reverse_neg, reverse_X, dvd_neg] at hg2,
+    exact is_unit_of_dvd_one g hg2 },
+  by_cases hn1 : n = 1,
+  { rw [hn1, selmer.one, dvd_neg] at hg1,
+    exact is_unit_of_dvd_one g hg1 },
   have hn := nat.one_lt_iff_ne_zero_and_ne_one.mpr ⟨hn0, hn1⟩,
   have hn' := zero_lt_one.trans hn,
-  have h0 : (X ^ n - X - 1 : polynomial ℤ).eval 0 = -1,
-  { rw [eval_sub, eval_sub, eval_one, eval_pow, eval_X, zero_pow hn', sub_self, zero_sub] },
-  have h1 : (X ^ n - X - 1 : polynomial ℤ).eval 0 ≠ 0,
-  { exact ne_of_eq_of_ne h0 (neg_ne_zero.mpr one_ne_zero) },
-  have h2 : ¬ is_unit (X ^ n - X - 1 : polynomial ℤ),
-  { sorry },
-  apply key_lemma h1 h2,
-  { intros k hk,
-    sorry },
-  { intros g hg1 hg2,
-    suffices : ¬ (0 < g.nat_degree),
-    { rw [eq_C_of_nat_degree_eq_zero (not_not.mp (mt zero_lt_iff.mpr this)), is_unit_C],
-      cases hg1 with h fgh,
-      have key := (is_unit_neg _).mpr is_unit_one,
-      rw [←h0, fgh, eval_mul, ←coeff_zero_eq_eval_zero] at key,
-      exact is_unit_of_mul_is_unit_left key },
-    intro h,
-    have inj : function.injective (algebra_map ℤ ℂ) := int.cast_injective,
-    rw [lt_iff_not_ge, ge_iff_le, nat_degree_le_iff_degree_le, ←ge_iff_le, ←lt_iff_not_ge,
-        with_bot.coe_zero, ←degree_map' inj] at h,
-    cases complex.exists_root h with z hz,
-    sorry, },
+  suffices : ¬ (0 < g.nat_degree),
+  { cases hg1 with h fgh,
+    have key : is_unit (g.coeff 0 * h.eval 0),
+    { rw [coeff_zero_eq_eval_zero, ←eval_mul, ←fgh, selmer.eval_zero hn', is_unit_neg],
+      exact is_unit_one },
+    rw [eq_C_of_nat_degree_eq_zero (not_not.mp (mt zero_lt_iff.mpr this)), is_unit_C],
+    exact is_unit_of_mul_is_unit_left key },
+  intro h,
+  have inj : function.injective (algebra_map ℤ ℂ) := int.cast_injective,
+  rw [lt_iff_not_ge, ge_iff_le, nat_degree_le_iff_degree_le, ←ge_iff_le, ←lt_iff_not_ge,
+      with_bot.coe_zero, ←degree_map' inj] at h,
+  cases complex.exists_root h with z hz,
+  rw [is_root, eval_map, ←aeval_def] at hz,
+  replace hg1 : aeval z (selmer n) = 0,
+  { cases hg1 with g' hg',
+    rw [hg', aeval_mul, hz, zero_mul] },
+  replace hg2 : aeval z (selmer n).reverse = 0,
+  { cases hg2 with g' hg',
+    rw [hg', aeval_mul, hz, zero_mul] },
+  rw [selmer, alg_hom.map_sub, alg_hom.map_sub, alg_hom.map_pow, aeval_X, aeval_one,
+      sub_sub, sub_eq_zero] at hg1,
+  rw [selmer.reverse hn, alg_hom.map_sub, alg_hom.map_sub, alg_hom.map_pow, alg_hom.map_pow,
+      aeval_X, aeval_one, sub_sub, sub_eq_zero, hg1, ←add_assoc, right_eq_add_iff] at hg2,
+  replace hg2 : z ^ n + z ^ 2 = 0,
+  { rw [←nat.sub_add_cancel (nat.succ_le_of_lt hn'), pow_succ, pow_two, ←mul_add, hg2, mul_zero] },
+  exact sub_lemma n z ⟨hg1, hg2⟩,
+end
+
+theorem selmer.irreducible (n : ℕ) (hn1 : n ≠ 1) : irreducible (selmer n) :=
+begin
+  by_cases hn0 : n = 0,
+  { exact irreducible_of_associated
+      ⟨-1, by rw [units.coe_neg_one, mul_neg_one, hn0, selmer.zero]⟩ irreducible_X },
+  have hn := nat.one_lt_iff_ne_zero_and_ne_one.mpr ⟨hn0, hn1⟩,
+  have hn' := zero_lt_one.trans hn,
+  refine key_lemma (ne_of_eq_of_ne (selmer.eval_zero hn') (neg_ne_zero.mpr one_ne_zero))
+    (selmer.not_is_unit hn1) _ (λ _, selmer.coprime_reverse),
+  intros k hk,
+  sorry,
 end
 
 --https://math.stackexchange.com/a/800835
