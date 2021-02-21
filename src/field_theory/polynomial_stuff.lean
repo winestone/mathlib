@@ -5,14 +5,106 @@ import algebra.big_operators.nat_antidiagonal
 
 namespace polynomial
 
+lemma coeff_reverse {R : Type*} [semiring R] (p : polynomial R) (n : ℕ) :
+  p.reverse.coeff n = p.coeff (rev_at p.nat_degree n) :=
+by rw [reverse, coeff_reflect]
+
+lemma reverse_eq_zero {R : Type*} [semiring R] {p : polynomial R} :
+  p.reverse = 0 ↔ p = 0 :=
+begin
+  split,
+  { rw [polynomial.ext_iff, polynomial.ext_iff],
+    intros h n,
+    specialize h (rev_at p.nat_degree n),
+    rwa [coeff_zero, coeff_reverse, rev_at_invol] at h },
+  { intro h,
+    rw [h, reverse_zero] },
+end
+
 lemma reverse_nat_degree_le {R : Type*} [semiring R] (p : polynomial R) :
   p.reverse.nat_degree ≤ p.nat_degree :=
 begin
   rw [nat_degree_le_iff_degree_le, degree_le_iff_coeff_zero],
   intros n hn,
   rw with_bot.coe_lt_coe at hn,
-  rw [reverse, coeff_reflect, rev_at, function.embedding.coe_fn_mk,
-      if_neg ((lt_iff_not_ge _ _).mp hn), coeff_eq_zero_of_nat_degree_lt hn],
+  rw [coeff_reverse, rev_at, function.embedding.coe_fn_mk,
+      if_neg (not_le_of_gt hn), coeff_eq_zero_of_nat_degree_lt hn],
+end
+
+lemma nat_trailing_degree_le_nat_degree {R : Type*} [semiring R] (p : polynomial R) :
+  p.nat_trailing_degree ≤ p.nat_degree :=
+begin
+  by_cases hp : p = 0,
+  { rw [hp, nat_degree_zero, nat_trailing_degree_zero] },
+  { exact le_nat_degree_of_ne_zero (mt trailing_coeff_eq_zero.mp hp) },
+end
+
+lemma good_lemma {R : Type*} [semiring R] (p : polynomial R) :
+  p.nat_degree = p.reverse.nat_degree + p.nat_trailing_degree :=
+begin
+  by_cases hp : p = 0,
+  { rw [hp, reverse_zero, nat_degree_zero, nat_trailing_degree_zero] },
+  apply le_antisymm,
+  { apply nat.le_add_of_sub_le_right,
+    apply le_nat_degree_of_ne_zero,
+    rw [reverse, coeff_reflect, ←rev_at_le p.nat_trailing_degree_le_nat_degree, rev_at_invol],
+    exact trailing_coeff_nonzero_iff_nonzero.mpr hp },
+  { rw ← nat.le_sub_left_iff_add_le p.reverse_nat_degree_le,
+    apply nat_trailing_degree_le_of_ne_zero,
+    have key := mt leading_coeff_eq_zero.mp (mt reverse_eq_zero.mp hp),
+    rwa [leading_coeff, coeff_reverse, rev_at_le p.reverse_nat_degree_le] at key },
+end
+
+lemma reverse_nat_degree {R : Type*} [semiring R] (p : polynomial R) :
+  p.reverse.nat_degree = p.nat_degree - p.nat_trailing_degree :=
+by rw [p.good_lemma, nat.add_sub_cancel]
+
+lemma reverse_leading_coeff {R : Type*} [semiring R] (p : polynomial R) :
+  p.reverse.leading_coeff = p.trailing_coeff :=
+by rw [leading_coeff, reverse_nat_degree, ←rev_at_le p.nat_trailing_degree_le_nat_degree,
+  coeff_reverse, rev_at_invol, trailing_coeff]
+
+lemma reverse_nat_trailing_degree {R : Type*} [semiring R] (p : polynomial R) :
+  p.reverse.nat_trailing_degree = 0 :=
+begin
+  by_cases hp : p = 0,
+  { rw [hp, reverse_zero, nat_trailing_degree_zero] },
+  { rw ← nat.le_zero_iff,
+    apply nat_trailing_degree_le_of_ne_zero,
+    rw [coeff_zero_reverse],
+    exact mt leading_coeff_eq_zero.mp hp },
+end
+
+lemma reverse_trailing_coeff {R : Type*} [semiring R] (p : polynomial R) :
+  p.reverse.trailing_coeff = p.leading_coeff :=
+by rw [trailing_coeff, reverse_nat_trailing_degree, coeff_zero_reverse]
+
+lemma nat_trailing_degree_mul {R : Type*} [integral_domain R] {p q : polynomial R}
+  (hp : p ≠ 0) (hq : q ≠ 0) :
+  (p * q).nat_trailing_degree = p.nat_trailing_degree + q.nat_trailing_degree :=
+begin
+  rw [←nat.sub_eq_of_eq_add p.good_lemma, ←nat.sub_eq_of_eq_add q.good_lemma,
+      ←nat.sub_eq_of_eq_add (p * q).good_lemma, reverse_mul_of_domain, nat_degree_mul hp hq, nat_degree_mul (mt reverse_eq_zero.mp hp) (mt reverse_eq_zero.mp hq), reverse_nat_degree,
+      reverse_nat_degree],
+  omega,
+end
+
+lemma trailing_coeff_mul {R : Type*} [integral_domain R] (p q : polynomial R) :
+  (p * q).trailing_coeff = p.trailing_coeff * q.trailing_coeff :=
+by rw [←reverse_leading_coeff, reverse_mul_of_domain, leading_coeff_mul,
+  reverse_leading_coeff, reverse_leading_coeff]
+
+lemma mul_reverse_lemma {R : Type*} [integral_domain R] (p : polynomial R) :
+  p.nat_degree = ((p * p.reverse).nat_degree + (p * p.reverse).nat_trailing_degree) / 2 :=
+begin
+  by_cases hp : p = 0,
+  { rw [hp, reverse_zero, mul_zero, nat_degree_zero, nat_trailing_degree_zero,
+        add_zero, nat.zero_div] },
+  have hp' : p.reverse ≠ 0 := mt reverse_eq_zero.mp hp,
+  symmetry,
+  apply nat.div_eq_of_eq_mul_left zero_lt_two,
+  rw [nat_degree_mul hp hp', nat_trailing_degree_mul hp hp',
+      reverse_nat_trailing_degree, add_zero, add_assoc, ←good_lemma, mul_two],
 end
 
 lemma reverse_nat_degree_eq {R : Type*} [semiring R] {p : polynomial R} (hp : p.coeff 0 ≠ 0) :
@@ -96,6 +188,20 @@ lemma monomial_eq_zero {R : Type*} [semiring R] {n : ℕ} {a : R} :
 ⟨λ h, by rw [←leading_coeff_monomial a n, h, leading_coeff_zero],
   λ h, by rw [h, monomial_zero_right]⟩
 
+/-lemma support_card_le_one {R : Type*} [semiring R] {p : polynomial R} :
+  p.support.card ≤ 1 ↔ ∃ k a, p = monomial k a :=
+begin
+  split,
+  { intro hp,
+    interval_cases p.support.card with h,
+    { exact ⟨0, 0, (finsupp.card_support_eq_zero.mp h).trans (monomial_zero_right 0).symm⟩ },
+    { cases (finsupp.card_support_eq_one.mp h) with k hk,
+      exact ⟨k, p.coeff k, hk.2⟩ } },
+  { intro hp,
+    obtain ⟨k, a, rfl⟩ := hp,
+    exact finset.card_le_of_subset (support_monomial' k a) },
+end-/
+
 section unit_trinomial
 
 def norm2 {R : Type*} [semiring R] (p : polynomial R) : R :=
@@ -126,20 +232,6 @@ begin
   rw [pow_two, reverse, coeff_reflect, rev_at_le (nat.sub_le_self _ _),
       nat.sub_sub_self (finset.mem_range_succ_iff.mp hk)],
 end
-
-/-lemma support_card_le_one {R : Type*} [semiring R] {p : polynomial R} :
-  p.support.card ≤ 1 ↔ ∃ k a, p = monomial k a :=
-begin
-  split,
-  { intro hp,
-    interval_cases p.support.card with h,
-    { exact ⟨0, 0, (finsupp.card_support_eq_zero.mp h).trans (monomial_zero_right 0).symm⟩ },
-    { cases (finsupp.card_support_eq_one.mp h) with k hk,
-      exact ⟨k, p.coeff k, hk.2⟩ } },
-  { intro hp,
-    obtain ⟨k, a, rfl⟩ := hp,
-    exact finset.card_le_of_subset (support_monomial' k a) },
-end-/
 
 lemma norm2_induction {R : Type*} [semiring R] (p : polynomial R) :
   norm2 p = p.leading_coeff ^ 2 + norm2 p.erase_lead :=
@@ -210,21 +302,6 @@ begin
     rw [norm2_monomial, ←units.coe_pow, int.units_pow_two, units.coe_one] },
 end
 
-example {i j : ℕ} {a b : ℤ} : (monomial i a + monomial j b).support ⊆ {i, j} :=
-begin
-  refine finset.subset.trans finsupp.support_add _,
-  have key := finset.union_subset_union (support_monomial' i a) (support_monomial' j b),
-  -- this doesn't work: apply finset.subset.trans key,
-  -- this doesn't work: refine finset.subset.trans key _,
-  have key' : ({i} : finset ℕ) ∪ ({j} : finset ℕ) ⊆ ({i, j} : finset ℕ),
-  { apply finset.union_subset,
-    all_goals { rw [finset.singleton_subset_iff, finset.mem_insert] },
-    exact or.inl rfl,
-    exact or.inr (finset.mem_singleton_self j) },
-  have key'' := finset.subset.trans key key',
-  exact key'',
-end
-
 lemma norm2_eq_two {p : polynomial ℤ} :
   norm2 p = 2 ↔ ∃ k m (u v : units ℤ), k < m ∧ p = monomial k ↑u + monomial m ↑v :=
 begin
@@ -245,25 +322,18 @@ begin
       exact u.ne_zero h1 } },
   { rintros ⟨k, m, u, v, h, rfl⟩,
     have key : (monomial k ↑u + monomial m ↑v).support ⊆ ({k, m} : finset ℕ),
-    { --refine finset.subset.trans finsupp.support_add _,
-      have key''' : ({k} : finset ℕ) ∪ ({m} : finset ℕ) ⊆ ({k, m} : finset ℕ),
-      { apply finset.union_subset,
-        all_goals { rw [finset.singleton_subset_iff, finset.mem_insert] },
-        exact or.inl rfl,
-        exact or.inr (finset.mem_singleton_self m) },
-      have key'' := finset.subset.trans (finset.union_subset_union
-        (support_monomial' k (↑u : ℤ)) (support_monomial' m (↑v : ℤ))) key''',
-      exact finset.subset.trans finsupp.support_add key'',
-      --convert key'',
-       },
-    rw [norm2_eq_sum_of_support key, finset.sum_insert, finset.sum_singleton],
+    { apply finset.subset.trans (@finsupp.support_add ℕ ℤ _ _ _ _),
+      apply finset.union_subset,
+      all_goals { apply finset.subset.trans (support_monomial' _ _) },
+      all_goals { simp only [finset.singleton_subset_iff,
+        finset.mem_insert, finset.mem_singleton, iff_of_true rfl trivial, or_true, true_or] } },
+    rw [norm2_eq_sum_of_support key,
+        finset.sum_insert (mt finset.mem_singleton.mp (ne_of_lt h)), finset.sum_singleton],
     simp only [coeff_add, coeff_monomial],
     rw [if_neg (ne_of_lt h), if_neg (ne_of_gt h), if_pos rfl, if_pos rfl, add_zero, zero_add],
     rw [←units.coe_pow, ←units.coe_pow, int.units_pow_two, int.units_pow_two],
-    refl,
-    exact mt finset.mem_singleton.mp (ne_of_lt h) },
+    refl },
 end
-
 
 lemma norm2_eq_three {p : polynomial ℤ} :
   norm2 p = 3 ↔
@@ -277,19 +347,36 @@ begin
     obtain ⟨k, m, u, v, h0, h1⟩ := h1,
     rw h1 at h2,
     refine ⟨k, m, p.nat_degree, u, v, w, h0, _, h2⟩,
-    apply lt_of_le_of_ne,
-    { have key : (monomial k ↑u + monomial m ↑v).nat_degree = m,
+    have key : (monomial k ↑u + monomial m ↑v).nat_degree = m,
       { apply nat_degree_eq_of_degree_eq_some,
         rw [degree_add_eq_right_of_degree_lt, degree_monomial m v.ne_zero],
         rwa [degree_monomial k u.ne_zero, degree_monomial m v.ne_zero, with_bot.coe_lt_coe] },
-      rw [←key, ←h1],
+    apply lt_of_le_of_ne,
+    { rw [←key, ←h1],
       exact erase_lead_nat_degree_le },
     { intro h3,
-      rw [←h3, add_assoc, ←monomial_add] at h2,
-      rw [h2] at h1,
-      sorry, } },
+      rw [←h1, h3] at key,
+      rw [h3, ←key, p.erase_lead_nat_degree_lt_or_erase_lead_eq_zero.resolve_left
+        (λ h, ne_of_lt h key), nat_degree_zero] at h0,
+      exact not_lt_zero' h0 } },
   { rintros ⟨k, m, n, u, v, w, h1, h2, rfl⟩,
-    sorry, },
+    have key : (monomial k ↑u + monomial m ↑v + monomial n ↑w).support ⊆ ({k, m, n} : finset ℕ),
+    { apply finset.subset.trans (@finsupp.support_add ℕ ℤ _ _ _ _),
+      apply finset.union_subset,
+      apply finset.subset.trans (@finsupp.support_add ℕ ℤ _ _ _ _),
+      apply finset.union_subset,
+      all_goals { apply finset.subset.trans (support_monomial' _ _) },
+      all_goals { simp only [finset.singleton_subset_iff,
+        finset.mem_insert, finset.mem_singleton, iff_of_true rfl trivial, or_true, true_or] } },
+    rw [norm2_eq_sum_of_support key, finset.sum_insert, finset.sum_insert, finset.sum_singleton],
+    simp only [coeff_add, coeff_monomial],
+    rw [if_neg (ne_of_lt h1), if_neg (ne_of_gt h1), if_neg (ne_of_lt h2), if_neg (ne_of_gt h2),
+        if_neg (ne_of_lt (h1.trans h2)), if_neg (ne_of_gt (h1.trans h2))],
+    simp only [if_pos rfl, add_zero, zero_add, ←units.coe_pow, int.units_pow_two],
+    refl,
+    exact (mt finset.mem_singleton.mp (ne_of_lt h2)),
+    exact mt finset.mem_insert.mp (not_or (ne_of_lt h1)
+      (mt finset.mem_singleton.mp (ne_of_lt (h1.trans h2)))) },
 end
 
 lemma the_key {p : polynomial ℤ} (hp : p.norm2 ≤ 3) :
@@ -298,7 +385,7 @@ begin
   rw ← int.lt_add_one_iff at hp,
   have hp' := norm2_nonneg p,
   interval_cases using hp' hp,
-  { intros q hq, },
+  all_goals { intros q hq, },
 end
 
 end unit_trinomial
