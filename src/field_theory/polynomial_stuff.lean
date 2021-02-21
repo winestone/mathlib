@@ -189,9 +189,9 @@ begin
   have key' : p.leading_coeff ^ 2 = 1,
   { apply int_lemma (mt leading_coeff_eq_zero.mp (mt norm2_eq_zero.mpr h1)),
     rw key at h2,
-    exact (le_add_of_nonneg_left p.erase_lead.norm2_nonneg).trans h2 },
+    exact (le_add_of_nonneg_right p.erase_lead.norm2_nonneg).trans h2 },
   split,
-  { rw [key, key', add_sub_cancel] },
+  { rw [key, key', add_sub_cancel'] },
   { rw [pow_two] at key',
     exact ⟨units.mk _ _ key' key', p.erase_lead_add_monomial_nat_degree_leading_coeff.symm⟩ },
 end
@@ -212,7 +212,7 @@ end
 
 example {i j : ℕ} {a b : ℤ} : (monomial i a + monomial j b).support ⊆ {i, j} :=
 begin
-  refine finset.subset.trans (@finsupp.support_add ℕ ℤ _ (monomial i a) (monomial j b)) _,
+  refine finset.subset.trans finsupp.support_add _,
   have key := finset.union_subset_union (support_monomial' i a) (support_monomial' j b),
   -- this doesn't work: apply finset.subset.trans key,
   -- this doesn't work: refine finset.subset.trans key _,
@@ -222,7 +222,7 @@ begin
     exact or.inl rfl,
     exact or.inr (finset.mem_singleton_self j) },
   have key'' := finset.subset.trans key key',
-  convert key'',
+  exact key'',
 end
 
 lemma norm2_eq_two {p : polynomial ℤ} :
@@ -245,7 +245,7 @@ begin
       exact u.ne_zero h1 } },
   { rintros ⟨k, m, u, v, h, rfl⟩,
     have key : (monomial k ↑u + monomial m ↑v).support ⊆ ({k, m} : finset ℕ),
-    { apply finset.subset.trans (@finsupp.support_add ℕ ℤ _ (monomial k ↑u) (monomial m ↑v)),
+    { --refine finset.subset.trans finsupp.support_add _,
       have key''' : ({k} : finset ℕ) ∪ ({m} : finset ℕ) ⊆ ({k, m} : finset ℕ),
       { apply finset.union_subset,
         all_goals { rw [finset.singleton_subset_iff, finset.mem_insert] },
@@ -253,7 +253,8 @@ begin
         exact or.inr (finset.mem_singleton_self m) },
       have key'' := finset.subset.trans (finset.union_subset_union
         (support_monomial' k (↑u : ℤ)) (support_monomial' m (↑v : ℤ))) key''',
-      convert key'',
+      exact finset.subset.trans finsupp.support_add key'',
+      --convert key'',
        },
     rw [norm2_eq_sum_of_support key, finset.sum_insert, finset.sum_singleton],
     simp only [coeff_add, coeff_monomial],
