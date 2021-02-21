@@ -463,22 +463,6 @@ le_antisymm nat_degree_comp_le
     ... ≠ 0 : mul_ne_zero (mt leading_coeff_eq_zero.1 hp0)
       (pow_ne_zero _ (mt leading_coeff_eq_zero.1 hq0)))
 
-lemma comp_eq_zero_iff :
-  p.comp q = 0 ↔ p = 0 ∨ (p.eval (q.coeff 0) = 0 ∧ q = C (q.coeff 0)) :=
-begin
-  split,
-  { intro h,
-    have key : p.nat_degree = 0 ∨ q.nat_degree = 0,
-    { rw [←mul_eq_zero, ←nat_degree_comp, h, nat_degree_zero] },
-    replace key := or.imp eq_C_of_nat_degree_eq_zero eq_C_of_nat_degree_eq_zero key,
-    cases key,
-    { rw [key, C_comp] at h,
-      exact or.inl (key.trans h) },
-    { rw [key, comp_C, C_eq_zero] at h,
-      exact or.inr ⟨h, key⟩ }, },
-  { exact λ h, or.rec (λ h, by rw [h, zero_comp]) (λ h, by rw [h.2, comp_C, h.1, C_0]) h },
-end
-
 lemma leading_coeff_comp (hq : nat_degree q ≠ 0) : leading_coeff (p.comp q) =
   leading_coeff p * leading_coeff q ^ nat_degree p :=
 by rw [← coeff_comp_degree_mul_degree hq, ← nat_degree_comp]; refl
