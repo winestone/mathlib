@@ -86,6 +86,13 @@ polynomial.ext (λ n, by rw [coeff_reverse', coeff_reverse',
 lemma reverse'_eq_zero : p.reverse' = 0 ↔ p = 0 :=
 ⟨λ h, by rw [←p.reverse'_reverse', h, reverse'_zero], λ h, by rw [h, reverse'_zero]⟩
 
+lemma reverse'_trailing_coeff : p.reverse'.trailing_coeff = p.leading_coeff :=
+by rw [leading_coeff, trailing_coeff, reverse'_nat_trailing_degree, coeff_reverse',
+  rev_at_le (nat.le_add_left _ _), nat.add_sub_cancel]
+
+lemma reverse'_leading_coeff : p.reverse'.leading_coeff = p.trailing_coeff :=
+by rw [←p.reverse'_reverse', reverse'_trailing_coeff, p.reverse'_reverse']
+
 lemma reverse'_mul_of_domain {R : Type*} [integral_domain R] (p q : polynomial R) :
   (p * q).reverse' = p.reverse' * q.reverse' :=
 begin
@@ -181,6 +188,9 @@ begin
   { rw [norm2_eq_mul_reverse_coeff, norm2_eq_mul_reverse_coeff, hpq, hpq1, hpq2] },
   have hq : q.norm2 ≤ 3,
   { rwa ← hpq3 },
+  have hpq4 : p.leading_coeff * p.trailing_coeff = q.leading_coeff * q.trailing_coeff,
+  { rw [←reverse'_leading_coeff, ←reverse'_leading_coeff,
+        ←leading_coeff_mul, ←leading_coeff_mul, hpq] },
   --step 1' : show that `p.leading_coeff = q.leading_coeff` (negate `q` if necessary)
   --step 2' : show that `p.trailing_coeff = q.trailing_coeff` (follows from previous)
   --step 3' : reduce to the case of a trinomial
