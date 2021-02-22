@@ -5,95 +5,6 @@ import algebra.big_operators.nat_antidiagonal
 
 namespace polynomial
 
-lemma coeff_reverse {R : Type*} [semiring R] (p : polynomial R) (n : ℕ) :
-  p.reverse.coeff n = p.coeff (rev_at p.nat_degree n) :=
-by rw [reverse, coeff_reflect]
-
-lemma reverse_eq_zero {R : Type*} [semiring R] {p : polynomial R} :
-  p.reverse = 0 ↔ p = 0 :=
-begin
-  split,
-  { rw [polynomial.ext_iff, polynomial.ext_iff],
-    intros h n,
-    specialize h (rev_at p.nat_degree n),
-    rwa [coeff_zero, coeff_reverse, rev_at_invol] at h },
-  { intro h,
-    rw [h, reverse_zero] },
-end
-
-lemma reverse_nat_degree_le {R : Type*} [semiring R] (p : polynomial R) :
-  p.reverse.nat_degree ≤ p.nat_degree :=
-begin
-  rw [nat_degree_le_iff_degree_le, degree_le_iff_coeff_zero],
-  intros n hn,
-  rw with_bot.coe_lt_coe at hn,
-  rw [coeff_reverse, rev_at, function.embedding.coe_fn_mk,
-      if_neg (not_le_of_gt hn), coeff_eq_zero_of_nat_degree_lt hn],
-end
-
-lemma nat_trailing_degree_le_nat_degree {R : Type*} [semiring R] (p : polynomial R) :
-  p.nat_trailing_degree ≤ p.nat_degree :=
-begin
-  by_cases hp : p = 0,
-  { rw [hp, nat_degree_zero, nat_trailing_degree_zero] },
-  { exact le_nat_degree_of_ne_zero (mt trailing_coeff_eq_zero.mp hp) },
-end
-
-lemma good_lemma {R : Type*} [semiring R] (p : polynomial R) :
-  p.nat_degree = p.reverse.nat_degree + p.nat_trailing_degree :=
-begin
-  by_cases hp : p = 0,
-  { rw [hp, reverse_zero, nat_degree_zero, nat_trailing_degree_zero] },
-  apply le_antisymm,
-  { apply nat.le_add_of_sub_le_right,
-    apply le_nat_degree_of_ne_zero,
-    rw [reverse, coeff_reflect, ←rev_at_le p.nat_trailing_degree_le_nat_degree, rev_at_invol],
-    exact trailing_coeff_nonzero_iff_nonzero.mpr hp },
-  { rw ← nat.le_sub_left_iff_add_le p.reverse_nat_degree_le,
-    apply nat_trailing_degree_le_of_ne_zero,
-    have key := mt leading_coeff_eq_zero.mp (mt reverse_eq_zero.mp hp),
-    rwa [leading_coeff, coeff_reverse, rev_at_le p.reverse_nat_degree_le] at key },
-end
-
-lemma reverse_nat_degree {R : Type*} [semiring R] (p : polynomial R) :
-  p.reverse.nat_degree = p.nat_degree - p.nat_trailing_degree :=
-by rw [p.good_lemma, nat.add_sub_cancel]
-
-lemma reverse_leading_coeff {R : Type*} [semiring R] (p : polynomial R) :
-  p.reverse.leading_coeff = p.trailing_coeff :=
-by rw [leading_coeff, reverse_nat_degree, ←rev_at_le p.nat_trailing_degree_le_nat_degree,
-  coeff_reverse, rev_at_invol, trailing_coeff]
-
-lemma reverse_nat_trailing_degree {R : Type*} [semiring R] (p : polynomial R) :
-  p.reverse.nat_trailing_degree = 0 :=
-begin
-  by_cases hp : p = 0,
-  { rw [hp, reverse_zero, nat_trailing_degree_zero] },
-  { rw ← nat.le_zero_iff,
-    apply nat_trailing_degree_le_of_ne_zero,
-    rw [coeff_zero_reverse],
-    exact mt leading_coeff_eq_zero.mp hp },
-end
-
-lemma reverse_trailing_coeff {R : Type*} [semiring R] (p : polynomial R) :
-  p.reverse.trailing_coeff = p.leading_coeff :=
-by rw [trailing_coeff, reverse_nat_trailing_degree, coeff_zero_reverse]
-
-lemma nat_trailing_degree_mul {R : Type*} [integral_domain R] {p q : polynomial R}
-  (hp : p ≠ 0) (hq : q ≠ 0) :
-  (p * q).nat_trailing_degree = p.nat_trailing_degree + q.nat_trailing_degree :=
-begin
-  rw [←nat.sub_eq_of_eq_add p.good_lemma, ←nat.sub_eq_of_eq_add q.good_lemma,
-      ←nat.sub_eq_of_eq_add (p * q).good_lemma, reverse_mul_of_domain, nat_degree_mul hp hq, nat_degree_mul (mt reverse_eq_zero.mp hp) (mt reverse_eq_zero.mp hq), reverse_nat_degree,
-      reverse_nat_degree],
-  omega,
-end
-
-lemma trailing_coeff_mul {R : Type*} [integral_domain R] (p q : polynomial R) :
-  (p * q).trailing_coeff = p.trailing_coeff * q.trailing_coeff :=
-by rw [←reverse_leading_coeff, reverse_mul_of_domain, leading_coeff_mul,
-  reverse_leading_coeff, reverse_leading_coeff]
-
 lemma mul_reverse_lemma {R : Type*} [integral_domain R] (p : polynomial R) :
   p.nat_degree = ((p * p.reverse).nat_degree + (p * p.reverse).nat_trailing_degree) / 2 :=
 begin
@@ -104,7 +15,8 @@ begin
   symmetry,
   apply nat.div_eq_of_eq_mul_left zero_lt_two,
   rw [nat_degree_mul hp hp', nat_trailing_degree_mul hp hp',
-      reverse_nat_trailing_degree, add_zero, add_assoc, ←good_lemma, mul_two],
+      reverse_nat_trailing_degree, add_zero, add_assoc,
+      ←p.nat_degree_eq_reverse_nat_degree_add_nat_trailing_degree, mul_two],
 end
 
 lemma reverse_nat_degree_eq {R : Type*} [semiring R] {p : polynomial R} (hp : p.coeff 0 ≠ 0) :
@@ -141,7 +53,7 @@ lemma reverse_eval_zero {R : Type*} [semiring R] (p : polynomial R) :
   p.reverse.eval 0 = p.leading_coeff :=
 by rw [←coeff_zero_eq_eval_zero, reverse_coeff_zero]
 
-lemma reverse_leading_coeff {R : Type*} [semiring R] {p : polynomial R} (hp : p.coeff 0 ≠ 0) :
+lemma reverse_leading_coeff' {R : Type*} [semiring R] {p : polynomial R} (hp : p.coeff 0 ≠ 0) :
   p.reverse.leading_coeff = p.coeff 0 :=
 by rw [leading_coeff, reverse_nat_degree_eq hp, reverse, coeff_reflect,
   rev_at_le (le_refl _), nat.sub_self]
@@ -379,13 +291,35 @@ begin
       (mt finset.mem_singleton.mp (ne_of_lt (h1.trans h2)))) },
 end
 
+lemma reverse_monomial {R : Type*} [semiring R] (n : ℕ) (a : R) :
+  (monomial n a).reverse = monomial 0 a :=
+begin
+  by_cases ha : a = 0,
+  { rw [ha, monomial_zero_right, monomial_zero_right, reverse_zero] },
+  rw [reverse, nat_degree_monomial n a ha, monomial_eq_smul_X, ←C_mul', reflect_C_mul_X_pow,
+      rev_at_le (le_refl n), nat.sub_self, pow_zero, mul_one],
+  refl,
+end
+
 lemma the_key {p : polynomial ℤ} (hp : p.norm2 ≤ 3) :
   ∀ q, p * p.reverse = q * q.reverse → p = q ∨ p = -q ∨ p = q.reverse ∨ p = -(q.reverse) :=
 begin
+  intros q hq,
+  have hpq : p.nat_degree = q.nat_degree,
+  { rw [p.mul_reverse_lemma, q.mul_reverse_lemma, hq] },
+  have Hq : q.norm2 = p.norm2,
+  { rw [norm2_eq_mul_reverse_coeff, norm2_eq_mul_reverse_coeff, hq, hpq] },
   rw ← int.lt_add_one_iff at hp,
   have hp' := norm2_nonneg p,
-  interval_cases using hp' hp,
-  all_goals { intros q hq, },
+  interval_cases using hp' hp with Hp,
+  all_goals { rw Hp at Hq },
+  { rw [norm2_eq_zero.mp Hp, norm2_eq_zero.mp Hq],
+    exact or.inl rfl },
+  { obtain ⟨kp, up, rfl⟩ := norm2_eq_one.mp Hp,
+    obtain ⟨kq, uq, rfl⟩ := norm2_eq_one.mp Hq,
+    rw [reverse_monomial, reverse_monomial, monomial_mul_monomial, monomial_mul_monomial,
+        add_zero, add_zero, ←pow_two, ←pow_two] at hq,
+    sorry },
 end
 
 end unit_trinomial
