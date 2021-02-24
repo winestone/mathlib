@@ -123,14 +123,6 @@ begin
   { exact λ n hn hp, p.coeff_reverse' n },
 end
 
-lemma reverse'_smul (a : R) : (a • p).reverse' = a • p.reverse' :=
-begin
-  rw [←C_mul', ←C_mul'],
-  ext n,
-  rw [coeff_reverse', coeff_C_mul, coeff_C_mul, coeff_reverse'],
-  sorry, -- by_cases ha : a = 0
-end
-
 lemma reverse'_reverse' : p.reverse'.reverse' = p :=
 polynomial.ext (λ n, by rw [coeff_reverse', coeff_reverse',
   reverse'_nat_degree, reverse'_nat_trailing_degree, rev_at_invol])
@@ -155,6 +147,10 @@ begin
   rw [reverse', reverse', reverse', reverse_mul_of_domain, nat_trailing_degree_mul hp hq, pow_add],
   ring,
 end
+
+lemma reverse'_smul {R : Type*} [integral_domain R] (p : polynomial R) (a : R) :
+  (a • p).reverse' = a • p.reverse' :=
+by rw [←C_mul', ←C_mul', reverse'_mul_of_domain, reverse'_C]
 
 lemma reverse'_neg {R : Type*} [ring R] (p : polynomial R) : (-p).reverse' = -(p.reverse') :=
 by rw [reverse', reverse', reverse_neg, nat_trailing_degree_neg, neg_mul_eq_neg_mul]
