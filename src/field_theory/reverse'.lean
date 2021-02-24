@@ -4,11 +4,32 @@ import analysis.complex.polynomial
 
 namespace polynomial
 
+lemma leading_coeff_neg {R : Type*} [ring R] (f : polynomial R) :
+  leading_coeff (-f) = - (leading_coeff f) :=
+by rw [leading_coeff, leading_coeff, coeff_neg, nat_degree_neg]
+
 variables {R : Type*} [semiring R] (p : polynomial R)
+
+section reverse'
 
 noncomputable def reverse' := p.reverse * X ^ p.nat_trailing_degree
 
 lemma reverse'_zero : (0 : polynomial R).reverse' = 0 := rfl
+
+lemma reverse'_monomial (n : ℕ) (a : R) : (monomial n a).reverse' = (monomial n a) :=
+begin
+  by_cases ha : a = 0,
+  { rw [ha, monomial_zero_right, reverse'_zero] },
+  { rw [reverse', reverse, nat_degree_monomial n a ha, nat_trailing_degree_monomial ha,
+        ←C_mul_X_pow_eq_monomial, reflect_C_mul_X_pow, rev_at_le (le_refl n),
+        nat.sub_self, pow_zero, mul_one] },
+end
+
+lemma reverse'_C (a : R) : (C a).reverse' = C a :=
+reverse'_monomial 0 a
+
+lemma reverse'_X : X.reverse' = (X : polynomial R) :=
+reverse'_monomial 1 (1 : R)
 
 lemma reverse'_nat_degree : p.reverse'.nat_degree = p.nat_degree :=
 begin
@@ -79,6 +100,14 @@ begin
   exact coeff_eq_zero_of_lt_nat_trailing_degree (by rwa reverse'_nat_trailing_degree),
 end
 
+lemma reverse'_smul (a : R) : (a • p).reverse' = a • p.reverse' :=
+begin
+  rw [←C_mul', ←C_mul'],
+  ext n,
+  rw [coeff_reverse', coeff_C_mul, coeff_C_mul, coeff_reverse'],
+  sorry, -- by_cases ha : a = 0
+end
+
 lemma reverse'_reverse' : p.reverse'.reverse' = p :=
 polynomial.ext (λ n, by rw [coeff_reverse', coeff_reverse',
   reverse'_nat_degree, reverse'_nat_trailing_degree, rev_at_invol])
@@ -138,11 +167,35 @@ begin
     { exact or.inl (h3 g g_dvd_f (by rwa [eq_neg_iff_eq_neg.mp hk, dvd_neg])) } },
 end
 
+end reverse'
+
+section norm2
+
 def norm2 := p.support.sum (λ k, (p.coeff k) ^ 2)
 
 lemma norm2_eq_sum_of_support {s : finset ℕ}
   (h : p.support ⊆ s) : p.norm2 = s.sum (λ k, (p.coeff k) ^ 2) :=
 finset.sum_subset h (λ k h1 h2, by rw [not_mem_support_iff_coeff_zero.mp h2, pow_two, zero_mul])
+
+lemma norm2_monomial (k : ℕ) (a : R) : (monomial k a).norm2 = a ^ 2 :=
+by rw [norm2_eq_sum_of_support _ (support_monomial' k a),
+  finset.sum_singleton, coeff_monomial, if_pos rfl]
+
+lemma norm2_C (a : R) : (C a).norm2 = a ^ 2 := norm2_monomial 0 a
+
+lemma norm2_zero : (0 : polynomial R).norm2 = 0 := by rw [←C_0, norm2_C, pow_two, zero_mul]
+
+lemma norm2_eq_zero {R : Type*} [linear_ordered_ring R] {p : polynomial R} :
+  p.norm2 = 0 ↔ p = 0 :=
+begin
+  split,
+  { rw [norm2, finset.sum_eq_zero_iff_of_nonneg (λ k hk, pow_two_nonneg (p.coeff k))],
+    simp_rw [pow_eq_zero_iff zero_lt_two, mem_support_iff_coeff_ne_zero, not_imp_self],
+    rw polynomial.ext_iff,
+    exact id },
+  { intro hp,
+    rw [hp, norm2_zero] },
+end
 
 lemma norm2_eq_mul_reverse_coeff :
   p.norm2 = (p * p.reverse').coeff (p.nat_degree + p.nat_trailing_degree) :=
@@ -174,63 +227,23 @@ begin
         reverse'_nat_trailing_degree, two_mul] },
 end
 
-lemma the_key {p : polynomial ℤ} (hp : p.norm2 ≤ 3) :
-  ∀ q, p * p.reverse' = q * q.reverse' → p = q ∨ p = -q ∨ p = q.reverse' ∨ p = -(q.reverse') :=
-begin
-  intros q hpq,
-  have hpq1 : p.nat_degree = q.nat_degree,
-  { refine mul_left_cancel' two_ne_zero _,
-    rw [←nat_degree_mul_reverse', ←nat_degree_mul_reverse', hpq] },
-  have hpq2 : p.nat_trailing_degree = q.nat_trailing_degree,
-  { refine mul_left_cancel' two_ne_zero _,
-    rw [←nat_trailing_degree_mul_reverse', ←nat_trailing_degree_mul_reverse', hpq] },
-  have hpq3 : p.norm2 = q.norm2,
-  { rw [norm2_eq_mul_reverse_coeff, norm2_eq_mul_reverse_coeff, hpq, hpq1, hpq2] },
-  have hq : q.norm2 ≤ 3,
-  { rwa ← hpq3 },
-  have hpq4 : p.leading_coeff * p.trailing_coeff = q.leading_coeff * q.trailing_coeff,
-  { rw [←reverse'_leading_coeff, ←reverse'_leading_coeff,
-        ←leading_coeff_mul, ←leading_coeff_mul, hpq] },
-  --step 1' : show that `p.leading_coeff = q.leading_coeff` (negate `q` if necessary)
-  --step 2' : show that `p.trailing_coeff = q.trailing_coeff` (follows from previous)
-  --step 3' : reduce to the case of a trinomial
-  --step 4' : show that the degree of the middle term matches (reverse `q` if necessary)
-  --step 5' : finish the proof
+lemma norm2_nonneg {R : Type*} [linear_ordered_ring R] (p : polynomial R) :
+  0 ≤ norm2 p :=
+finset.sum_nonneg (λ _ _, pow_two_nonneg _)
 
-  --step 1 : show that `p.norm2 ≤ 3` implies that `p.coeff k ^ 2 ≤ 1`
-  --step 2 : show that if `p.coeff k ^ 2 ≤ 1` then `p.norm2 = p.support.card`
-  --step 3 : we have `p.support.card = q.support.card ≤ 3`, so do proceed case-by-case
+lemma coeff_sq_le_norm2 {R : Type*} [linear_ordered_ring R] (p : polynomial R) (k : ℕ) :
+  p.coeff k ^ 2 ≤ p.norm2 :=
+begin
+  rw [norm2, ←finset.sum_insert_of_eq_zero_if_not_mem],
+  exact (le_of_eq (finset.sum_singleton.symm)).trans (finset.sum_le_sum_of_subset_of_nonneg
+    (finset.singleton_subset_iff.mpr (finset.mem_insert_self k p.support))
+    (λ j _ _, pow_two_nonneg (p.coeff j))),
+  exact λ h, (pow_eq_zero_iff zero_lt_two).mpr (not_mem_support_iff_coeff_zero.mp h),
 end
 
-/- OLD STUFF -/
+end norm2
 
-lemma norm2_zero : (0 : polynomial R).norm2 = 0 := rfl
-
-lemma norm2_monomial (k : ℕ) (a : R) : (monomial k a).norm2 = a ^ 2 :=
-by rw [norm2_eq_sum_of_support _ (support_monomial' k a), finset.sum_singleton,
-  coeff_monomial, if_pos rfl]
-
-lemma norm2_eq_zero {R : Type*} [linear_ordered_ring R] [no_zero_divisors R] {p : polynomial R} :
-  norm2 p = 0 ↔ p = 0 :=
-begin
-  split,
-  { rw [norm2, finset.sum_eq_zero_iff_of_nonneg (λ k hk, pow_two_nonneg (p.coeff k))],
-    simp_rw [pow_eq_zero_iff zero_lt_two, mem_support_iff_coeff_ne_zero, not_imp_self],
-    rw polynomial.ext_iff,
-    exact id },
-  { intro p,
-    rw [p, norm2_zero] },
-end
-
-lemma card_support_le_norm2 (p : polynomial ℤ) : ↑p.support.card ≤ p.norm2 :=
-begin
-  rw [←int.nat_cast_eq_coe_nat, ←ring_hom.eq_nat_cast (nat.cast_ring_hom ℤ),
-      finset.card_eq_sum_ones, ring_hom.map_sum],
-  apply finset.sum_le_sum,
-  intros x hx,
-  rw [ring_hom.map_one, ←int.sub_one_lt_iff, sub_self, lt_iff_le_and_ne],
-  exact ⟨pow_two_nonneg (p.coeff x), (pow_ne_zero 2 (mem_support_iff_coeff_ne_zero.mp hx)).symm⟩,
-end
+section useful_stuff
 
 lemma int_lemma {a : ℤ} (h1 : a ≠ 0) (h2 : a ^ 2 ≤ 3) : a ^ 2 = 1 :=
 begin
@@ -243,25 +256,22 @@ begin
     rwa [zero_lt_iff, ne, int.nat_abs_eq_zero] },
 end
 
-lemma norm2_nonneg {R : Type*} [linear_ordered_ring R] (p : polynomial R) :
-  0 ≤ norm2 p :=
-finset.sum_nonneg (λ _ _, pow_two_nonneg _)
+lemma lem1 (p : polynomial ℤ) (hp : p.norm2 ≤ 3) (k : ℕ) (hk : p.coeff k ≠ 0) :
+  p.coeff k ^ 2 = 1 :=
+int_lemma hk ((p.coeff_sq_le_norm2 k).trans hp)
 
-/- could probably clean up proof -/
-lemma coeff_sq_le_norm2 {R : Type*} [linear_ordered_ring R] (p : polynomial R) (k : ℕ) :
-  p.coeff k ^ 2 ≤ p.norm2 :=
+lemma norm2_eq_card_support (hp : ∀ k, p.coeff k ≠ 0 → p.coeff k ^ 2 = 1) :
+  p.norm2 = p.support.card :=
 begin
-  rw [norm2, ←finset.sum_insert_of_eq_zero_if_not_mem],
-  exact le_trans (le_of_eq (finset.sum_singleton.symm)) (finset.sum_le_sum_of_subset_of_nonneg
-    (finset.singleton_subset_iff.mpr (finset.mem_insert_self k p.support))
-    (λ j _ _, pow_two_nonneg (p.coeff j))),
-  exact λ h, (pow_eq_zero_iff zero_lt_two).mpr (not_mem_support_iff_coeff_zero.mp h),
+  rw [←ring_hom.eq_nat_cast (nat.cast_ring_hom R), finset.card_eq_sum_ones, ring_hom.map_sum],
+  simp only [ring_hom.map_one],
+  exact finset.sum_congr rfl (λ k hk, hp k (mem_support_iff_coeff_ne_zero.mp hk)),
 end
 
-lemma coeff_sq_le_one_of_norm2_le_three {p : polynomial ℤ} (hp : p.norm2 ≤ 3) {k : ℕ}
-  (hk : k ∈ p.support) : p.coeff k ^ 2 = 1 :=
-int_lemma (mem_support_iff_coeff_ne_zero.mp hk) (ge_trans hp (le_trans
-  (le_of_eq finset.sum_singleton.symm) (finset.sum_le_sum_of_subset_of_nonneg
-  (finset.singleton_subset_iff.mpr hk) (λ j _ _, pow_two_nonneg (p.coeff j)))))
+lemma card_support_eq_three_of_norm2_eq_three (p : polynomial ℤ) (hp : p.norm2 = 3) :
+  p.support.card = 3 :=
+nat.cast_inj.mp ((p.norm2_eq_card_support (p.lem1 (le_of_eq hp))).symm.trans hp)
+
+end useful_stuff
 
 end polynomial

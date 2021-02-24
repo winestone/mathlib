@@ -122,6 +122,7 @@ end
 
 def P (α : SBR F E) : Prop := is_solvable (minpoly F α).gal
 
+--change key to fact!
 lemma gal_X_pow_sub_C_is_solvable {n : ℕ} (hn : n ≠ 0) (x : F) : is_solvable (X ^ n - C x).gal :=
 begin
   let K := (X ^ n - C (1 : F)).splitting_field,
