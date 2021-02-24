@@ -205,6 +205,10 @@ begin
   refl,
 end
 
+lemma neg_to_polynomial {R : Type*} [ring R] (t : trinomial R) :
+  ((-1 : units R) • t).to_polynomial = -t.to_polynomial :=
+by rw [smul_to_polynomial, units.coe_neg_one, ←C_mul', C_neg, C_1, neg_one_mul]
+
 /-- reverse a trinomial -/
 def reverse : trinomial R :=
 { a := t.c,
@@ -237,20 +241,103 @@ end
 lemma reverse_reverse : t.reverse.reverse = t :=
 by rw [←to_polynomial_inj, reverse_to_polynomial, reverse_to_polynomial, reverse'_reverse']
 
+section main_proof
+
+section rel
+
+variables {S : Type*} [ring S] (q r s : trinomial S)
+
+lemma neg_neg : (-1 : units S) • (-1 : units S) • s = s :=
+by rw [smul_smul, units.neg_mul_neg, one_mul, one_smul]
+
+/-- two trinomial are related if they are the same up to negation and reverse -/
+def rel :=
+s = r ∨ s = (-1 : units S) • r ∨ s = r.reverse ∨ s = (-1 : units S) • r.reverse
+
+@[refl] lemma rel_refl : rel s s := or.inl rfl
+
+lemma rel_of_neg_rel : rel ((-1 : units S) • r) s → rel r s :=
+begin
+  rintro (h | h | h | h),
+  { exact or.inr (or.inl h) },
+  { exact or.inl (by rw [h, neg_neg]) },
+  { exact or.inr (or.inr (or.inr (by rw [h, reverse_smul]))) },
+  { exact or.inr (or.inr (or.inl (by rw [h, reverse_smul, neg_neg]))) },
+end
+
+lemma neg_rel : rel ((-1 : units S) • r) s ↔ rel r s :=
+begin
+  split,
+  { exact rel_of_neg_rel r s },
+  { exact λ h, rel_of_neg_rel ((-1 : units S) • r) s (by rwa neg_neg) },
+end
+
+lemma rel_of_reverse_rel : rel r.reverse s → rel r s :=
+begin
+  rintro (h | h | h | h),
+  { exact or.inr (or.inr (or.inl h)) },
+  { exact or.inr (or.inr (or.inr h)) },
+  { exact or.inl (h.trans r.reverse_reverse) },
+  { exact or.inr (or.inl (h.trans (congr_arg _ r.reverse_reverse))) },
+end
+
+lemma reverse_rel : rel r.reverse s ↔ rel r s :=
+begin
+  split,
+  { exact rel_of_reverse_rel r s },
+  { exact λ h, rel_of_reverse_rel r.reverse s (by rwa r.reverse_reverse) },
+end
+
+@[symm] lemma rel_symm : rel r s → rel s r :=
+begin
+  rintro (h | h | h | h),
+  all_goals { simp only [h, neg_rel, reverse_rel] },
+end
+
+@[trans] lemma rel_trans : rel q r → rel r s → rel q s :=
+begin
+  rintros (h | h | h | h),
+  all_goals { simp only [h, neg_rel, reverse_rel], exact id },
+end
+
+lemma rel_comm : rel r s ↔ rel s r := ⟨rel_symm r s, rel_symm s r⟩
+
+lemma rel_neg : rel r ((-1 : units S) • s) ↔ rel r s :=
+by rw [rel_comm, neg_rel, rel_comm]
+
+lemma rel_reverse : rel r s.reverse ↔ rel r s :=
+by rw [rel_comm, reverse_rel, rel_comm]
+
+lemma unit_rel (r s : trinomial ℤ) (u : units ℤ) : rel (u • r) s ↔ rel r s :=
+begin
+  cases int.units_eq_one_or u with hu hu,
+  { rw [hu, one_smul] },
+  { rw [hu, neg_rel] },
+end
+
+lemma rel_unit (r s : trinomial ℤ) (u : units ℤ) : rel r (u • s) ↔ rel r s :=
+begin
+  cases int.units_eq_one_or u with hu hu,
+  { rw [hu, one_smul] },
+  { rw [hu, rel_neg] },
+end
+
+end rel
+
 lemma key_lemma_aux1 {R : Type*} [integral_domain R] (p q : trinomial R) (hpqa : p.a = q.a)
   (hpq : p.to_polynomial * p.to_polynomial.reverse' = q.to_polynomial * q.to_polynomial.reverse') :
-  ∃ u : units R, q = u • p ∨ q = u • p.reverse :=
+  rel p q :=
 begin
   have hpqc : p.c = q.c,
   { replace hpq := congr_arg polynomial.leading_coeff hpq,
     simp_rw [leading_coeff_mul, reverse'_leading_coeff, leading_coeff, trailing_coeff] at hpq,
     rwa [hpqa, mul_eq_mul_right_iff, or_iff_not_imp_right, imp_iff_right q.ha] at hpq },
-  have hpqk : p.i = q.i,
+  have hpqk : p.i = q.i, -- not needed yet
   { replace hpq := congr_arg polynomial.nat_trailing_degree hpq,
     rw [nat_trailing_degree_mul_reverse', nat_trailing_degree_mul_reverse',
         nat_trailing_degree, nat_trailing_degree] at hpq,
     exact mul_left_cancel' two_ne_zero hpq },
-  have hpqk : p.k = q.k,
+  have hpqk : p.k = q.k, -- not needed yet
   { replace hpq := congr_arg polynomial.nat_degree hpq,
     rw [nat_degree_mul_reverse', nat_degree_mul_reverse', nat_degree, nat_degree] at hpq,
     exact mul_left_cancel' two_ne_zero hpq },
@@ -268,7 +355,7 @@ end
 lemma key_lemma {p q : trinomial ℤ}
   (hp : is_unit (p.a * p.c) ∨ irreducible (p.a * p.c))
   (hpq : p.to_polynomial * p.to_polynomial.reverse' = q.to_polynomial * q.to_polynomial.reverse') :
-  ∃ u : units ℤ, q = u • p ∨ q = u • p.reverse :=
+  rel p q :=
 begin
   have hp' : ∀ x y, p.a * p.c = x * y → is_unit x ∨ is_unit y := or.elim hp (λ h1 x y h2, or.inl
     (is_unit_of_mul_is_unit_left ((congr_arg is_unit h2).mp h1))) irreducible.is_unit_or_is_unit,
@@ -278,32 +365,27 @@ begin
     rwa [mul_comm p.a p.c, mul_comm q.a q.c] },
   rcases (hp' p.a p.c rfl) with ⟨u1, hu1⟩ | ⟨u1, hu1⟩,
   { rcases (hp' q.a q.c key) with ⟨u2, hu2⟩ | ⟨u2, hu2⟩,
-    { obtain ⟨u, hu⟩ := key_lemma_aux1 (u2 • p) (u1 • q)
-        ((mul_comm _ _).trans (congr (congr_arg has_mul.mul hu1.symm) hu2))
-        (by simp_rw [smul_to_polynomial, reverse'_smul, mini_lemma, int.units_coe_mul_self, hpq]),
-      simp_rw [reverse_smul, ←eq_inv_smul_iff, smul_smul] at hu,
-      exact ⟨_, hu⟩ },
-    { obtain ⟨u, hu⟩ := key_lemma_aux1 (u1 • p.reverse) (u2 • q)
+    { have key' := key_lemma_aux1 (u1 • p.reverse) (u2 • q.reverse)
+        (by rwa [←hu1, ←hu2] at key)
+        (by simp_rw [smul_to_polynomial, reverse_to_polynomial, reverse'_smul, reverse'_reverse',
+          mini_lemma, int.units_coe_mul_self, mul_comm, hpq]),
+      rwa [unit_rel, rel_unit, reverse_rel, rel_reverse] at key' },
+    { have key' := key_lemma_aux1 (u1 • p.reverse) (u2 • q)
         (by rwa [←hu1, ←hu2, mul_comm q.a] at key)
         (by simp_rw [smul_to_polynomial, reverse_to_polynomial, reverse'_smul, reverse'_reverse',
           mini_lemma, int.units_coe_mul_self, mul_comm, hpq]),
-      simp_rw [reverse_smul, reverse_reverse, ←eq_inv_smul_iff, smul_smul, or_comm] at hu,
-      exact ⟨_, hu⟩ } },
+      rwa [unit_rel, rel_unit, reverse_rel] at key' } },
   { rcases (hp' q.a q.c key) with ⟨u2, hu2⟩ | ⟨u2, hu2⟩,
-    { obtain ⟨u, hu⟩ := key_lemma_aux1 (u2 • p.reverse) (u1 • q)
-        ((mul_comm _ _).trans (congr (congr_arg has_mul.mul hu1.symm) hu2))
+    { have key' := key_lemma_aux1 (u1 • p) (u2 • q.reverse)
+        (by rwa [←hu1, ←hu2, mul_comm p.a] at key)
         (by simp_rw [smul_to_polynomial, reverse_to_polynomial, reverse'_smul, reverse'_reverse',
           mini_lemma, int.units_coe_mul_self, mul_comm, hpq]),
-      simp_rw [reverse_smul, reverse_reverse, ←eq_inv_smul_iff, smul_smul, or_comm] at hu,
-      exact ⟨_, hu⟩ },
-    { obtain ⟨u, hu⟩ := key_lemma_aux1 (u1 • p) (u2 • q)
+      rwa [unit_rel, rel_unit, rel_reverse] at key' },
+    { have key' := key_lemma_aux1 (u1 • p) (u2 • q)
         (by rwa [←hu1, ←hu2, mul_comm p.a, mul_comm q.a] at key)
         (by simp_rw [smul_to_polynomial, reverse'_smul, mini_lemma, int.units_coe_mul_self, hpq]),
-      simp_rw [reverse_smul, ←eq_inv_smul_iff, smul_smul] at hu,
-      exact ⟨_, hu⟩ } },
+      rwa [unit_rel, rel_unit] at key' } },
 end
-
-end trinomial
 
 lemma reverse'_irreducible_test' {f : polynomial ℤ}
   (h1 : f.norm2 = 3)
@@ -316,17 +398,28 @@ begin
     rw [←h4, norm2_C, ←units.coe_pow, int.units_pow_two, units.coe_one] at h1,
     exact ne_of_lt (int.add_lt_add zero_lt_one one_lt_two) h1 },
   { intros g hg,
+    replace hg := hg.symm,
+    have hg1 : g.nat_degree = t.to_polynomial.nat_degree,
+    { replace hg := congr_arg polynomial.nat_degree hg,
+      rw [nat_degree_mul_reverse', nat_degree_mul_reverse'] at hg,
+      exact mul_left_cancel' two_ne_zero hg },
+    have hg2 : g.nat_trailing_degree = t.to_polynomial.nat_trailing_degree,
+    { replace hg := congr_arg polynomial.nat_trailing_degree hg,
+      rw [nat_trailing_degree_mul_reverse', nat_trailing_degree_mul_reverse'] at hg,
+      exact mul_left_cancel' two_ne_zero hg },
+    have hg3 : g.norm2 = 3,
+    { simp_rw [←h1, norm2_eq_mul_reverse_coeff, hg, hg1, hg2] },
     obtain ⟨s, rfl⟩ := trinomial.support_card_eq_three_iff.mp
-      (g.card_support_eq_three_of_norm2_eq_three begin
-        rw [norm2_eq_mul_reverse_coeff, ←hg],
-        -- swap out nat_degree and nat_trailing_degree...
-        -- (use those fancy div by 2 lemmas)
-        sorry,
-      end),
-    have key := trinomial.key_lemma _ hg,
-    sorry,
-    { apply or.inl,
-      sorry },},
+      (g.card_support_eq_three_of_norm2_eq_three hg3),
+    simp_rw [←reverse_to_polynomial, ←neg_to_polynomial, to_polynomial_inj],
+    refine rel_symm s t (trinomial.key_lemma _ hg),
+    apply or.inl,
+    have key1 := s.to_polynomial.lem1 (le_of_eq hg3) s.i,
+    have key2 := s.to_polynomial.lem1 (le_of_eq hg3) s.k,
+    rw [s.coeff_i, pow_two] at key1,
+    rw [s.coeff_k, pow_two] at key2,
+    exact is_unit.mul (is_unit_of_mul_eq_one s.a s.a (key1 s.ha))
+      (is_unit_of_mul_eq_one s.c s.c (key2 s.hc)) },
 end
 
 lemma selmer_irreducible {n : ℕ} (hn1 : n ≠ 1) : irreducible (X ^ n - X - 1 : polynomial ℤ) :=
@@ -346,6 +439,10 @@ begin
     norm_num },
   { rw ← p.reverse_to_polynomial, sorry },
 end
+
+end main_proof
+
+end trinomial
 
 end polynomial
 
