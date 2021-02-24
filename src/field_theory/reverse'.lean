@@ -100,6 +100,29 @@ begin
   exact coeff_eq_zero_of_lt_nat_trailing_degree (by rwa reverse'_nat_trailing_degree),
 end
 
+lemma reverse'_eval_one : p.reverse'.eval 1 = p.eval 1 :=
+begin
+  simp_rw [eval_eq_finset_sum, one_pow, mul_one, reverse'_nat_degree],
+  refine finset.sum_bij_ne_zero _ _ _ _ _,
+  { exact λ n hn hp, rev_at (p.nat_degree + p.nat_trailing_degree) n },
+  { intros n hn hp,
+    rw finset.mem_range_succ_iff at *,
+    rw rev_at_le (hn.trans (nat.le_add_right _ _)),
+    rw [nat.sub_le_iff, add_comm, nat.add_sub_cancel, ←reverse'_nat_trailing_degree],
+    exact nat_trailing_degree_le_of_ne_zero hp },
+  { exact λ n₁ n₂ hn₁ hp₁ hn₂ hp₂ h, by rw [←@rev_at_invol _ n₁, h, rev_at_invol] },
+  { intros n hn hp,
+    use rev_at (p.nat_degree + p.nat_trailing_degree) n,
+    refine ⟨_, _, rev_at_invol.symm⟩,
+    { rw finset.mem_range_succ_iff at *,
+      rw rev_at_le (hn.trans (nat.le_add_right _ _)),
+      rw [nat.sub_le_iff, add_comm, nat.add_sub_cancel],
+      exact nat_trailing_degree_le_of_ne_zero hp },
+    { change p.reverse'.coeff _ ≠ 0,
+      rwa [coeff_reverse', rev_at_invol] } },
+  { exact λ n hn hp, p.coeff_reverse' n },
+end
+
 lemma reverse'_smul (a : R) : (a • p).reverse' = a • p.reverse' :=
 begin
   rw [←C_mul', ←C_mul'],
@@ -226,6 +249,12 @@ begin
   { rw [nat_trailing_degree_mul hp (mt p.reverse'_eq_zero.mp hp),
         reverse'_nat_trailing_degree, two_mul] },
 end
+
+lemma central_coeff_mul_reverse' {R : Type*} [integral_domain R] (p : polynomial R) :
+  (p * p.reverse').coeff (((p * p.reverse').nat_degree +
+    (p * p.reverse').nat_trailing_degree) / 2) = p.norm2 :=
+by rw [nat_degree_mul_reverse', nat_trailing_degree_mul_reverse',  ←mul_add,
+  nat.mul_div_cancel_left _ zero_lt_two, norm2_eq_mul_reverse_coeff]
 
 lemma norm2_nonneg {R : Type*} [linear_ordered_ring R] (p : polynomial R) :
   0 ≤ norm2 p :=
