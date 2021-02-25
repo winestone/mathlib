@@ -324,12 +324,85 @@ end
 
 end rel
 
+lemma key_lemma_aux5 {R : Type*} [semiring R] {a : R} (ha : a ≠ 0) {i j : ℕ} :
+  (monomial i a) = (monomial j a) ↔ i = j :=
+begin
+  split,
+  { intro h,
+    rw [←nat_degree_monomial i a ha, ←nat_degree_monomial j a ha, h] },
+  { intro h,
+    rw h },
+end
+
+lemma key_lemma_aux4 {R : Type*} [ring R] {a b : R} (ha : a ≠ 0) (hb : b ≠ 0) {i j k l : ℕ} :
+  (monomial i a) + (monomial j b) = (monomial k a) + (monomial l b) ↔
+  ((i = k ∧ j = l) ∨ (a = b ∧ i = l ∧ j = k) ∨ (a + b = 0 ∧ i = j ∧ k = l)) :=
+begin
+  split,
+  { intro h,
+    by_cases hik : i = k,
+    { rw [hik, add_right_inj, key_lemma_aux5 hb] at h,
+      exact or.inl ⟨hik, h⟩ },
+    { apply or.inr,
+      have key := congr_arg (λ x : polynomial R, x.coeff k) h,
+      simp_rw [coeff_add, coeff_monomial] at key,
+      rw [if_neg hik, if_pos rfl, zero_add] at key,
+      by_cases hjk : j = k,
+      { rw [if_pos hjk] at key,
+        by_cases hkl : l = k,
+        { rw [if_pos hkl, self_eq_add_left] at key,
+          exact false.rec _ (ha key) },
+        { rw [if_neg hkl, add_zero] at key,
+          rw [key, hjk, add_comm, add_right_inj, key_lemma_aux5 ha] at h,
+          exact or.inl ⟨key.symm, h, hjk⟩ } },
+      { rw [if_neg hjk] at key,
+        by_cases hkl : l = k,
+        { rw [if_pos hkl, eq_comm] at key,
+          rw [hkl, ←monomial_add, key, monomial_zero_right, add_eq_zero_iff_neg_eq,
+              ←C_mul_X_pow_eq_monomial, neg_mul_eq_neg_mul, ←C_neg, C_mul_X_pow_eq_monomial,
+              add_eq_zero_iff_neg_eq.mp key, key_lemma_aux5 hb] at h,
+          exact or.inr ⟨key, h, hkl.symm⟩ },
+        { rw [if_neg hkl, add_zero, eq_comm] at key,
+          exact false.rec _ (ha key) } } } },
+  { rintros (⟨hik, hkl⟩ | ⟨hab, hil, hjk⟩ | ⟨hab, hij, hkl⟩),
+    { rw [hik, hkl] },
+    { rw [hab, hil, hjk, add_comm] },
+    { rw [hij, hkl, ←monomial_add, ←monomial_add, hab,
+          monomial_zero_right, monomial_zero_right] } },
+end
+
+lemma key_lemma_aux3 {R : Type*} [integral_domain R] (p : trinomial R) :
+  (p.to_polynomial * p.to_polynomial.reverse').filter (set.Ioo (p.k + p.i) (p.k + p.k)) =
+    (monomial (p.k + (p.k + p.i - p.j)) (p.b * p.c)) + (monomial (p.k + p.j) (p.b * p.a)) :=
+begin
+  rw [←reverse_to_polynomial, reverse, to_polynomial, to_polynomial],
+  simp_rw [mul_add, add_mul, monomial_mul_monomial, monomial_def, finsupp.filter_add, ←add_assoc],
+  rw [mul_comm p.c p.b, add_comm p.i p.k, add_comm p.j p.k, add_comm p.i (p.k + p.i - p.j)],
+  rw [finsupp.filter_single_of_neg, finsupp.filter_single_of_neg, finsupp.filter_single_of_neg,
+      finsupp.filter_single_of_neg, finsupp.filter_single_of_neg, finsupp.filter_single_of_pos,
+      finsupp.filter_single_of_neg, finsupp.filter_single_of_pos, finsupp.filter_single_of_neg],
+  simp_rw [zero_add, add_zero],
+  { exact not_and_of_not_right _ (lt_irrefl _) },
+  { exact ⟨add_lt_add_left p.hij p.k, add_lt_add_left p.hjk p.k⟩ },
+  { exact not_and_of_not_left _ (lt_irrefl _) },
+  { exact ⟨add_lt_add_left (nat.lt_sub_left_iff_add_lt.mpr (add_lt_add_right p.hjk p.i)) p.k,
+      add_lt_add_left ((nat.sub_lt_right_iff_lt_add ((le_of_lt p.hjk).trans
+      (nat.le_add_right _ _))).mpr (add_lt_add_left p.hij p.k)) p.k⟩ },
+  { exact not_and_of_not_left _ (not_lt_of_le (le_of_eq
+      (nat.add_sub_cancel' ((le_of_lt p.hjk).trans (nat.le_add_right _ _))))) },
+  { exact not_and_of_not_left _ (not_lt_of_le (add_le_add_right
+      (nat.sub_le_right_iff_le_add.mpr (add_le_add_left (le_of_lt p.hij) _)) _)) },
+  { exact not_and_of_not_left _ (lt_irrefl _) },
+  { exact not_and_of_not_left _ (not_lt_of_gt (add_lt_add_right p.hjk p.i)) },
+  { exact not_and_of_not_left _ (not_lt_of_gt (add_lt_add_right p.hik p.i)) },
+end
+
 lemma key_lemma_aux2 {R : Type*} [integral_domain R] (p q : trinomial R) (hpqa : p.a = q.a)
   (hpqb : p.b = q.b) (hpqc : p.c = q.c)
   (hpq : p.to_polynomial * p.to_polynomial.reverse' = q.to_polynomial * q.to_polynomial.reverse') :
   rel p q :=
 begin
-  have hpqk : p.i = q.i,
+  have hpqi : p.i = q.i,
   { replace hpq := congr_arg polynomial.nat_trailing_degree hpq,
     rw [nat_trailing_degree_mul_reverse', nat_trailing_degree_mul_reverse',
         nat_trailing_degree, nat_trailing_degree] at hpq,
@@ -338,11 +411,31 @@ begin
   { replace hpq := congr_arg polynomial.nat_degree hpq,
     rw [nat_degree_mul_reverse', nat_degree_mul_reverse', nat_degree, nat_degree] at hpq,
     exact mul_left_cancel' two_ne_zero hpq },
-  sorry,
-  -- look for the a*b coefficient. It will be in front of the X ^ (j + k) term
-  -- only problem is if a * b = b * c, but then you can reverse
+  have key : (monomial (p.k + (p.k + p.i - p.j)) (p.b * p.c)) + (monomial (p.k + p.j) (p.b * p.a))
+    = (monomial (q.k + (q.k + q.i - q.j)) (q.b * q.c)) + (monomial (q.k + q.j) (q.b * q.a)),
+  { rw [←key_lemma_aux3, ←key_lemma_aux3, hpq, hpqi, hpqk] },
+  rw [hpqa, hpqb, hpqc, hpqi, hpqk,
+      key_lemma_aux4 (mul_ne_zero q.hb q.hc) (mul_ne_zero q.hb q.ha)] at key,
+  simp_rw add_right_inj at key,
+  rcases key with (⟨h1, h2⟩ | ⟨h1, h2, h3⟩ | ⟨h1, h2, h3⟩),
+  { exact or.inl (ext hpqa hpqb hpqc hpqi h2 hpqk).symm },
+  { rw [mul_right_inj' q.hb] at h1,
+    rw [add_comm, ←hpqi, ←hpqk] at h2,
+    refine or.inr (or.inr (or.inl _)),
+    symmetry,
+    refine ext (hpqc.trans h1) hpqb (hpqa.trans h1.symm) hpqi h2 hpqk },
+  { rw [nat.sub_eq_iff_eq_add, ←two_mul] at h2,
+    rw [nat.sub_eq_iff_eq_add, ←two_mul] at h3,
+    have key := h2.symm.trans h3,
+    rw [nat.mul_right_inj zero_lt_two] at key,
+    exact or.inl (ext hpqa hpqb hpqc hpqi key hpqk).symm,
+    exact (le_of_lt q.hjk).trans (nat.le_add_right _ _),
+    rw [←hpqi, ←hpqk],
+    exact (le_of_lt p.hjk).trans (nat.le_add_right _ _) },
 end
 
+/- I don't expect anyone to want to use this lemma in positive characteristic, but this lemma
+  does generalize to odd characteristic (with the same proof) -/
 lemma key_lemma_aux1 {R : Type*} [integral_domain R] [char_zero R]
   (p q : trinomial R) (hpqa : p.a = q.a)
   (hpq : p.to_polynomial * p.to_polynomial.reverse' = q.to_polynomial * q.to_polynomial.reverse') :
