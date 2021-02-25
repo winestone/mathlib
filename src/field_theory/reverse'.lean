@@ -2,11 +2,19 @@ import data.polynomial.ring_division
 import algebra.big_operators.nat_antidiagonal
 import analysis.complex.polynomial
 
-namespace polynomial
+--TODO : Move
+lemma int.sq_eq_one_of_sq_le_three {a : ℤ} (h1 : a ≠ 0) (h2 : a ^ 2 ≤ 3) : a ^ 2 = 1 :=
+begin
+  rw [←int.nat_abs_pow_two a, ←int.coe_nat_pow, ←int.coe_nat_one, int.coe_nat_inj',
+      pow_eq_one_iff two_ne_zero],
+  apply le_antisymm,
+  { rwa [←nat.lt_succ_iff, ←nat.pow_lt_iff_lt_left one_le_two, ←int.coe_nat_lt_coe_nat_iff,
+        int.coe_nat_pow, int.nat_abs_pow_two, ←int.le_sub_one_iff] },
+  { apply nat.one_le_of_lt,
+    rwa [zero_lt_iff, ne, int.nat_abs_eq_zero] },
+end
 
-lemma leading_coeff_neg {R : Type*} [ring R] (f : polynomial R) :
-  leading_coeff (-f) = - (leading_coeff f) :=
-by rw [leading_coeff, leading_coeff, coeff_neg, nat_degree_neg]
+namespace polynomial
 
 variables {R : Type*} [semiring R] (p : polynomial R)
 
@@ -44,7 +52,8 @@ begin
     exact congr_arg nat_degree (subsingleton.elim p.reverse' p) },
 end
 
-lemma coeff_mul_X_pow' {R : Type*} [semiring R] (p : polynomial R) (n : ℕ) (d : ℕ) :
+--TODO : Move to same spot as `coeff_mul_X_pow`
+lemma coeff_mul_X_pow' (n : ℕ) (d : ℕ) :
   (p * X ^ n).coeff d = ite (n ≤ d) (p.coeff (d - n)) 0 :=
 begin
   by_cases h : n ≤ d,
@@ -56,6 +65,7 @@ begin
       (le_of_eq (finset.nat.mem_antidiagonal.mp hx))) (not_le.mp h)) },
 end
 
+--TODO : Move to trailing file
 lemma nat_trailing_degree_mul_X_pow {p : polynomial R} (hp : p ≠ 0) (n : ℕ) :
   (p * X ^ n).nat_trailing_degree = p.nat_trailing_degree + n :=
 begin
@@ -229,6 +239,7 @@ begin
   rw [pow_two, coeff_reverse', ←rev_at_le (finset.mem_range_succ_iff.mp hk), rev_at_invol],
 end
 
+-- `p.nat_degree` can be recovered from `p * p.reverse'`
 lemma nat_degree_mul_reverse' {R : Type*} [integral_domain R] (p : polynomial R) :
   (p * p.reverse').nat_degree = 2 * p.nat_degree :=
 begin
@@ -237,6 +248,7 @@ begin
   { rw [nat_degree_mul hp (mt p.reverse'_eq_zero.mp hp), reverse'_nat_degree, two_mul] },
 end
 
+-- `p.nat_trailing_degree` can be recovered from `p * p.reverse'`
 lemma nat_trailing_degree_mul_reverse' {R : Type*} [integral_domain R] (p : polynomial R) :
   (p * p.reverse').nat_trailing_degree = 2 * p.nat_trailing_degree :=
 begin
@@ -246,6 +258,7 @@ begin
         reverse'_nat_trailing_degree, two_mul] },
 end
 
+-- `p.norm2` can be recovered from `p * p.reverse'`
 lemma central_coeff_mul_reverse' {R : Type*} [integral_domain R] (p : polynomial R) :
   (p * p.reverse').coeff (((p * p.reverse').nat_degree +
     (p * p.reverse').nat_trailing_degree) / 2) = p.norm2 :=
@@ -266,25 +279,6 @@ begin
   exact λ h, (pow_eq_zero_iff zero_lt_two).mpr (not_mem_support_iff_coeff_zero.mp h),
 end
 
-end norm2
-
-section useful_stuff
-
-lemma int_lemma {a : ℤ} (h1 : a ≠ 0) (h2 : a ^ 2 ≤ 3) : a ^ 2 = 1 :=
-begin
-  rw [←int.nat_abs_pow_two a, ←int.coe_nat_pow, ←int.coe_nat_one, int.coe_nat_inj',
-      pow_eq_one_iff two_ne_zero],
-  apply le_antisymm,
-  { rwa [←nat.lt_succ_iff, ←nat.pow_lt_iff_lt_left one_le_two, ←int.coe_nat_lt_coe_nat_iff,
-        int.coe_nat_pow, int.nat_abs_pow_two, ←int.le_sub_one_iff] },
-  { apply nat.one_le_of_lt,
-    rwa [zero_lt_iff, ne, int.nat_abs_eq_zero] },
-end
-
-lemma lem1 (p : polynomial ℤ) (hp : p.norm2 ≤ 3) (k : ℕ) (hk : p.coeff k ≠ 0) :
-  p.coeff k ^ 2 = 1 :=
-int_lemma hk ((p.coeff_sq_le_norm2 k).trans hp)
-
 lemma norm2_eq_card_support (hp : ∀ k, p.coeff k ≠ 0 → p.coeff k ^ 2 = 1) :
   p.norm2 = p.support.card :=
 begin
@@ -293,10 +287,15 @@ begin
   exact finset.sum_congr rfl (λ k hk, hp k (mem_support_iff_coeff_ne_zero.mp hk)),
 end
 
+lemma coeff_sq_eq_one_of_norm2_le_three (p : polynomial ℤ) (hp : p.norm2 ≤ 3) (k : ℕ)
+  (hk : p.coeff k ≠ 0) : p.coeff k ^ 2 = 1 :=
+int.sq_eq_one_of_sq_le_three hk ((p.coeff_sq_le_norm2 k).trans hp)
+
 lemma card_support_eq_three_of_norm2_eq_three (p : polynomial ℤ) (hp : p.norm2 = 3) :
   p.support.card = 3 :=
-nat.cast_inj.mp ((p.norm2_eq_card_support (p.lem1 (le_of_eq hp))).symm.trans hp)
+nat.cast_inj.mp
+  ((p.norm2_eq_card_support (p.coeff_sq_eq_one_of_norm2_le_three (le_of_eq hp))).symm.trans hp)
 
-end useful_stuff
+end norm2
 
 end polynomial

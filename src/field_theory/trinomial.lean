@@ -42,8 +42,7 @@ by simp_rw [to_polynomial, eval_add, eval_monomial, one_pow, mul_one]
 lemma support : t.to_polynomial.support = {t.i, t.j, t.k} :=
 begin
   apply finset.subset.antisymm,
-  { rw to_polynomial,
-    refine finset.subset.trans finsupp.support_add (finset.union_subset
+  { refine finset.subset.trans finsupp.support_add (finset.union_subset
       (finset.subset.trans finsupp.support_add (finset.union_subset _ _)) _),
     all_goals
     { apply finset.subset.trans (support_monomial' _ _) (finset.singleton_subset_iff.mpr _),
@@ -194,20 +193,20 @@ ext (one_mul _) (one_mul _) (one_mul _) rfl rfl rfl
 lemma twist_twist (u v : units R) : (t.twist v).twist u = t.twist (u * v) :=
 ext (mul_assoc _ _ _).symm (mul_assoc _ _ _).symm (mul_assoc _ _ _).symm rfl rfl rfl
 
-instance twist_action : mul_action (units R) (trinomial R) :=
+instance : mul_action (units R) (trinomial R) :=
 { smul := λ u t, t.twist u,
   one_smul := twist_one,
   mul_smul := λ u v t, (t.twist_twist u v).symm }
 
 lemma smul_to_polynomial (u : units R) : (u • t).to_polynomial = (u : R) • t.to_polynomial :=
-begin
-  simp_rw [to_polynomial, smul_add, smul_monomial],
-  refl,
-end
+by { simp_rw [to_polynomial, smul_add, smul_monomial], refl }
 
 lemma neg_to_polynomial {R : Type*} [ring R] (t : trinomial R) :
   ((-1 : units R) • t).to_polynomial = -t.to_polynomial :=
 by rw [smul_to_polynomial, units.coe_neg_one, ←C_mul', C_neg, C_1, neg_one_mul]
+
+lemma neg_neg {R : Type*} [ring R] (t : trinomial R) : (-1 : units R) • (-1 : units R) • t = t :=
+by rw [smul_smul, units.neg_mul_neg, one_mul, one_smul]
 
 /-- reverse a trinomial -/
 def reverse : trinomial R :=
@@ -246,9 +245,6 @@ section main_proof
 section rel
 
 variables {S : Type*} [ring S] (q r s : trinomial S)
-
-lemma neg_neg : (-1 : units S) • (-1 : units S) • s = s :=
-by rw [smul_smul, units.neg_mul_neg, one_mul, one_smul]
 
 /-- two trinomial are related if they are the same up to negation and reverse -/
 def rel :=
@@ -324,7 +320,7 @@ end
 
 end rel
 
-lemma key_lemma_aux5 {R : Type*} [semiring R] {a : R} (ha : a ≠ 0) {i j : ℕ} :
+lemma monomial_eq_monomial_iff {R : Type*} [semiring R] {a : R} (ha : a ≠ 0) {i j : ℕ} :
   (monomial i a) = (monomial j a) ↔ i = j :=
 begin
   split,
@@ -334,14 +330,16 @@ begin
     rw h },
 end
 
-lemma key_lemma_aux4 {R : Type*} [ring R] {a b : R} (ha : a ≠ 0) (hb : b ≠ 0) {i j k l : ℕ} :
+--TODO: see if there's a cleaner way
+lemma monomial_add_monomial_eq_monomial_add_monomial_iff {R : Type*} [ring R]
+  {a b : R} (ha : a ≠ 0) (hb : b ≠ 0) {i j k l : ℕ} :
   (monomial i a) + (monomial j b) = (monomial k a) + (monomial l b) ↔
   ((i = k ∧ j = l) ∨ (a = b ∧ i = l ∧ j = k) ∨ (a + b = 0 ∧ i = j ∧ k = l)) :=
 begin
   split,
   { intro h,
     by_cases hik : i = k,
-    { rw [hik, add_right_inj, key_lemma_aux5 hb] at h,
+    { rw [hik, add_right_inj, monomial_eq_monomial_iff hb] at h,
       exact or.inl ⟨hik, h⟩ },
     { apply or.inr,
       have key := congr_arg (λ x : polynomial R, x.coeff k) h,
@@ -353,14 +351,14 @@ begin
         { rw [if_pos hkl, self_eq_add_left] at key,
           exact false.rec _ (ha key) },
         { rw [if_neg hkl, add_zero] at key,
-          rw [key, hjk, add_comm, add_right_inj, key_lemma_aux5 ha] at h,
+          rw [key, hjk, add_comm, add_right_inj, monomial_eq_monomial_iff ha] at h,
           exact or.inl ⟨key.symm, h, hjk⟩ } },
       { rw [if_neg hjk] at key,
         by_cases hkl : l = k,
         { rw [if_pos hkl, eq_comm] at key,
           rw [hkl, ←monomial_add, key, monomial_zero_right, add_eq_zero_iff_neg_eq,
               ←C_mul_X_pow_eq_monomial, neg_mul_eq_neg_mul, ←C_neg, C_mul_X_pow_eq_monomial,
-              add_eq_zero_iff_neg_eq.mp key, key_lemma_aux5 hb] at h,
+              add_eq_zero_iff_neg_eq.mp key, monomial_eq_monomial_iff hb] at h,
           exact or.inr ⟨key, h, hkl.symm⟩ },
         { rw [if_neg hkl, add_zero, eq_comm] at key,
           exact false.rec _ (ha key) } } } },
@@ -371,7 +369,7 @@ begin
           monomial_zero_right, monomial_zero_right] } },
 end
 
-lemma key_lemma_aux3 {R : Type*} [integral_domain R] (p : trinomial R) :
+lemma mul_reverse'_filter {R : Type*} [integral_domain R] (p : trinomial R) :
   (p.to_polynomial * p.to_polynomial.reverse').filter (set.Ioo (p.k + p.i) (p.k + p.k)) =
     (monomial (p.k + (p.k + p.i - p.j)) (p.b * p.c)) + (monomial (p.k + p.j) (p.b * p.a)) :=
 begin
@@ -397,6 +395,7 @@ begin
   { exact not_and_of_not_left _ (not_lt_of_gt (add_lt_add_right p.hik p.i)) },
 end
 
+--TODO : clean up
 lemma key_lemma_aux2 {R : Type*} [integral_domain R] (p q : trinomial R) (hpqa : p.a = q.a)
   (hpqb : p.b = q.b) (hpqc : p.c = q.c)
   (hpq : p.to_polynomial * p.to_polynomial.reverse' = q.to_polynomial * q.to_polynomial.reverse') :
@@ -413,9 +412,9 @@ begin
     exact mul_left_cancel' two_ne_zero hpq },
   have key : (monomial (p.k + (p.k + p.i - p.j)) (p.b * p.c)) + (monomial (p.k + p.j) (p.b * p.a))
     = (monomial (q.k + (q.k + q.i - q.j)) (q.b * q.c)) + (monomial (q.k + q.j) (q.b * q.a)),
-  { rw [←key_lemma_aux3, ←key_lemma_aux3, hpq, hpqi, hpqk] },
-  rw [hpqa, hpqb, hpqc, hpqi, hpqk,
-      key_lemma_aux4 (mul_ne_zero q.hb q.hc) (mul_ne_zero q.hb q.ha)] at key,
+  { rw [←mul_reverse'_filter, ←mul_reverse'_filter, hpq, hpqi, hpqk] },
+  rw [hpqa, hpqb, hpqc, hpqi, hpqk, monomial_add_monomial_eq_monomial_add_monomial_iff
+      (mul_ne_zero q.hb q.hc) (mul_ne_zero q.hb q.ha)] at key,
   simp_rw add_right_inj at key,
   rcases key with (⟨h1, h2⟩ | ⟨h1, h2, h3⟩ | ⟨h1, h2, h3⟩),
   { exact or.inl (ext hpqa hpqb hpqc hpqi h2 hpqk).symm },
@@ -467,7 +466,8 @@ begin
           hpq, mul_comm] } },
 end
 
-lemma mini_lemma {R : Type*} [comm_semiring R] (r s : R) (p q : polynomial R) :
+--TODO: move
+lemma smul_mul_smul {R : Type*} [comm_semiring R] (r s : R) (p q : polynomial R) :
   (r • p) * (s • q) = (r * s) • (p * q) :=
 begin
   rw [←C_mul', ←C_mul', ←C_mul', C_mul, ←mul_assoc, ←mul_assoc,
@@ -490,22 +490,23 @@ begin
     { have key' := key_lemma_aux1 (u1 • p.reverse) (u2 • q.reverse)
         (by rwa [←hu1, ←hu2] at key)
         (by simp_rw [smul_to_polynomial, reverse_to_polynomial, reverse'_smul, reverse'_reverse',
-          mini_lemma, int.units_coe_mul_self, mul_comm, hpq]),
+          smul_mul_smul, int.units_coe_mul_self, mul_comm, hpq]),
       rwa [unit_rel, rel_unit, reverse_rel, rel_reverse] at key' },
     { have key' := key_lemma_aux1 (u1 • p.reverse) (u2 • q)
         (by rwa [←hu1, ←hu2, mul_comm q.a] at key)
         (by simp_rw [smul_to_polynomial, reverse_to_polynomial, reverse'_smul, reverse'_reverse',
-          mini_lemma, int.units_coe_mul_self, mul_comm, hpq]),
+          smul_mul_smul, int.units_coe_mul_self, mul_comm, hpq]),
       rwa [unit_rel, rel_unit, reverse_rel] at key' } },
   { rcases (hp' q.a q.c key) with ⟨u2, hu2⟩ | ⟨u2, hu2⟩,
     { have key' := key_lemma_aux1 (u1 • p) (u2 • q.reverse)
         (by rwa [←hu1, ←hu2, mul_comm p.a] at key)
         (by simp_rw [smul_to_polynomial, reverse_to_polynomial, reverse'_smul, reverse'_reverse',
-          mini_lemma, int.units_coe_mul_self, mul_comm, hpq]),
+          smul_mul_smul, int.units_coe_mul_self, mul_comm, hpq]),
       rwa [unit_rel, rel_unit, rel_reverse] at key' },
     { have key' := key_lemma_aux1 (u1 • p) (u2 • q)
         (by rwa [←hu1, ←hu2, mul_comm p.a, mul_comm q.a] at key)
-        (by simp_rw [smul_to_polynomial, reverse'_smul, mini_lemma, int.units_coe_mul_self, hpq]),
+        (by simp_rw [smul_to_polynomial, reverse'_smul,
+          smul_mul_smul, int.units_coe_mul_self, hpq]),
       rwa [unit_rel, rel_unit] at key' } },
 end
 
@@ -513,7 +514,7 @@ lemma reverse'_irreducible_test' {f : polynomial ℤ}
   (h1 : f.norm2 = 3)
   (h2 : ∀ g, g ∣ f → g ∣ f.reverse' → is_unit g) : irreducible f :=
 begin
-  obtain ⟨t, rfl⟩ := trinomial.support_card_eq_three_iff.mp
+  obtain ⟨t, rfl⟩ := support_card_eq_three_iff.mp
     (f.card_support_eq_three_of_norm2_eq_three h1),
   refine reverse'_irreducible_test (λ h3, _) _ h2,
   { obtain ⟨r, ⟨u, rfl⟩, h4⟩ := is_unit_iff.mp h3,
@@ -522,13 +523,13 @@ begin
   { intros g hg,
     have hg' : g.norm2 = 3,
     { rwa [←central_coeff_mul_reverse', ←hg, central_coeff_mul_reverse'] },
-    obtain ⟨s, rfl⟩ := trinomial.support_card_eq_three_iff.mp
+    obtain ⟨s, rfl⟩ := support_card_eq_three_iff.mp
       (g.card_support_eq_three_of_norm2_eq_three hg'),
     simp_rw [←reverse_to_polynomial, ←neg_to_polynomial, to_polynomial_inj],
-    refine rel_symm s t (trinomial.key_lemma _ hg.symm),
+    refine rel_symm s t (key_lemma _ hg.symm),
     apply or.inl,
-    have key1 := s.to_polynomial.lem1 (le_of_eq hg') s.i,
-    have key2 := s.to_polynomial.lem1 (le_of_eq hg') s.k,
+    have key1 := s.to_polynomial.coeff_sq_eq_one_of_norm2_le_three (le_of_eq hg') s.i,
+    have key2 := s.to_polynomial.coeff_sq_eq_one_of_norm2_le_three (le_of_eq hg') s.k,
     rw [s.coeff_i, pow_two] at key1,
     rw [s.coeff_k, pow_two] at key2,
     exact is_unit.mul (is_unit_of_mul_eq_one s.a s.a (key1 s.ha))
@@ -550,8 +551,8 @@ begin
     cases hg1 with h fgh,
     apply @is_unit_of_mul_is_unit_left _ _ g.leading_coeff h.leading_coeff,
     rw [←leading_coeff_mul, ←fgh],
-    exact is_unit_of_pow_eq_one _ _ (f.lem1 (le_of_eq h1) f.nat_degree
-      (mt leading_coeff_eq_zero.mp hf)) zero_lt_two },
+    exact is_unit_of_pow_eq_one _ _ (f.coeff_sq_eq_one_of_norm2_le_three
+      (le_of_eq h1) f.nat_degree (mt leading_coeff_eq_zero.mp hf)) zero_lt_two },
   intro h,
   have inj : function.injective (algebra_map ℤ ℂ) := int.cast_injective,
   rw [nat_degree_pos_iff_degree_pos, ←degree_map' inj] at h,
@@ -565,7 +566,7 @@ begin
     rw [hg', aeval_mul, hz, zero_mul] },
 end
 
-lemma sub_lemma (n : ℕ) (z : ℂ) : ¬ (z ^ n = z + 1 ∧ z ^ n + z ^ 2 = 0) :=
+lemma selmer_coprime_lemma (n : ℕ) (z : ℂ) : ¬ (z ^ n = z + 1 ∧ z ^ n + z ^ 2 = 0) :=
 begin
   rintros ⟨h1, h2⟩,
   rw h1 at h2,
@@ -601,13 +602,13 @@ begin
   { rw [hn0, pow_zero, sub_sub, add_comm, ←sub_sub, sub_self, zero_sub],
     exact irreducible_of_associated ⟨-1, mul_neg_one X⟩ irreducible_X },
   have hn : 1 < n := nat.one_lt_iff_ne_zero_and_ne_one.mpr ⟨hn0, hn1⟩,
-  let p := trinomial.mk (-(1 : ℤ)) (-(1 : ℤ)) (1 : ℤ) (neg_ne_zero.mpr one_ne_zero)
+  let p := mk (-(1 : ℤ)) (-(1 : ℤ)) (1 : ℤ) (neg_ne_zero.mpr one_ne_zero)
     (neg_ne_zero.mpr one_ne_zero) (one_ne_zero) 0 1 n zero_lt_one hn,
   have h1 : p.to_polynomial = X ^ n - X - 1,
-  { simp_rw [trinomial.to_polynomial, ←C_mul_X_pow_eq_monomial, C_neg, C_1],
+  { simp_rw [to_polynomial, ←C_mul_X_pow_eq_monomial, C_neg, C_1],
     ring },
   have h2 : p.to_polynomial.reverse' = 1 - X ^ (n - 1) - X ^ n,
-  { simp_rw [←reverse_to_polynomial, reverse, trinomial.to_polynomial, ←C_mul_X_pow_eq_monomial,
+  { simp_rw [←reverse_to_polynomial, reverse, to_polynomial, ←C_mul_X_pow_eq_monomial,
       C_neg, C_1, nat.zero_add],
     ring },
   rw ← h1,
@@ -620,7 +621,7 @@ begin
       aeval_X, aeval_one, sub_sub, sub_eq_zero, hz1, ←add_assoc, self_eq_add_left] at hz2,
   replace hz2 : z ^ n + z ^ 2 = 0,
   { rw [←nat.sub_add_cancel (le_of_lt hn), pow_succ, pow_two, ←mul_add, hz2, mul_zero] },
-  exact sub_lemma n z ⟨hz1, hz2⟩,
+  exact selmer_coprime_lemma n z ⟨hz1, hz2⟩,
 end
 
 end main_proof
