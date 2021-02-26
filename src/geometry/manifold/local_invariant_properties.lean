@@ -228,7 +228,7 @@ begin
   repeat { simp only [hy] with mfld_simps },
 end
 
-lemma lift_prop_within_at_inter' (ht : t ∈ nhds_within x s) :
+lemma lift_prop_within_at_inter' (ht : t ∈ 𝓝[s] x) :
   lift_prop_within_at P g (s ∩ t) x ↔ lift_prop_within_at P g s x :=
 begin
   by_cases hcont : ¬ (continuous_within_at g s x),
@@ -328,16 +328,16 @@ lemma lift_prop_within_at_congr_iff (h₁ : ∀ y ∈ s, g' y = g y) (hx : g' x 
  λ h, hG.lift_prop_within_at_congr h h₁ hx⟩
 
 lemma lift_prop_within_at_congr_of_eventually_eq
-  (h : lift_prop_within_at P g s x) (h₁ : g' =ᶠ[nhds_within x s] g) (hx : g' x = g x) :
+  (h : lift_prop_within_at P g s x) (h₁ : g' =ᶠ[𝓝[s] x] g) (hx : g' x = g x) :
   lift_prop_within_at P g' s x :=
 begin
   rcases h₁.exists_mem with ⟨t, t_nhd, ht⟩,
   rw ← hG.lift_prop_within_at_inter' t_nhd at h ⊢,
-  exact hG.lift_prop_within_at_congr h (λ y hy, ht _ hy.2) hx
+  exact hG.lift_prop_within_at_congr h (λ y hy, ht hy.2) hx
 end
 
 lemma lift_prop_within_at_congr_iff_of_eventually_eq
-  (h₁ : g' =ᶠ[nhds_within x s] g) (hx : g' x = g x) :
+  (h₁ : g' =ᶠ[𝓝[s] x] g) (hx : g' x = g x) :
   lift_prop_within_at P g' s x ↔ lift_prop_within_at P g s x :=
 ⟨λ h, hG.lift_prop_within_at_congr_of_eventually_eq h h₁.symm hx.symm,
  λ h, hG.lift_prop_within_at_congr_of_eventually_eq h h₁ hx⟩
@@ -487,5 +487,64 @@ begin
 end
 
 end local_invariant_prop
+
+section local_structomorph
+
+variables (G)
+open local_homeomorph
+
+/-- A function from a model space `H` to itself is a local structomorphism, with respect to a
+structure groupoid `G` for `H`, relative to a set `s` in `H`, if for all points `x` in the set, the
+function agrees with a `G`-structomorphism on `s` in a neighbourhood of `x`. -/
+def is_local_structomorph_within_at (f : H → H) (s : set H) (x : H) : Prop :=
+(x ∈ s) → ∃ (e : local_homeomorph H H), e ∈ G ∧ eq_on f e.to_fun (s ∩ e.source) ∧ x ∈ e.source
+
+/-- For a groupoid `G` which is `closed_under_restriction`, being a local structomorphism is a local
+invariant property. -/
+lemma is_local_structomorph_within_at_local_invariant_prop [closed_under_restriction G] :
+  local_invariant_prop G G (is_local_structomorph_within_at G) :=
+{ is_local := begin
+    intros s x u f hu hux,
+    split,
+    { rintros h hx,
+      rcases h hx.1 with ⟨e, heG, hef, hex⟩,
+      have : s ∩ u ∩ e.source ⊆ s ∩ e.source := by mfld_set_tac,
+      exact ⟨e, heG, hef.mono this, hex⟩ },
+    { rintros h hx,
+      rcases h ⟨hx, hux⟩ with ⟨e, heG, hef, hex⟩,
+      refine ⟨e.restr (interior u), _, _, _⟩,
+      { exact closed_under_restriction' heG (is_open_interior) },
+      { have : s ∩ u ∩ e.source = s ∩ (e.source ∩ u) := by mfld_set_tac,
+        simpa only [this, interior_interior, hu.interior_eq] with mfld_simps using hef },
+      { simp only [*, interior_interior, hu.interior_eq] with mfld_simps } }
+  end,
+  right_invariance := begin
+    intros s x f e' he'G he'x h hx,
+    have hxs : x ∈ s := by simpa only [e'.left_inv he'x] with mfld_simps using hx.2,
+    rcases h hxs with ⟨e, heG, hef, hex⟩,
+    refine ⟨e'.symm.trans e, G.trans (G.symm he'G) heG, _, _⟩,
+    { intros y hy,
+      simp only with mfld_simps at hy,
+      simp only [hef ⟨hy.1.2, hy.2.2⟩] with mfld_simps },
+    { simp only [hex, he'x] with mfld_simps }
+  end,
+  congr := begin
+    intros s x f g hfgs hfg' h hx,
+    rcases h hx with ⟨e, heG, hef, hex⟩,
+    refine ⟨e, heG, _, hex⟩,
+    intros y hy,
+    rw [← hef hy, hfgs y hy.1]
+  end,
+  left_invariance := begin
+    intros s x f e' he'G he' hfx h hx,
+    rcases h hx with ⟨e, heG, hef, hex⟩,
+    refine ⟨e.trans e', G.trans heG he'G, _, _⟩,
+    { intros y hy,
+      simp only with mfld_simps at hy,
+      simp only [hef ⟨hy.1, hy.2.1⟩] with mfld_simps },
+    { simpa only [hex, hef ⟨hx, hex⟩] with mfld_simps using hfx }
+  end }
+
+end local_structomorph
 
 end structure_groupoid

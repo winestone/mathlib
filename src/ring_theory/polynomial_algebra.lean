@@ -3,7 +3,6 @@ Copyright (c) 2020 Scott Morrison. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Scott Morrison
 -/
-import ring_theory.tensor_product
 import ring_theory.matrix_algebra
 import data.polynomial.algebra_map
 
@@ -89,14 +88,14 @@ def to_fun_bilinear : A →ₗ[R] polynomial R →ₗ[R] polynomial A :=
   map_smul' := by {
     intros, unfold to_fun_linear_right,
     congr, simp only [linear_map.coe_mk],
-    unfold to_fun finsupp.sum monomial,
-    simp_rw [finset.smul_sum, finsupp.smul_single,  ← algebra.smul_mul_assoc],
+    unfold to_fun finsupp.sum,
+    simp_rw [finset.smul_sum, smul_monomial,  ← algebra.smul_mul_assoc],
     refl },
   map_add' := by {
     intros, unfold to_fun_linear_right,
     congr, simp only [linear_map.coe_mk],
-    unfold to_fun finsupp.sum monomial,
-    simp_rw [← finset.sum_add_distrib, ← finsupp.single_add, ← add_mul],
+    unfold to_fun finsupp.sum,
+    simp_rw [← finset.sum_add_distrib, ← monomial_add, ← add_mul],
     refl } }
 
 /--
@@ -125,15 +124,17 @@ begin
 end
 
 lemma to_fun_linear_mul_tmul_mul (a₁ a₂ : A) (p₁ p₂ : polynomial R) :
-  (to_fun_linear R A) ((a₁ * a₂) ⊗ₜ[R] p₁ * p₂) =
+  (to_fun_linear R A) ((a₁ * a₂) ⊗ₜ[R] (p₁ * p₂)) =
     (to_fun_linear R A) (a₁ ⊗ₜ[R] p₁) * (to_fun_linear R A) (a₂ ⊗ₜ[R] p₂) :=
 begin
   dsimp [to_fun_linear],
   simp only [lift.tmul],
   dsimp [to_fun_bilinear, to_fun_linear_right, to_fun],
   ext k,
-  simp_rw [coeff_sum, coeff_single, finsupp.sum,
-    finset.sum_ite_eq', finsupp.mem_support_iff, ne.def, coeff_mul, finset_sum_coeff, coeff_single,
+  -- TODO This is a bit annoying: the polynomial API is breaking down.
+  have apply_eq_coeff : ∀ {p : ℕ →₀ R} {n : ℕ}, p n = coeff p n := by { intros, refl },
+  simp_rw [coeff_sum, coeff_monomial, finsupp.sum, finset.sum_ite_eq', finsupp.mem_support_iff,
+    ne.def, coeff_mul, finset_sum_coeff, coeff_monomial,
     finset.sum_ite_eq', finsupp.mem_support_iff, ne.def,
     mul_ite, mul_zero, ite_mul, zero_mul, apply_eq_coeff],
   simp_rw [ite_mul_zero_left (¬coeff p₁ _ = 0) (a₁ * (algebra_map R A) (coeff p₁ _))],
@@ -147,9 +148,8 @@ begin
   dsimp [to_fun_linear],
   simp only [lift.tmul],
   dsimp [to_fun_bilinear, to_fun_linear_right, to_fun],
-  rw [← C_1, ←monomial_zero_left, finsupp.sum_single_index],
-  { simp, refl, },
-  { simp, },
+  rw [← C_1, ←monomial_zero_left],
+  refine (finsupp.sum_single_index _).trans _; simp [algebra_map_apply]
 end
 
 /--
@@ -181,6 +181,10 @@ p.eval₂
 lemma inv_fun_add {p q} : inv_fun R A (p + q) = inv_fun R A p + inv_fun R A q :=
 by simp only [inv_fun, eval₂_add]
 
+lemma inv_fun_monomial (n : ℕ) (a : A) :
+  inv_fun R A (monomial n a) = include_left a * ((1 : A) ⊗ₜ[R] (X : polynomial R)) ^ n :=
+eval₂_monomial _ _
+
 lemma left_inv (x : A ⊗ polynomial R) :
   inv_fun R A ((to_fun_alg_hom R A) x) = x :=
 begin
@@ -205,9 +209,10 @@ begin
   apply polynomial.induction_on' x,
   { intros p q hp hq, simp only [inv_fun_add, alg_hom.map_add, hp, hq], },
   { intros n a,
-    rw [inv_fun, eval₂_monomial, alg_hom.coe_to_ring_hom, algebra.tensor_product.include_left_apply,
+    rw [inv_fun_monomial, algebra.tensor_product.include_left_apply,
       algebra.tensor_product.tmul_pow, one_pow, algebra.tensor_product.tmul_mul_tmul,
-      mul_one, one_mul, to_fun_alg_hom_apply_tmul, ←monomial_one_eq_X_pow],
+      mul_one, one_mul, to_fun_alg_hom_apply_tmul, X_pow_eq_monomial],
+    dsimp [monomial],
     rw [finsupp.sum_single_index]; simp, }
 end
 
@@ -251,7 +256,7 @@ open matrix
 open_locale big_operators
 
 variables {R}
-variables {n : Type w} [fintype n] [decidable_eq n]
+variables {n : Type w} [decidable_eq n] [fintype n]
 
 /--
 The algebra isomorphism stating "matrices of polynomials are the same as polynomials of matrices".
@@ -282,7 +287,7 @@ begin
   simp only [algebra.tensor_product.tmul_mul_tmul, one_pow, one_mul, matrix.mul_one,
     algebra.tensor_product.tmul_pow, algebra.tensor_product.include_left_apply, mul_eq_mul],
   rw [monomial_eq_smul_X, ← tensor_product.smul_tmul],
-  congr, ext, simp, dsimp, simp,
+  congr' with i' j'; simp
 end
 
 lemma mat_poly_equiv_coeff_apply_aux_2
@@ -292,9 +297,9 @@ lemma mat_poly_equiv_coeff_apply_aux_2
 begin
   apply polynomial.induction_on' p,
   { intros p q hp hq, ext,
-    simp [hp, hq, coeff_add, add_val, std_basis_matrix_add], },
+    simp [hp, hq, coeff_add, add_apply, std_basis_matrix_add], },
   { intros k x,
-    simp only [mat_poly_equiv_coeff_apply_aux_1, coeff_single],
+    simp only [mat_poly_equiv_coeff_apply_aux_1, coeff_monomial],
     split_ifs; { funext, simp, }, }
 end
 
@@ -327,7 +332,7 @@ lemma mat_poly_equiv_smul_one (p : polynomial R) :
   mat_poly_equiv (p • 1) = p.map (algebra_map R (matrix n n R)) :=
 begin
   ext m i j,
-  simp only [coeff_map, one_val, algebra_map_matrix_val, mul_boole,
-    smul_val, mat_poly_equiv_coeff_apply],
+  simp only [coeff_map, one_apply, algebra_map_matrix_apply, mul_boole,
+    smul_apply, mat_poly_equiv_coeff_apply],
   split_ifs; simp,
 end

@@ -3,7 +3,10 @@ Copyright (c) 2020 Chris Hughes. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chris Hughes
 -/
-import data.equiv.mul_add logic.function.basic group_theory.subgroup
+import data.equiv.mul_add_aut
+import logic.function.basic
+import group_theory.subgroup
+
 /-!
 # Semidirect product
 
@@ -46,7 +49,8 @@ variables {N G} {φ : G →* mul_aut N}
 private def one_aux : N ⋊[φ] G := ⟨1, 1⟩
 private def mul_aux (a b : N ⋊[φ] G) : N ⋊[φ] G := ⟨a.1 * φ a.2 b.1, a.right * b.right⟩
 private def inv_aux (a : N ⋊[φ] G) : N ⋊[φ] G := let i := a.2⁻¹ in ⟨φ i a.1⁻¹, i⟩
-private lemma mul_assoc_aux (a b c : N ⋊[φ] G) : mul_aux (mul_aux a b) c = mul_aux a (mul_aux b c) :=
+private lemma mul_assoc_aux (a b c : N ⋊[φ] G) :
+  mul_aux (mul_aux a b) c = mul_aux a (mul_aux b c) :=
 by simp [mul_aux, mul_assoc, mul_equiv.map_mul]
 private lemma mul_one_aux (a : N ⋊[φ] G) : mul_aux a one_aux = a :=
 by cases a; simp [mul_aux, one_aux]
@@ -156,7 +160,7 @@ def lift (f₁ : N →* H) (f₂ : G →* H)
   map_one' := by simp,
   map_mul' := λ a b, begin
     have := λ n g, monoid_hom.ext_iff.1 (h n) g,
-    simp only [mul_aut.conj_apply, monoid_hom.comp_apply, mul_equiv.to_monoid_hom_apply] at this,
+    simp only [mul_aut.conj_apply, monoid_hom.comp_apply, mul_equiv.coe_to_monoid_hom] at this,
     simp [this, mul_assoc]
   end }
 
@@ -181,5 +185,44 @@ lemma hom_ext {f g : (N ⋊[φ] G) →* H} (hl : f.comp inl = g.comp inl)
 by { rw [lift_unique f, lift_unique g], simp only * }
 
 end lift
+
+section map
+
+variables {N₁ : Type*} {G₁ : Type*} [group N₁] [group G₁] {φ₁ : G₁ →* mul_aut N₁}
+
+/-- Define a map from `N ⋊[φ] G` to `N₁ ⋊[φ₁] G₁` given maps `N →* N₁` and `G →* G₁` that
+  satisfy a commutativity condition `∀ n g, f₁ (φ g n) = φ₁ (f₂ g) (f₁ n)`.  -/
+def map (f₁ : N →* N₁) (f₂ : G →* G₁)
+  (h : ∀ g : G, f₁.comp (φ g).to_monoid_hom = (φ₁ (f₂ g)).to_monoid_hom.comp f₁) :
+  N ⋊[φ] G →* N₁ ⋊[φ₁] G₁ :=
+{ to_fun := λ x, ⟨f₁ x.1, f₂ x.2⟩,
+  map_one' := by simp,
+  map_mul' := λ x y, begin
+    replace h := monoid_hom.ext_iff.1 (h x.right) y.left,
+    ext; simp * at *,
+  end  }
+
+variables (f₁ : N →* N₁) (f₂ : G →* G₁)
+  (h : ∀ g : G, f₁.comp (φ g).to_monoid_hom = (φ₁ (f₂ g)).to_monoid_hom.comp f₁)
+
+@[simp] lemma map_left (g : N ⋊[φ] G) : (map f₁ f₂ h g).left = f₁ g.left := rfl
+
+@[simp] lemma map_right (g : N ⋊[φ] G) : (map f₁ f₂ h g).right = f₂ g.right := rfl
+
+@[simp] lemma right_hom_comp_map : right_hom.comp (map f₁ f₂ h) = f₂.comp right_hom := rfl
+
+@[simp] lemma map_inl (n : N) : map f₁ f₂ h (inl n) = inl (f₁ n) :=
+by simp [map]
+
+@[simp] lemma map_comp_inl : (map f₁ f₂ h).comp inl = inl.comp f₁ :=
+by ext; simp
+
+@[simp] lemma map_inr (g : G) : map f₁ f₂ h (inr g) = inr (f₂ g) :=
+by simp [map]
+
+@[simp] lemma map_comp_inr : (map f₁ f₂ h).comp inr = inr.comp f₂ :=
+by ext; simp [map]
+
+end map
 
 end semidirect_product

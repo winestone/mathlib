@@ -3,8 +3,9 @@ Copyright (c) 2018 Chris Hughes. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chris Hughes, Johannes Hölzl, Scott Morrison, Jens Wagemaker
 -/
-import data.polynomial.induction
-import data.polynomial.degree
+
+import data.polynomial.eval
+import algebra.algebra.tower
 
 /-!
 # Theory of univariate polynomials
@@ -14,27 +15,12 @@ We promote `eval₂` to an algebra hom in `aeval`.
 -/
 
 noncomputable theory
-local attribute [instance, priority 100] classical.prop_decidable
-
-local attribute [instance, priority 10] is_semiring_hom.comp is_ring_hom.comp
-
-open finsupp finset add_monoid_algebra
+open finset
 open_locale big_operators
 
 namespace polynomial
 universes u v w z
 variables {R : Type u} {S : Type v} {T : Type w} {A : Type z} {a b : R} {n : ℕ}
-
-section semiring
-variables [semiring R] {p q r : polynomial R}
-
-lemma C_mul' (a : R) (f : polynomial R) : C a * f = a • f :=
-ext $ λ n, coeff_C_mul f
-
-lemma C_inj : C a = C b ↔ a = b :=
-⟨λ h, coeff_C_zero.symm.trans (h.symm ▸ coeff_C_zero), congr_arg C⟩
-
-end semiring
 
 section comm_semiring
 variables [comm_semiring R] {p q r : polynomial R}
@@ -92,76 +78,80 @@ lemma eval₂_algebra_map_int_X {R : Type*} [ring R] (p : polynomial ℤ) (f : p
 -- Unfortunately `f.to_int_alg_hom` doesn't work here, as typeclasses don't match up correctly.
 eval₂_algebra_map_X p { commutes' := λ n, by simp, .. f }
 
-section eval
-variable {x : R}
-
-@[simp] lemma eval_mul : (p * q).eval x = p.eval x * q.eval x := eval₂_mul _ _
-
-instance eval.is_semiring_hom : is_semiring_hom (eval x) := eval₂.is_semiring_hom _ _
-
-@[simp] lemma eval_pow (n : ℕ) : (p ^ n).eval x = p.eval x ^ n := eval₂_pow _ _ _
-
-lemma eval₂_hom [comm_semiring S] (f : R →+* S) (x : R) :
-  p.eval₂ f (f x) = f (p.eval x) :=
-polynomial.induction_on p
-  (by simp)
-  (by simp [f.map_add] {contextual := tt})
-  (by simp [f.map_mul, eval_pow,
-    f.map_pow, pow_succ', (mul_assoc _ _ _).symm] {contextual := tt})
-
-lemma root_mul_left_of_is_root (p : polynomial R) {q : polynomial R} :
-  is_root q a → is_root (p * q) a :=
-λ H, by rw [is_root, eval_mul, is_root.def.1 H, mul_zero]
-
-lemma root_mul_right_of_is_root {p : polynomial R} (q : polynomial R) :
-  is_root p a → is_root (p * q) a :=
-λ H, by rw [is_root, eval_mul, is_root.def.1 H, zero_mul]
-
-end eval
-
 section comp
 
 lemma eval₂_comp [comm_semiring S] (f : R →+* S) {x : S} :
-  (p.comp q).eval₂ f x = p.eval₂ f (q.eval₂ f x) :=
-by rw [comp, p.as_sum]; simp only [eval₂_mul, eval₂_C, eval₂_pow, eval₂_finset_sum, eval₂_X]
-
+  eval₂ f x (p.comp q) = eval₂ f (eval₂ f x q) p :=
+by rw [comp, p.as_sum_range]; simp [eval₂_finset_sum, eval₂_pow]
 
 lemma eval_comp : (p.comp q).eval a = p.eval (q.eval a) := eval₂_comp _
 
-instance : is_semiring_hom (λ q : polynomial R, q.comp p) :=
+instance comp.is_semiring_hom : is_semiring_hom (λ q : polynomial R, q.comp p) :=
 by unfold comp; apply_instance
-
-@[simp] lemma mul_comp : (p * q).comp r = p.comp r * q.comp r := eval₂_mul _ _
 
 end comp
 
 end comm_semiring
 
-
 section aeval
-variables [comm_semiring R] {p : polynomial R}
+variables [comm_semiring R] {p q : polynomial R}
 
-variables (R) (A)
-
--- TODO this could be generalized: there's no need for `A` to be commutative,
--- we just need that `x` is central.
-variables [comm_semiring A] [algebra R A]
-variables {B : Type*} [comm_semiring B] [algebra R B]
+variables [semiring A] [algebra R A]
+variables {B : Type*} [semiring B] [algebra R B]
 variables (x : A)
 
 /-- Given a valuation `x` of the variable in an `R`-algebra `A`, `aeval R A x` is
 the unique `R`-algebra homomorphism from `R[X]` to `A` sending `X` to `x`. -/
 def aeval : polynomial R →ₐ[R] A :=
 { commutes' := λ r, eval₂_C _ _,
-  ..eval₂_ring_hom (algebra_map R A) x }
+  ..eval₂_ring_hom' (algebra_map R A) x (λ a, algebra.commutes _ _) }
 
 variables {R A}
 
-theorem aeval_def (p : polynomial R) : aeval R A x p = eval₂ (algebra_map R A) x p := rfl
+@[ext] lemma alg_hom_ext {f g : polynomial R →ₐ[R] A} (h : f X = g X) : f = g :=
+by { ext, exact h }
 
-@[simp] lemma aeval_X : aeval R A x X = x := eval₂_X _ x
+theorem aeval_def (p : polynomial R) : aeval x p = eval₂ (algebra_map R A) x p := rfl
 
-@[simp] lemma aeval_C (r : R) : aeval R A x (C r) = algebra_map R A r := eval₂_C _ x
+@[simp] lemma aeval_zero : aeval x (0 : polynomial R) = 0 :=
+alg_hom.map_zero (aeval x)
+
+@[simp] lemma aeval_X : aeval x (X : polynomial R) = x := eval₂_X _ x
+
+@[simp] lemma aeval_C (r : R) : aeval x (C r) = algebra_map R A r := eval₂_C _ x
+
+lemma aeval_monomial {n : ℕ} {r : R} : aeval x (monomial n r) = (algebra_map _ _ r) * x^n :=
+eval₂_monomial _ _
+
+@[simp] lemma aeval_X_pow {n : ℕ} : aeval x ((X : polynomial R)^n) = x^n :=
+eval₂_X_pow _ _
+
+@[simp] lemma aeval_add : aeval x (p + q) = aeval x p + aeval x q :=
+alg_hom.map_add _ _ _
+
+@[simp] lemma aeval_one : aeval x (1 : polynomial R) = 1 :=
+alg_hom.map_one _
+
+@[simp] lemma aeval_bit0 : aeval x (bit0 p) = bit0 (aeval x p) :=
+alg_hom.map_bit0 _ _
+
+@[simp] lemma aeval_bit1 : aeval x (bit1 p) = bit1 (aeval x p) :=
+alg_hom.map_bit1 _ _
+
+@[simp] lemma aeval_nat_cast (n : ℕ) : aeval x (n : polynomial R) = n :=
+alg_hom.map_nat_cast _ _
+
+lemma aeval_mul : aeval x (p * q) = aeval x p * aeval x q :=
+alg_hom.map_mul _ _ _
+
+lemma aeval_comp {A : Type*} [comm_semiring A] [algebra R A] (x : A) :
+  aeval x (p.comp q) = (aeval (aeval x q) p) :=
+eval₂_comp (algebra_map R A)
+
+@[simp] lemma aeval_map {A : Type*} [comm_semiring A] [algebra R A] [algebra A B]
+  [is_scalar_tower R A B] (b : B) (p : polynomial R) :
+  aeval b (p.map (algebra_map R A)) = aeval b p :=
+by rw [aeval_def, eval₂_map, ←is_scalar_tower.algebra_map_eq, ←aeval_def]
 
 theorem eval_unique (φ : polynomial R →ₐ[R] A) (p) :
   φ p = eval₂ (algebra_map R A) (φ X) p :=
@@ -171,28 +161,39 @@ begin
   { intros f g ih1 ih2,
     rw [φ.map_add, ih1, ih2, eval₂_add] },
   { intros n r ih,
-    rw [pow_succ', ← mul_assoc, φ.map_mul, eval₂_mul (algebra_map R A), eval₂_X, ih] }
+    rw [pow_succ', ← mul_assoc, φ.map_mul,
+        eval₂_mul_noncomm (algebra_map R A) _ (λ k, algebra.commutes _ _), eval₂_X, ih] }
 end
 
-theorem aeval_alg_hom (f : A →ₐ[R] B) (x : A) : aeval R B (f x) = f.comp (aeval R A x) :=
-alg_hom.ext $ λ p, by rw [eval_unique (f.comp (aeval R A x)), alg_hom.comp_apply, aeval_X, aeval_def]
+theorem aeval_alg_hom (f : A →ₐ[R] B) (x : A) : aeval (f x) = f.comp (aeval x) :=
+alg_hom.ext $ λ p, by rw [eval_unique (f.comp (aeval x)), alg_hom.comp_apply, aeval_X, aeval_def]
 
-theorem aeval_alg_hom_apply (f : A →ₐ[R] B) (x : A) (p) : aeval R B (f x) p = f (aeval R A x p) :=
+theorem aeval_alg_hom_apply (f : A →ₐ[R] B) (x : A) (p : polynomial R) :
+  aeval (f x) p = f (aeval x p) :=
 alg_hom.ext_iff.1 (aeval_alg_hom f x) p
+
+@[simp] lemma coe_aeval_eq_eval (r : R) :
+  (aeval r : polynomial R → R) = eval r := rfl
+
+lemma coeff_zero_eq_aeval_zero (p : polynomial R) : p.coeff 0 = aeval 0 p :=
+by simp [coeff_zero_eq_eval_zero]
+
+lemma pow_comp (p q : polynomial R) (k : ℕ) : (p ^ k).comp q = (p.comp q) ^ k :=
+by { unfold comp, rw ← coe_eval₂_ring_hom, apply ring_hom.map_pow }
 
 variables [comm_ring S] {f : R →+* S}
 
 lemma is_root_of_eval₂_map_eq_zero
   (hf : function.injective f) {r : R} : eval₂ f (f r) p = 0 → p.is_root r :=
-show eval₂ (f.comp (ring_hom.id R)) (f r) p = 0 → eval₂ (ring_hom.id R) r p = 0, begin
+begin
   intro h,
   apply hf,
-  rw [hom_eval₂, h, f.map_zero]
+  rw [←eval₂_hom, h, f.map_zero],
 end
 
 lemma is_root_of_aeval_algebra_map_eq_zero [algebra R S] {p : polynomial R}
   (inj : function.injective (algebra_map R S))
-  {r : R} (hr : aeval R S (algebra_map R S r) p = 0) : p.is_root r :=
+  {r : R} (hr : aeval (algebra_map R S r) p = 0) : p.is_root r :=
 is_root_of_eval₂_map_eq_zero inj hr
 
 lemma dvd_term_of_dvd_eval_of_dvd_terms {z p : S} {f : polynomial S} (i : ℕ)
@@ -204,7 +205,8 @@ begin
   by_cases hi : i ∈ f.support,
   { unfold polynomial.eval polynomial.eval₂ finsupp.sum id at dvd_eval,
     rw [←finset.insert_erase hi, finset.sum_insert (finset.not_mem_erase _ _)] at dvd_eval,
-    refine (dvd_add_left (finset.dvd_sum _)).mp dvd_eval,
+    refine (dvd_add_left _).mp dvd_eval,
+    apply finset.dvd_sum,
     intros j hj,
     exact dvd_terms j (finset.ne_of_mem_erase hj) },
   { convert dvd_zero p,
@@ -215,6 +217,14 @@ end
 lemma dvd_term_of_is_root_of_dvd_terms {r p : S} {f : polynomial S} (i : ℕ)
   (hr : f.is_root r) (h : ∀ (j ≠ i), p ∣ f.coeff j * r ^ j) : p ∣ f.coeff i * r ^ i :=
 dvd_term_of_dvd_eval_of_dvd_terms i (eq.symm hr ▸ dvd_zero p) h
+
+lemma aeval_eq_sum_range [algebra R S] {p : polynomial R} (x : S) :
+  aeval x p = ∑ i in finset.range (p.nat_degree + 1), p.coeff i • x ^ i :=
+by { simp_rw algebra.smul_def, exact eval₂_eq_sum_range (algebra_map R S) x }
+
+lemma aeval_eq_sum_range' [algebra R S] {p : polynomial R} {n : ℕ} (hn : p.nat_degree < n) (x : S) :
+  aeval x p = ∑ i in finset.range n, p.coeff i • x ^ i :=
+by { simp_rw algebra.smul_def, exact eval₂_eq_sum_range' (algebra_map R S) hn x }
 
 end aeval
 
@@ -245,12 +255,21 @@ begin
     congr, apply_congr, skip,
     rw [coeff_mul_X_sub_C, sub_mul, mul_assoc, ←pow_succ],
   },
-  simp [sum_range_sub', coeff_single],
+  simp [sum_range_sub', coeff_monomial],
 end
 
 theorem not_is_unit_X_sub_C [nontrivial R] {r : R} : ¬ is_unit (X - C r) :=
 λ ⟨⟨_, g, hfg, hgf⟩, rfl⟩, @zero_ne_one R _ _ $ by erw [← eval_mul_X_sub_C, hgf, eval_one]
 
 end ring
+
+lemma aeval_endomorphism {M : Type*}
+  [comm_ring R] [add_comm_group M] [module R M]
+  (f : M →ₗ[R] M) (v : M) (p : polynomial R) :
+  aeval f p v = p.sum (λ n b, b • (f ^ n) v) :=
+begin
+  rw [aeval_def, eval₂],
+  exact (finset.sum_hom p.support (λ h : M →ₗ[R] M, h v)).symm
+end
 
 end polynomial

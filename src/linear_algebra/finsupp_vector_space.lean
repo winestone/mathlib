@@ -7,6 +7,8 @@ Linear structures on function with finite support `ι →₀ β`.
 -/
 import data.mv_polynomial
 import linear_algebra.dimension
+import linear_algebra.direct_sum.finsupp
+
 noncomputable theory
 local attribute [instance, priority 100] classical.prop_decidable
 
@@ -27,7 +29,7 @@ begin
     have h_disjoint : disjoint (span R (range (f i))) (ker (lsingle i)),
     { rw ker_lsingle,
       exact disjoint_bot_right },
-    apply linear_independent.image (hf i) h_disjoint },
+    apply (hf i).map h_disjoint },
   { intros i t ht hit,
     refine (disjoint_lsingle_lsingle {i} t (disjoint_singleton_left.2 hit)).mono _ _,
     { rw span_le,
@@ -126,12 +128,14 @@ begin
       (module_equiv_finsupp hm').symm⟩,
 end
 
+/-- Two `K`-vector spaces are equivalent if their dimension is the same. -/
 def equiv_of_dim_eq_dim (h : dim K V₁ = dim K V₂) : V₁ ≃ₗ[K] V₂ :=
 begin
   classical,
   exact classical.choice (equiv_of_dim_eq_lift_dim (cardinal.lift_inj.2 h))
 end
 
+/-- An `n`-dimensional `K`-vector space is equivalent to `fin n → K`. -/
 def fin_dim_vectorspace_equiv (n : ℕ)
   (hn : (dim K V) = n) : V ≃ₗ[K] (fin n → K) :=
 begin

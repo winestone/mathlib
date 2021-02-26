@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sébastien Gouëzel
 -/
 import data.equiv.local_equiv
-import topology.homeomorph
+import topology.opens
 
 /-!
 # Local homeomorphisms
@@ -37,7 +37,7 @@ especially when restricting to subsets, as these should be open subsets.
 For design notes, see `local_equiv.lean`.
 -/
 
-open function set
+open function set filter
 open_locale topological_space
 
 variables {α : Type*} {β : Type*} {γ : Type*} {δ : Type*}
@@ -53,7 +53,7 @@ structure local_homeomorph (α : Type*) (β : Type*) [topological_space α] [top
 (continuous_inv_fun : continuous_on inv_fun target)
 
 /-- A homeomorphism induces a local homeomorphism on the whole space -/
-def homeomorph.to_local_homeomorph (e : homeomorph α β) :
+def homeomorph.to_local_homeomorph (e : α ≃ₜ β) :
   local_homeomorph α β :=
 { open_source        := is_open_univ,
   open_target        := is_open_univ,
@@ -108,18 +108,24 @@ e.left_inv' h
 @[simp, mfld_simps] lemma right_inv {x : β} (h : x ∈ e.target) : e (e.symm x) = x :=
 e.right_inv' h
 
+protected lemma maps_to : maps_to e e.source e.target := λ x, e.map_source
+protected lemma symm_maps_to : maps_to e.symm e.target e.source := e.symm.maps_to
+protected lemma left_inv_on : left_inv_on e.symm e e.source := λ x, e.left_inv
+protected lemma right_inv_on : right_inv_on e.symm e e.target := λ x, e.right_inv
+protected lemma inv_on : inv_on e.symm e e.source e.target := ⟨e.left_inv_on, e.right_inv_on⟩
+protected lemma inj_on : inj_on e e.source := e.left_inv_on.inj_on
+protected lemma bij_on : bij_on e e.source e.target := e.inv_on.bij_on e.maps_to e.symm_maps_to
+protected lemma surj_on : surj_on e e.source e.target := e.bij_on.surj_on
+
+lemma source_preimage_target : e.source ⊆ e ⁻¹' e.target := λ _ h, map_source e h
+
 lemma eq_of_local_equiv_eq {e e' : local_homeomorph α β}
   (h : e.to_local_equiv = e'.to_local_equiv) : e = e' :=
-begin
-  cases e, cases e',
-  dsimp at *,
-  induction h,
-  refl
-end
+by { cases e, cases e', cases h, refl }
 
 lemma eventually_left_inverse (e : local_homeomorph α β) {x} (hx : x ∈ e.source) :
   ∀ᶠ y in 𝓝 x, e.symm (e y) = y :=
-filter.eventually.mono (mem_nhds_sets e.open_source hx) e.left_inv'
+(e.open_source.eventually_mem hx).mono e.left_inv'
 
 lemma eventually_left_inverse' (e : local_homeomorph α β) {x} (hx : x ∈ e.target) :
   ∀ᶠ y in 𝓝 (e.symm x), e.symm (e y) = y :=
@@ -127,11 +133,16 @@ e.eventually_left_inverse (e.map_target hx)
 
 lemma eventually_right_inverse (e : local_homeomorph α β) {x} (hx : x ∈ e.target) :
   ∀ᶠ y in 𝓝 x, e (e.symm y) = y :=
-filter.eventually.mono (mem_nhds_sets e.open_target hx) e.right_inv'
+(e.open_target.eventually_mem hx).mono e.right_inv'
 
 lemma eventually_right_inverse' (e : local_homeomorph α β) {x} (hx : x ∈ e.source) :
   ∀ᶠ y in 𝓝 (e x), e (e.symm y) = y :=
 e.eventually_right_inverse (e.map_source hx)
+
+lemma eventually_ne_nhds_within (e : local_homeomorph α β) {x} (hx : x ∈ e.source) :
+  ∀ᶠ x' in 𝓝[{x}ᶜ] x, e x' ≠ e x :=
+eventually_nhds_within_iff.2 $ (e.eventually_left_inverse hx).mono $
+  λ x' hx', mt $ λ h, by rw [mem_singleton_iff, ← e.left_inv hx, ← h, hx']
 
 lemma image_eq_target_inter_inv_preimage {s : set α} (h : s ⊆ e.source) :
   e '' s = e.target ∩ e.symm ⁻¹' s :=
@@ -173,8 +184,21 @@ lemma continuous_at_symm {x : β} (h : x ∈ e.target) : continuous_at e.symm x 
 e.symm.continuous_at h
 
 lemma tendsto_symm (e : local_homeomorph α β) {x} (hx : x ∈ e.source) :
-  filter.tendsto e.symm (𝓝 (e x)) (𝓝 x) :=
+  tendsto e.symm (𝓝 (e x)) (𝓝 x) :=
 by simpa only [continuous_at, e.left_inv hx] using e.continuous_at_symm (e.map_source hx)
+
+lemma map_nhds_eq (e : local_homeomorph α β) {x} (hx : x ∈ e.source) :
+  map e (𝓝 x) = 𝓝 (e x) :=
+le_antisymm (e.continuous_at hx) $
+  le_map_of_right_inverse (e.eventually_right_inverse' hx) (e.tendsto_symm hx)
+
+lemma symm_map_nhds_eq (e : local_homeomorph α β) {x} (hx : x ∈ e.source) :
+  map e.symm (𝓝 (e x)) = 𝓝 x :=
+(e.symm.map_nhds_eq $ e.map_source hx).trans $ by rw e.left_inv hx
+
+lemma image_mem_nhds (e : local_homeomorph α β) {x} (hx : x ∈ e.source) {s : set α} (hs : s ∈ 𝓝 x) :
+  e '' s ∈ 𝓝 (e x) :=
+e.map_nhds_eq hx ▸ filter.image_mem_map hs
 
 /-- Preimage of interior or interior of preimage coincide for local homeomorphisms, when restricted
 to the source. -/
@@ -198,7 +222,7 @@ begin
         exact e.continuous_on_symm.preimage_interior_subset_interior_preimage e.open_target
       end
     ... = e.source ∩ e ⁻¹' (interior (e.target ∩ e.symm ⁻¹' (e ⁻¹' s))) :
-      by rw [interior_inter, interior_eq_of_open e.open_target]
+      by rw [interior_inter, e.open_target.interior_eq]
     ... = e.source ∩ e ⁻¹' (interior (e.target ∩ s)) :
       begin
         have := e.to_local_equiv.target_inter_inv_preimage_preimage,
@@ -206,7 +230,7 @@ begin
         rw this
       end
     ... = e.source ∩ e ⁻¹' e.target ∩ e ⁻¹' (interior s) :
-      by rw [interior_inter, preimage_inter, interior_eq_of_open e.open_target, inter_assoc]
+      by rw [interior_inter, preimage_inter, e.open_target.interior_eq, inter_assoc]
     ... = e.source ∩ e ⁻¹' (interior s) : by mfld_set_tac }
 end
 
@@ -224,6 +248,30 @@ begin
   rw this,
   exact e.continuous_on_symm.preimage_open_of_open e.open_target hs
 end
+
+/-- The image of the restriction of an open set to the source is open. -/
+lemma image_open_of_open' {s : set α} (hs : is_open s) : is_open (e '' (s ∩ e.source)) :=
+begin
+  refine image_open_of_open _ (is_open_inter hs e.open_source) _,
+  simp,
+end
+
+/-- A `local_equiv` with continuous open forward map and an open source is a `local_homeomorph`. -/
+def of_continuous_open_restrict (e : local_equiv α β) (hc : continuous_on e e.source)
+  (ho : is_open_map (e.source.restrict e)) (hs : is_open e.source) :
+  local_homeomorph α β :=
+{ to_local_equiv := e,
+  open_source := hs,
+  open_target := by simpa only [range_restrict, e.image_source_eq_target] using ho.is_open_range,
+  continuous_to_fun := hc,
+  continuous_inv_fun := e.image_source_eq_target ▸
+    ho.continuous_on_image_of_left_inv_on e.left_inv_on }
+
+/-- A `local_equiv` with continuous open forward map and an open source is a `local_homeomorph`. -/
+def of_continuous_open (e : local_equiv α β) (hc : continuous_on e e.source)
+  (ho : is_open_map e) (hs : is_open e.source) :
+  local_homeomorph α β :=
+of_continuous_open_restrict e hc (ho.restrict hs) hs
 
 /-- Restricting a local homeomorphism `e` to `e.source ∩ s` when `s` is open. This is sometimes hard
 to use because of the openness assumption, but it has the advantage that when it can
@@ -259,11 +307,11 @@ lemma restr_target (s : set α) :
   (e.restr s).target = e.target ∩ e.symm ⁻¹' (interior s) := rfl
 
 lemma restr_source' (s : set α) (hs : is_open s) : (e.restr s).source = e.source ∩ s :=
-by rw [e.restr_source, interior_eq_of_open hs]
+by rw [e.restr_source, hs.interior_eq]
 
 lemma restr_to_local_equiv' (s : set α) (hs : is_open s):
   (e.restr s).to_local_equiv = e.to_local_equiv.restr s :=
-by rw [e.restr_to_local_equiv, interior_eq_of_open hs]
+by rw [e.restr_to_local_equiv, hs.interior_eq]
 
 lemma restr_eq_of_source_subset {e : local_homeomorph α β} {s : set α} (h : e.source ⊆ s) :
   e.restr s = e :=
@@ -272,7 +320,7 @@ begin
   rw restr_to_local_equiv,
   apply local_equiv.restr_eq_of_source_subset,
   have := interior_mono h,
-  rwa interior_eq_of_open (e.open_source) at this
+  rwa e.open_source.interior_eq at this
 end
 
 @[simp, mfld_simps] lemma restr_univ {e : local_homeomorph α β} : e.restr univ = e :=
@@ -281,7 +329,7 @@ restr_eq_of_source_subset (subset_univ _)
 lemma restr_source_inter (s : set α) : e.restr (e.source ∩ s) = e.restr s :=
 begin
   refine local_homeomorph.ext _ _ (λx, rfl) (λx, rfl) _,
-  simp [interior_eq_of_open e.open_source],
+  simp [e.open_source.interior_eq],
   rw [← inter_assoc, inter_self]
 end
 
@@ -390,7 +438,7 @@ eq_of_local_equiv_eq $ local_equiv.refl_trans e.to_local_equiv
 lemma trans_of_set {s : set β} (hs : is_open s) :
   e.trans (of_set s hs) = e.restr (e ⁻¹' s) :=
 local_homeomorph.ext _ _ (λx, rfl) (λx, rfl) $
-  by simp [local_equiv.trans_source, (e.preimage_interior _).symm, interior_eq_of_open hs]
+  by simp [local_equiv.trans_source, (e.preimage_interior _).symm, hs.interior_eq]
 
 lemma trans_of_set' {s : set β} (hs : is_open s) :
   e.trans (of_set s hs) = e.restr (e.source ∩ e ⁻¹' s) :=
@@ -399,7 +447,7 @@ by rw [trans_of_set, restr_source_inter]
 lemma of_set_trans {s : set α} (hs : is_open s) :
   (of_set s hs).trans e = e.restr s :=
 local_homeomorph.ext _ _ (λx, rfl) (λx, rfl) $
-  by simp [local_equiv.trans_source, interior_eq_of_open hs, inter_comm]
+  by simp [local_equiv.trans_source, hs.interior_eq, inter_comm]
 
 lemma of_set_trans' {s : set α} (hs : is_open s) :
   (of_set s hs).trans e = e.restr (e.source ∩ s) :=
@@ -410,7 +458,7 @@ by rw [of_set_trans, restr_source_inter]
   (of_set s hs).trans (of_set s' hs') = of_set (s ∩ s') (is_open_inter hs hs')  :=
 begin
   rw (of_set s hs).trans_of_set hs',
-  ext; simp [interior_eq_of_open hs']
+  ext; simp [hs'.interior_eq]
 end
 
 lemma restr_trans (s : set α) :
@@ -487,8 +535,8 @@ section prod
 
 /-- The product of two local homeomorphisms, as a local homeomorphism on the product space. -/
 def prod (e : local_homeomorph α β) (e' : local_homeomorph γ δ) : local_homeomorph (α × γ) (β × δ) :=
-{ open_source := is_open_prod e.open_source e'.open_source,
-  open_target := is_open_prod e.open_target e'.open_target,
+{ open_source := e.open_source.prod e'.open_source,
+  open_target := e.open_target.prod e'.open_target,
   continuous_to_fun := continuous_on.prod
     (e.continuous_to_fun.comp continuous_fst.continuous_on (prod_subset_preimage_fst _ _))
     (e'.continuous_to_fun.comp continuous_snd.continuous_on (prod_subset_preimage_snd _ _)),
@@ -514,14 +562,15 @@ lemma prod_coe_symm (e : local_homeomorph α β) (e' : local_homeomorph γ δ) :
 
 @[simp, mfld_simps] lemma prod_symm (e : local_homeomorph α β) (e' : local_homeomorph γ δ) :
   (e.prod e').symm = (e.symm.prod e'.symm) :=
-by ext x; simp [prod_coe_symm]
+rfl
 
 @[simp, mfld_simps] lemma prod_trans
   {η : Type*} {ε : Type*} [topological_space η] [topological_space ε]
   (e : local_homeomorph α β) (f : local_homeomorph β γ)
   (e' : local_homeomorph δ η) (f' : local_homeomorph η ε) :
   (e.prod e').trans (f.prod f') = (e.trans f).prod (e'.trans f') :=
-by ext x; simp [ext_iff]; tauto
+local_homeomorph.eq_of_local_equiv_eq $
+  by dsimp only [trans_to_local_equiv, prod_to_local_equiv]; apply local_equiv.prod_trans
 
 end prod
 
@@ -586,7 +635,7 @@ end
 homeomorphism if a neighborhood of the initial point is sent to the source of the local
 homeomorphism-/
 lemma continuous_within_at_iff_continuous_within_at_comp_left
-  {f : γ → α} {s : set γ} {x : γ} (hx : f x ∈ e.source) (h : f ⁻¹' e.source ∈ nhds_within x s) :
+  {f : γ → α} {s : set γ} {x : γ} (hx : f x ∈ e.source) (h : f ⁻¹' e.source ∈ 𝓝[s] x) :
   continuous_within_at f s x ↔ continuous_within_at (e ∘ f) s x :=
 begin
   rw [← continuous_within_at_inter' h, ← continuous_within_at_inter' h],
@@ -609,7 +658,7 @@ lemma continuous_at_iff_continuous_at_comp_left
   continuous_at f x ↔ continuous_at (e ∘ f) x :=
 begin
   have hx : f x ∈ e.source := (mem_of_nhds h : _),
-  have h' : f ⁻¹' e.source ∈ nhds_within x univ, by rwa nhds_within_univ,
+  have h' : f ⁻¹' e.source ∈ 𝓝[univ] x, by rwa nhds_within_univ,
   rw [← continuous_within_at_univ, ← continuous_within_at_univ,
       e.continuous_within_at_iff_continuous_within_at_comp_left hx h']
 end
@@ -661,6 +710,21 @@ def to_homeomorph_of_source_eq_univ_target_eq_univ (h : e.source = (univ : set �
   (h : e.source = (univ : set α)) (h' : e.target = univ) :
   ((e.to_homeomorph_of_source_eq_univ_target_eq_univ h h').symm : β → α) = e.symm := rfl
 
+/-- A local homeomorphism whose source is all of `α` defines an open embedding of `α` into `β`.  The
+converse is also true; see `open_embedding.to_local_homeomorph`. -/
+lemma to_open_embedding (h : e.source = set.univ) : open_embedding e :=
+begin
+  apply open_embedding_of_continuous_injective_open,
+  { apply continuous_iff_continuous_on_univ.mpr,
+    rw ← h,
+    exact e.continuous_to_fun },
+  { apply set.injective_iff_inj_on_univ.mpr,
+    rw ← h,
+    exact e.inj_on },
+  { intros U hU,
+    simpa only [h, subset_univ] with mfld_simps using e.image_open_of_open hU}
+end
+
 end local_homeomorph
 
 namespace homeomorph
@@ -682,3 +746,100 @@ correspond to the fields of the original homeomorphism. -/
 local_homeomorph.eq_of_local_equiv_eq $ equiv.trans_to_local_equiv _ _
 
 end homeomorph
+
+namespace open_embedding
+variables [nonempty α]
+variables (f : α → β) (h : open_embedding f)
+
+/-- An open embedding of `α` into `β`, with `α` nonempty, defines a local homeomorphism whose source
+is all of `α`.  The converse is also true; see `local_homeomorph.to_open_embedding`. -/
+noncomputable def to_local_homeomorph : local_homeomorph α β :=
+local_homeomorph.of_continuous_open
+  ((h.to_embedding.inj.inj_on univ).to_local_equiv _ _)
+  h.continuous.continuous_on h.is_open_map is_open_univ
+
+@[simp, mfld_simps] lemma to_local_homeomorph_coe : ⇑(h.to_local_homeomorph f) = f := rfl
+@[simp, mfld_simps] lemma source : (h.to_local_homeomorph f).source = set.univ := rfl
+@[simp, mfld_simps] lemma target : (h.to_local_homeomorph f).target = set.range f := image_univ
+
+end open_embedding
+
+-- We close and reopen the namespace to avoid
+-- picking up the unnecessary `[nonempty α]` typeclass argument
+namespace open_embedding
+
+lemma continuous_at_iff
+  {f : α → β} {g : β → γ} (hf : open_embedding f) {x : α} :
+  continuous_at (g ∘ f) x ↔ continuous_at g (f x) :=
+begin
+  haveI : nonempty α := ⟨x⟩,
+  convert (((hf.to_local_homeomorph f).continuous_at_iff_continuous_at_comp_right) _).symm,
+  { apply (local_homeomorph.left_inv _ _).symm,
+    simp, },
+  { simp, },
+end
+
+end open_embedding
+
+namespace topological_space.opens
+
+open topological_space
+variables (s : opens α) [nonempty s]
+
+/-- The inclusion of an open subset `s` of a space `α` into `α` is a local homeomorphism from the
+subtype `s` to `α`. -/
+noncomputable def local_homeomorph_subtype_coe : local_homeomorph s α :=
+open_embedding.to_local_homeomorph _ s.2.open_embedding_subtype_coe
+
+@[simp, mfld_simps] lemma local_homeomorph_subtype_coe_coe :
+  (s.local_homeomorph_subtype_coe : s → α) = coe := rfl
+
+@[simp, mfld_simps] lemma local_homeomorph_subtype_coe_source :
+  s.local_homeomorph_subtype_coe.source = set.univ := rfl
+
+@[simp, mfld_simps] lemma local_homeomorph_subtype_coe_target :
+  s.local_homeomorph_subtype_coe.target = s :=
+by { simp only [local_homeomorph_subtype_coe, subtype.range_coe_subtype] with mfld_simps, refl }
+
+end topological_space.opens
+
+namespace local_homeomorph
+
+open topological_space
+variables (e : local_homeomorph α β)
+variables (s : opens α) [nonempty s]
+
+/-- The restriction of a local homeomorphism `e` to an open subset `s` of the domain type produces a
+local homeomorphism whose domain is the subtype `s`.-/
+noncomputable def subtype_restr : local_homeomorph s β := s.local_homeomorph_subtype_coe.trans e
+
+lemma subtype_restr_def : e.subtype_restr s = s.local_homeomorph_subtype_coe.trans e := rfl
+
+@[simp, mfld_simps] lemma subtype_restr_coe : ((e.subtype_restr s : local_homeomorph s β) : s → β)
+  = set.restrict (e : α → β) s := rfl
+
+@[simp, mfld_simps] lemma subtype_restr_source : (e.subtype_restr s).source = coe ⁻¹' e.source :=
+by simp only [subtype_restr_def] with mfld_simps
+
+/- This lemma characterizes the transition functions of an open subset in terms of the transition
+functions of the original space. -/
+lemma subtype_restr_symm_trans_subtype_restr (f f' : local_homeomorph α β) :
+  (f.subtype_restr s).symm.trans (f'.subtype_restr s)
+  ≈ (f.symm.trans f').restr (f.target ∩ (f.symm) ⁻¹' s) :=
+begin
+  simp only [subtype_restr_def, trans_symm_eq_symm_trans_symm],
+  have openness₁ : is_open (f.target ∩ f.symm ⁻¹' s) := f.preimage_open_of_open_symm s.2,
+  rw [← of_set_trans _ openness₁, ← trans_assoc, ← trans_assoc],
+  refine eq_on_source.trans' _ (eq_on_source_refl _),
+  -- f' has been eliminated !!!
+  have sets_identity : f.symm.source ∩ (f.target ∩ (f.symm) ⁻¹' s) = f.symm.source ∩ f.symm ⁻¹' s,
+  { mfld_set_tac },
+  have openness₂ : is_open (s : set α) := s.2,
+  rw [of_set_trans', sets_identity, ← trans_of_set' _ openness₂, trans_assoc],
+  refine eq_on_source.trans' (eq_on_source_refl _) _,
+  -- f has been eliminated !!!
+  refine setoid.trans (trans_symm_self s.local_homeomorph_subtype_coe) _,
+  simp only with mfld_simps,
+end
+
+end local_homeomorph

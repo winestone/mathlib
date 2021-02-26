@@ -14,7 +14,7 @@ the uniform distance.
 -/
 
 noncomputable theory
-open_locale topological_space classical
+open_locale topological_space classical nnreal
 
 open set filter metric
 
@@ -59,16 +59,17 @@ lemma dist_set_exists : ∃ C, 0 ≤ C ∧ ∀ x : α, dist (f x) (g x) ≤ C :=
 begin
   refine if h : nonempty α then _ else ⟨0, le_refl _, λ x, h.elim ⟨x⟩⟩,
   cases h with x,
-  rcases f.2 with ⟨_, Cf, hCf⟩, /- hCf : ∀ (x y : α), dist (f.val x) (f.val y) ≤ Cf -/
-  rcases g.2 with ⟨_, Cg, hCg⟩, /- hCg : ∀ (x y : α), dist (g.val x) (g.val y) ≤ Cg -/
+  rcases f.2.2 with ⟨Cf, hCf : ∀ x y, dist (f x) (f y) ≤ Cf⟩,
+  rcases g.2.2 with ⟨Cg, hCg : ∀ x y, dist (g x) (g y) ≤ Cg⟩,
   let C := max 0 (dist (f x) (g x) + (Cf + Cg)),
-  exact ⟨C, le_max_left _ _, λ y, calc
-    dist (f y) (g y) ≤ dist (f x) (g x) + (dist (f x) (f y) + dist (g x) (g y)) : dist_triangle4_left _ _ _ _
-                ... ≤ dist (f x) (g x) + (Cf + Cg) : add_le_add_left (add_le_add (hCf _ _) (hCg _ _)) _
-                ... ≤ C : le_max_right _ _⟩
+  refine ⟨C, le_max_left _ _, λ y, _⟩,
+  calc dist (f y) (g y) ≤ dist (f x) (g x) + (dist (f x) (f y) + dist (g x) (g y)) :
+    dist_triangle4_left _ _ _ _
+                    ... ≤ dist (f x) (g x) + (Cf + Cg) : by mono*
+                    ... ≤ C : le_max_right _ _
 end
 
-/-- The pointwise distance is controlled by the distance between functions, by definition -/
+/-- The pointwise distance is controlled by the distance between functions, by definition. -/
 lemma dist_coe_le_dist (x : α) : dist (f x) (g x) ≤ dist f g :=
 le_cInf dist_set_exists $ λb hb, hb.2 x
 
@@ -148,8 +149,7 @@ begin
   /- F : α → β,  hF : ∀ (x : α), tendsto (λ (n : ℕ), f n x) at_top (𝓝 (F x))
   `F` is the desired limit function. Check that it is uniformly approximated by `f N` -/
   have fF_bdd : ∀x N, dist (f N x) (F x) ≤ b N :=
-    λ x N, le_of_tendsto (by simp)
-      (tendsto_const_nhds.dist (hF x))
+    λ x N, le_of_tendsto (tendsto_const_nhds.dist (hF x))
       (filter.eventually_at_top.2 ⟨N, λn hn, f_bdd x N n N (le_refl N) hn⟩),
   refine ⟨⟨F, _, _⟩, _⟩,
   { /- Check that `F` is continuous, as a uniform limit of continuous functions -/
@@ -158,12 +158,13 @@ begin
       refine ((tendsto_order.1 b_lim).2 ε ε0).mono (λ n hn x, _),
       rw dist_comm,
       exact lt_of_le_of_lt (fF_bdd x n) hn },
-    exact this.continuous (λN, (f N).2.1) at_top_ne_bot },
+    exact this.continuous (λN, (f N).2.1) },
   { /- Check that `F` is bounded -/
     rcases (f 0).2.2 with ⟨C, hC⟩,
-    exact ⟨C + (b 0 + b 0), λ x y, calc
-      dist (F x) (F y) ≤ dist (f 0 x) (f 0 y) + (dist (f 0 x) (F x) + dist (f 0 y) (F y)) : dist_triangle4_left _ _ _ _
-         ... ≤ C + (b 0 + b 0) : add_le_add (hC x y) (add_le_add (fF_bdd x 0) (fF_bdd y 0))⟩ },
+    refine ⟨C + (b 0 + b 0), λ x y, _⟩,
+    calc dist (F x) (F y) ≤ dist (f 0 x) (f 0 y) + (dist (f 0 x) (F x) + dist (f 0 y) (F y)) :
+      dist_triangle4_left _ _ _ _
+                      ... ≤ C + (b 0 + b 0) : by mono* },
   { /- Check that `F` is close to `f N` in distance terms -/
     refine tendsto_iff_dist_tendsto_zero.2 (squeeze_zero (λ _, dist_nonneg) _ b_lim),
     exact λ N, (dist_le (b0 _)).2 (λx, fF_bdd x N) }
@@ -171,7 +172,7 @@ end
 
 /-- Composition (in the target) of a bounded continuous function with a Lipschitz map again
 gives a bounded continuous function -/
-def comp (G : β → γ) {C : nnreal} (H : lipschitz_with C G)
+def comp (G : β → γ) {C : ℝ≥0} (H : lipschitz_with C G)
   (f : α →ᵇ β) : α →ᵇ γ :=
 ⟨λx, G (f x), H.continuous.comp f.2.1,
   let ⟨D, hD⟩ := f.2.2 in
@@ -181,7 +182,7 @@ def comp (G : β → γ) {C : nnreal} (H : lipschitz_with C G)
     ... ≤ max C 0 * D : mul_le_mul_of_nonneg_left (hD _ _) (le_max_right C 0)⟩⟩
 
 /-- The composition operator (in the target) with a Lipschitz map is Lipschitz -/
-lemma lipschitz_comp {G : β → γ} {C : nnreal} (H : lipschitz_with C G) :
+lemma lipschitz_comp {G : β → γ} {C : ℝ≥0} (H : lipschitz_with C G) :
   lipschitz_with C (comp G H : (α →ᵇ β) → α →ᵇ γ) :=
 lipschitz_with.of_dist_le_mul $ λ f g,
 (dist_le (mul_nonneg C.2 dist_nonneg)).2 $ λ x,
@@ -189,12 +190,12 @@ calc dist (G (f x)) (G (g x)) ≤ C * dist (f x) (g x) : H.dist_le_mul _ _
   ... ≤ C * dist f g : mul_le_mul_of_nonneg_left (dist_coe_le_dist _) C.2
 
 /-- The composition operator (in the target) with a Lipschitz map is uniformly continuous -/
-lemma uniform_continuous_comp {G : β → γ} {C : nnreal} (H : lipschitz_with C G) :
+lemma uniform_continuous_comp {G : β → γ} {C : ℝ≥0} (H : lipschitz_with C G) :
   uniform_continuous (comp G H : (α →ᵇ β) → α →ᵇ γ) :=
 (lipschitz_comp H).uniform_continuous
 
 /-- The composition operator (in the target) with a Lipschitz map is continuous -/
-lemma continuous_comp {G : β → γ} {C : nnreal} (H : lipschitz_with C G) :
+lemma continuous_comp {G : β → γ} {C : ℝ≥0} (H : lipschitz_with C G) :
   continuous (comp G H : (α →ᵇ β) → α →ᵇ γ) :=
 (lipschitz_comp H).continuous
 
@@ -223,7 +224,7 @@ theorem arzela_ascoli₁ [compact_space β]
 begin
   refine compact_of_totally_bounded_is_closed _ closed,
   refine totally_bounded_of_finite_discretization (λ ε ε0, _),
-  rcases dense ε0 with ⟨ε₁, ε₁0, εε₁⟩,
+  rcases exists_between ε0 with ⟨ε₁, ε₁0, εε₁⟩,
   let ε₂ := ε₁/2/2,
   /- We have to find a finite discretization of `u`, i.e., finite information
   that is sufficient to reconstruct `u` up to ε. This information will be
@@ -322,7 +323,8 @@ arzela_ascoli₂ s hs (closure A) is_closed_closure
       refine bex.imp_right (λ U U_set hU y z hy hz f hf, _) (H x (ε/2) (half_pos ε0)),
       rcases metric.mem_closure_iff.1 hf (ε/2/2) (half_pos (half_pos ε0)) with ⟨g, gA, dist_fg⟩,
       replace dist_fg := λ x, lt_of_le_of_lt (dist_coe_le_dist x) dist_fg,
-      calc dist (f y) (f z) ≤ dist (f y) (g y) + dist (f z) (g z) + dist (g y) (g z) : dist_triangle4_right _ _ _ _
+      calc dist (f y) (f z) ≤ dist (f y) (g y) + dist (f z) (g z) + dist (g y) (g z) :
+        dist_triangle4_right _ _ _ _
           ... < ε/2/2 + ε/2/2 + ε/2 :
             add_lt_add (add_lt_add (dist_fg y) (dist_fg z)) (hU y z hy hz g gA)
           ... = ε : by rw [add_halves, add_halves]
@@ -336,7 +338,7 @@ lemma equicontinuous_of_continuity_modulus {α : Type u} [metric_space α]
   (b : ℝ → ℝ) (b_lim : tendsto b (𝓝 0) (𝓝 0))
   (A : set (α →ᵇ β))
   (H : ∀(x y:α) (f : α →ᵇ β), f ∈ A → dist (f x) (f y) ≤ b (dist x y))
-  (x:α) (ε : ℝ) (ε0 : ε > 0) : ∃U ∈ 𝓝 x, ∀ (y z ∈ U) (f : α →ᵇ β),
+  (x:α) (ε : ℝ) (ε0 : 0 < ε) : ∃U ∈ 𝓝 x, ∀ (y z ∈ U) (f : α →ᵇ β),
     f ∈ A → dist (f y) (f z) < ε :=
 begin
   rcases tendsto_nhds_nhds.1 b_lim ε ε0 with ⟨δ, δ0, hδ⟩,
@@ -433,6 +435,13 @@ instance : has_neg (α →ᵇ β) :=
 ⟨λf, of_normed_group (-f) f.2.1.neg ∥f∥ $ λ x,
   trans_rel_right _ (norm_neg _) (f.norm_coe_le_norm x)⟩
 
+/-- The pointwise difference of two bounded continuous functions is again bounded continuous. -/
+instance : has_sub (α →ᵇ β) :=
+⟨λf g, of_normed_group (f - g) (f.2.1.sub g.2.1) (∥f∥ + ∥g∥) $ λ x,
+  by { simp only [sub_eq_add_neg],
+       exact le_trans (norm_add_le _ _) (add_le_add (f.norm_coe_le_norm x) $
+         trans_rel_right _ (norm_neg _) (g.norm_coe_le_norm x)) }⟩
+
 @[simp] lemma coe_add : ⇑(f + g) = λ x, f x + g x := rfl
 lemma add_apply : (f + g) x = f x + g x := rfl
 @[simp] lemma coe_neg : ⇑(-f) = λ x, - f x := rfl
@@ -442,13 +451,15 @@ lemma forall_coe_zero_iff_zero : (∀x, f x = 0) ↔ f = 0 :=
 (@ext_iff _ _ _ _ f 0).symm
 
 instance : add_comm_group (α →ᵇ β) :=
-{ add_assoc    := assume f g h, by ext; simp [add_assoc],
-  zero_add     := assume f, by ext; simp,
-  add_zero     := assume f, by ext; simp,
-  add_left_neg := assume f, by ext; simp,
-  add_comm     := assume f g, by ext; simp [add_comm],
+{ add_assoc      := assume f g h, by ext; simp [add_assoc],
+  zero_add       := assume f, by ext; simp,
+  add_zero       := assume f, by ext; simp,
+  add_left_neg   := assume f, by ext; simp,
+  add_comm       := assume f g, by ext; simp [add_comm],
+  sub_eq_add_neg := assume f g, by { ext, apply sub_eq_add_neg },
   ..bounded_continuous_function.has_add,
   ..bounded_continuous_function.has_neg,
+  ..bounded_continuous_function.has_sub,
   ..bounded_continuous_function.has_zero }
 
 @[simp] lemma coe_sub : ⇑(f - g) = λ x, f x - g x := rfl
@@ -525,6 +536,25 @@ instance : normed_ring (α →ᵇ R) :=
   .. bounded_continuous_function.normed_group }
 
 end normed_ring
+
+section normed_comm_ring
+/-!
+### Normed commutative ring structure
+
+In this section, if `R` is a normed commutative ring, then we show that the space of bounded
+continuous functions from `α` to `R` inherits a normed commutative ring structure, by using
+pointwise operations and checking that they are compatible with the uniform distance. -/
+
+variables [topological_space α] {R : Type*} [normed_comm_ring R]
+
+instance : comm_ring (α →ᵇ R) :=
+{ mul_comm := λ f₁ f₂, ext $ λ x, mul_comm _ _,
+  .. bounded_continuous_function.ring }
+
+instance : normed_comm_ring (α →ᵇ R) :=
+{ .. bounded_continuous_function.comm_ring, .. bounded_continuous_function.normed_group }
+
+end normed_comm_ring
 
 section normed_algebra
 /-!

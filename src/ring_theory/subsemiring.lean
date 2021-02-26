@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yury Kudryashov
 -/
 
-import ring_theory.prod
+import algebra.ring.prod
 import group_theory.submonoid
 import data.equiv.ring
 
@@ -12,7 +12,8 @@ import data.equiv.ring
 # Bundled subsemirings
 
 We define bundled subsemirings and some standard constructions: `complete_lattice` structure,
-`subtype` and `inclusion` ring homomorphisms, subsemiring kernel and range of a `ring_hom` etc.
+`subtype` and `inclusion` ring homomorphisms, subsemiring `map`, `comap` and range (`srange`) of
+a `ring_hom` etc.
 -/
 
 open_locale big_operators
@@ -23,7 +24,7 @@ variables {R : Type u} {S : Type v} {T : Type w} [semiring R] [semiring S] [semi
 
 set_option old_structure_cmd true
 
-/-- Subsemiring of a semiring `R` is a subset `s` that is both a multiplicative and an additive
+/-- A subsemiring of a semiring `R` is a subset `s` that is both a multiplicative and an additive
 submonoid. -/
 structure subsemiring (R : Type u) [semiring R] extends submonoid R, add_submonoid R
 
@@ -37,9 +38,9 @@ namespace subsemiring
 
 instance : has_coe (subsemiring R) (set R) := ⟨subsemiring.carrier⟩
 
-instance : has_coe_to_sort (subsemiring R) := ⟨Type*, λ S, S.carrier⟩
-
 instance : has_mem R (subsemiring R) := ⟨λ m S, m ∈ (S:set R)⟩
+
+instance : has_coe_to_sort (subsemiring R) := ⟨Type*, λ S, {x : R // x ∈ S}⟩
 
 /-- Construct a `subsemiring R` from a set `s`, a submonoid `sm`, and an additive
 submonoid `sa` such that `x ∈ s ↔ x ∈ sm ↔ x ∈ sa`. -/
@@ -108,33 +109,34 @@ theorem mul_mem : ∀ {x y : R}, x ∈ s → y ∈ s → x * y ∈ s := s.mul_me
 /-- A subsemiring is closed under addition. -/
 theorem add_mem : ∀ {x y : R}, x ∈ s → y ∈ s → x + y ∈ s := s.add_mem'
 
-/-- Product of a list of elements in a subsemiring is in the subsemiring. -/
+/-- Product of a list of elements in a `subsemiring` is in the `subsemiring`. -/
 lemma list_prod_mem {l : list R} : (∀x ∈ l, x ∈ s) → l.prod ∈ s :=
 s.to_submonoid.list_prod_mem
 
-/-- Sum of a list of elements in an `add_subsemiring` is in the `add_subsemiring`. -/
+/-- Sum of a list of elements in a `subsemiring` is in the `subsemiring`. -/
 lemma list_sum_mem {l : list R} : (∀x ∈ l, x ∈ s) → l.sum ∈ s :=
 s.to_add_submonoid.list_sum_mem
 
-/-- Product of a multiset of elements in a subsemiring of a `comm_monoid` is in the subsemiring. -/
+/-- Product of a multiset of elements in a `subsemiring` of a `comm_semiring`
+    is in the `subsemiring`. -/
 lemma multiset_prod_mem {R} [comm_semiring R] (s : subsemiring R) (m : multiset R) :
   (∀a ∈ m, a ∈ s) → m.prod ∈ s :=
 s.to_submonoid.multiset_prod_mem m
 
-/-- Sum of a multiset of elements in an `add_subsemiring` of an `add_comm_monoid` is
+/-- Sum of a multiset of elements in a `subsemiring` of a `semiring` is
 in the `add_subsemiring`. -/
 lemma multiset_sum_mem {R} [semiring R] (s : subsemiring R) (m : multiset R) :
   (∀a ∈ m, a ∈ s) → m.sum ∈ s :=
 s.to_add_submonoid.multiset_sum_mem m
 
-/-- Product of elements of a subsemiring of a `comm_monoid` indexed by a `finset` is in the
+/-- Product of elements of a subsemiring of a `comm_semiring` indexed by a `finset` is in the
     subsemiring. -/
 lemma prod_mem {R : Type*} [comm_semiring R] (s : subsemiring R)
   {ι : Type*} {t : finset ι} {f : ι → R} (h : ∀c ∈ t, f c ∈ s) :
   ∏ i in t, f i ∈ s :=
 s.to_submonoid.prod_mem h
 
-/-- Sum of elements in an `add_subsemiring` of an `add_comm_monoid` indexed by a `finset`
+/-- Sum of elements in an `subsemiring` of an `semiring` indexed by a `finset`
 is in the `add_subsemiring`. -/
 lemma sum_mem {R : Type*} [semiring R] (s : subsemiring R)
   {ι : Type*} {t : finset ι} {f : ι → R} (h : ∀c ∈ t, f c ∈ s) :
@@ -157,6 +159,14 @@ instance to_semiring : semiring s :=
   left_distrib := λ x y z, subtype.eq $ left_distrib x y z,
   .. s.to_submonoid.to_monoid, .. s.to_add_submonoid.to_add_comm_monoid }
 
+instance nontrivial [nontrivial R] : nontrivial s :=
+nontrivial_of_ne 0 1 $ λ H, zero_ne_one (congr_arg subtype.val H)
+
+instance no_zero_divisors [no_zero_divisors R] : no_zero_divisors s :=
+{ eq_zero_or_eq_zero_of_mul_eq_zero := λ x y h,
+  or.cases_on (eq_zero_or_eq_zero_of_mul_eq_zero $ subtype.ext_iff.mp h)
+    (λ h, or.inl $ subtype.eq h) (λ h, or.inr $ subtype.eq h) }
+
 @[simp, norm_cast] lemma coe_mul (x y : s) : (↑(x * y) : R) = ↑x * ↑y := rfl
 @[simp, norm_cast] lemma coe_one : ((1 : s) : R) = 1 := rfl
 
@@ -164,7 +174,7 @@ instance to_semiring : semiring s :=
 instance to_comm_semiring {R} [comm_semiring R] (s : subsemiring R) : comm_semiring s :=
 { mul_comm := λ _ _, subtype.eq $ mul_comm _ _, ..s.to_semiring}
 
-/-- The natural ring hom from a subsemiring of monoid `R` to `R`. -/
+/-- The natural ring hom from a subsemiring of semiring `R` to `R`. -/
 def subtype : s →+* R :=
 { to_fun := coe, .. s.to_submonoid.subtype, .. s.to_add_submonoid.subtype }
 
@@ -248,6 +258,9 @@ def srange : subsemiring S := (⊤ : subsemiring R).map f
 
 @[simp] lemma mem_srange {f : R →+* S} {y : S} : y ∈ f.srange ↔ ∃ x, f x = y :=
 by simp [srange]
+
+lemma mem_srange_self (f : R →+* S) (x : R) : f x ∈ f.srange :=
+mem_srange.mpr ⟨x, rfl⟩
 
 lemma map_srange : f.srange.map g = (g.comp f).srange :=
 (⊤ : subsemiring R).map_map g f
@@ -507,13 +520,18 @@ def cod_srestrict (f : R →+* S) (s : subsemiring S) (h : ∀ x, f x ∈ s) : R
   .. (f : R →* S).cod_mrestrict s.to_submonoid h,
   .. (f : R →+ S).cod_mrestrict s.to_add_submonoid h }
 
-/-- Restriction of a ring homomorphism to its range iterpreted as a subsemiring. -/
+/-- Restriction of a ring homomorphism to its range interpreted as a subsemiring.
+
+This is the bundled version of `set.range_factorization`. -/
 def srange_restrict (f : R →+* S) : R →+* f.srange :=
-f.cod_srestrict f.srange $ λ x, ⟨x, subsemiring.mem_top x, rfl⟩
+f.cod_srestrict f.srange f.mem_srange_self
 
 @[simp] lemma coe_srange_restrict (f : R →+* S) (x : R) :
   (f.srange_restrict x : S) = f x :=
 rfl
+
+lemma srange_restrict_surjective (f : R →+* S) : function.surjective f.srange_restrict :=
+λ ⟨y, hy⟩, let ⟨x, hx⟩ := mem_srange.mp hy in ⟨x, subtype.ext hx⟩
 
 lemma srange_top_iff_surjective {f : R →+* S} :
   f.srange = (⊤ : subsemiring S) ↔ function.surjective f :=
@@ -593,5 +611,25 @@ variables {s t : subsemiring R}
     monoid are equal. -/
 def subsemiring_congr (h : s = t) : s ≃+* t :=
 { map_mul' :=  λ _ _, rfl, map_add' := λ _ _, rfl, ..equiv.set_congr $ subsemiring.ext'_iff.1 h }
+
+/-- Restrict a ring homomorphism with a left inverse to a ring isomorphism to its
+`ring_hom.srange`. -/
+def sof_left_inverse {g : S → R} {f : R →+* S} (h : function.left_inverse g f) :
+  R ≃+* f.srange :=
+{ to_fun := λ x, f.srange_restrict x,
+  inv_fun := λ x, (g ∘ f.srange.subtype) x,
+  left_inv := h,
+  right_inv := λ x, subtype.ext $
+    let ⟨x', hx'⟩ := ring_hom.mem_srange.mp x.prop in
+    show f (g x) = x, by rw [←hx', h x'],
+  ..f.srange_restrict }
+
+@[simp] lemma sof_left_inverse_apply
+  {g : S → R} {f : R →+* S} (h : function.left_inverse g f) (x : R) :
+  ↑(sof_left_inverse h x) = f x := rfl
+
+@[simp] lemma sof_left_inverse_symm_apply
+  {g : S → R} {f : R →+* S} (h : function.left_inverse g f) (x : f.srange) :
+  (sof_left_inverse h).symm x = g x := rfl
 
 end ring_equiv

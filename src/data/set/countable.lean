@@ -83,15 +83,13 @@ lemma countable_encodable [encodable α] (s : set α) : countable s :=
 lemma countable.exists_surjective {s : set α} (hc : countable s) (hs : s.nonempty) :
   ∃f:ℕ → α, s = range f :=
 begin
-  rcases hs with ⟨x, hx⟩,
   letI : encodable s := countable.to_encodable hc,
-  letI : inhabited s := ⟨⟨x, hx⟩⟩,
+  letI : nonempty s := hs.to_subtype,
   have : countable (univ : set s) := countable_encodable _,
   rcases countable_iff_exists_surjective.1 this with ⟨g, hg⟩,
   have : range g = univ := univ_subset_iff.1 hg,
   use coe ∘ g,
-  rw [range_comp, this],
-  simp only [image_univ, subtype.range_coe, mem_def]
+  simp only [range_comp, this, image_univ, subtype.range_coe]
 end
 
 @[simp] lemma countable_empty : countable (∅ : set α) :=
@@ -110,6 +108,27 @@ have hf' : surjective f', from assume ⟨b, a, ha, hab⟩, ⟨⟨a, ha⟩, subty
 
 lemma countable_range [encodable α] (f : α → β) : countable (range f) :=
 by rw ← image_univ; exact (countable_encodable _).image _
+
+lemma exists_seq_supr_eq_top_iff_countable [complete_lattice α] {p : α → Prop} (h : ∃ x, p x) :
+  (∃ s : ℕ → α, (∀ n, p (s n)) ∧ (⨆ n, s n) = ⊤) ↔
+    ∃ S : set α, countable S ∧ (∀ s ∈ S, p s) ∧ Sup S = ⊤ :=
+begin
+  split,
+  { rintro ⟨s, hps, hs⟩,
+    refine ⟨range s, countable_range s, forall_range_iff.2 hps, _⟩, rwa Sup_range },
+  { rintro ⟨S, hSc, hps, hS⟩,
+    rcases eq_empty_or_nonempty S with rfl|hne,
+    { rw [Sup_empty] at hS, haveI := subsingleton_of_bot_eq_top hS,
+      rcases h with ⟨x, hx⟩, exact ⟨λ n, x, λ n, hx, subsingleton.elim _ _⟩ },
+    { rcases (countable_iff_exists_surjective_to_subtype hne).1 hSc with ⟨s, hs⟩,
+      refine ⟨λ n, s n, λ n, hps _ (s n).coe_prop, _⟩,
+      rwa [hs.supr_comp, ← Sup_eq_supr'] } }
+end
+
+lemma exists_seq_cover_iff_countable {p : set α → Prop} (h : ∃ s, p s) :
+  (∃ s : ℕ → set α, (∀ n, p (s n)) ∧ (⋃ n, s n) = univ) ↔
+    ∃ S : set (set α), countable S ∧ (∀ s ∈ S, p s) ∧ ⋃₀ S = univ :=
+exists_seq_supr_eq_top_iff_countable h
 
 lemma countable_of_injective_of_countable_image {s : set α} {f : α → β}
   (hf : inj_on f s) (hs : countable (f '' s)) : countable s :=
