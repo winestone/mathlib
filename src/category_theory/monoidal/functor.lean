@@ -93,7 +93,7 @@ attribute [simp, reassoc] lax_monoidal_functor.associativity
 -- lax_monoidal_functor.right_unitality lax_monoidal_functor.associativity
 
 /--
-A monoidal functor is a lax monoidal functor for which the tensorator and unitor as isomorphisms.
+A monoidal functor is a lax monoidal functor for which the tensorator and unitor are isomorphisms.
 
 See https://stacks.math.columbia.edu/tag/0FFL.
 -/
@@ -313,5 +313,19 @@ def monoidal_inverse (F : monoidal_functor C D) [is_equivalence F.to_functor] :
 @[simp]
 lemma monoidal_inverse_to_functor (F : monoidal_functor C D) [is_equivalence F.to_functor] :
   (monoidal_inverse F).to_functor = F.to_functor.inv := rfl
+
+/-!
+Etingof-Gelaki-Nikshych-Ostrik "Tensor categories" define an equivalence of monoidal categories
+as a monoidal functor which, as a functor, is an equivalence.
+
+`monoidal_inverse` above partially justifies this definition, by showing that the inverse
+can be made monoidal.
+
+Presumably one could further show that the unit and counit become monoidal natural isomorphisms,
+but I've never seen this explained or worked it out.
+-/
+
+
+
 
 end category_theory

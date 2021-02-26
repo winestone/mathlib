@@ -12,9 +12,7 @@ When `C` and `D` are equivalent as categories,
 we can transport a monoidal structure on `C` along the equivalence,
 obtaining a monoidal structure on `D`.
 
-We don't yet prove anything about this transported structure!
-The next step would be to show that the original functor can be upgraded
-to a monoidal functor with respect to this new structure.
+We then upgrade the original functor to a monoidal functor.
 -/
 
 universes v₁ v₂ u₁ u₂
@@ -193,6 +191,10 @@ def lax_to_transported (e : C ≌ D) : lax_monoidal_functor C (transported e) :=
   end,
   ..e.functor, }.
 
+def lax_to_transported_to_functor (e : C ≌ D) :
+  (lax_to_transported e).to_functor ≅ e.functor :=
+nat_iso.of_components (λ X, iso.refl _) (by tidy)
+
 /--
 We can upgrade `e.functor` to a monoidal functor from `C` to `D` with the transported structure.
 -/
@@ -201,6 +203,12 @@ def to_transported (e : C ≌ D) : monoidal_functor C (transported e) :=
 { ε_is_iso := by { dsimp, apply_instance, },
   μ_is_iso := λ X Y, by { dsimp, apply_instance, },
   ..lax_to_transported e, }
+
+instance (e : C ≌ D) : is_equivalence ((to_transported e).to_functor) :=
+is_equivalence.of_nat_iso (lax_to_transported_to_functor e).symm
+
+def from_transported (e : C ≌ D) : monoidal_functor (transported e) C :=
+monoidal_inverse (to_transported e)
 
 /--
 We can upgrade `e.inverse` to a lax monoidal functor from `D` with the transported structure to `C`.
@@ -277,13 +285,5 @@ monoidal_nat_iso.of_components (λ X, e.counit_iso.app X) (λ X Y f, e.counit.na
     dsimp,
     simp, -- See note [dsimp, simp].
   end)
-
--- We could put these together as an equivalence of monoidal categories,
--- but I don't want to do this quite yet.
--- Etingof-Gelaki-Nikshych-Ostrik "Tensor categories" define an equivalence of monoidal categories
--- as a monoidal functor which, as a functor, is an equivalence.
--- Presumably one can show that the inverse functor can be upgraded to a monoidal
--- functor in a unique way, such that the unit and counit are monoidal natural isomorphisms,
--- but I've never seen this explained or worked it out.
 
 end category_theory.monoidal

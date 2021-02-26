@@ -470,6 +470,12 @@ end equivalence
 
 namespace is_equivalence
 
+/-- If `F ≅ G`, and `F` is an equivalence, then so is `G`. -/
+def of_nat_iso {F G : C ⥤ D} (α : F ≅ G) [is_equivalence F] : is_equivalence G :=
+{ inverse := F.inv,
+  unit_iso := F.as_equivalence.unit_iso ≪≫ iso_whisker_right α F.inv,
+  counit_iso := iso_whisker_left F.inv α.symm ≪≫ F.as_equivalence.counit_iso, }
+
 @[simp] lemma fun_inv_map (F : C ⥤ D) [is_equivalence F] (X Y : D) (f : X ⟶ Y) :
   F.map (F.inv.map f) = F.inv_fun_id.hom.app X ≫ f ≫ F.inv_fun_id.inv.app Y :=
 begin
