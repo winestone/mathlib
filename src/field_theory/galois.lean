@@ -37,7 +37,6 @@ open_locale classical
 
 open finite_dimensional alg_equiv
 
-
 section
 
 variables (F : Type*) [field F] (E : Type*) [field E] [algebra F E]
