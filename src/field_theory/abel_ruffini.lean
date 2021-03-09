@@ -1,10 +1,15 @@
 import group_theory.solvable
 import field_theory.polynomial_galois_group
+import ring_theory.roots_of_unity
 
 noncomputable theory
 open_locale classical
 
 open polynomial intermediate_field
+
+--mem_root_set
+
+--aeval_sub
 
 --todo: remove hypothesis in `nat_degree_X_pow_sub_C`
 lemma leading_coeff_X_pow_sub_C {R : Type*} [ring R] [nontrivial R] {n : ℕ} (hn : 0 < n) (a : R) :
@@ -104,22 +109,86 @@ begin
   exact tada F p.splitting_field q.splitting_field,
 end
 
+section gal_X_pow_sub_C
+
 lemma gal_X_pow_sub_one_is_solvable (n : ℕ) : is_solvable (X ^ n - 1 : polynomial F).gal :=
 begin
-  -- injective homomorphism to `(ℤ/nℤ)*`
+  suffices : ∀ σ τ : (X ^ n - 1 : polynomial F).gal, σ * τ = τ * σ,
+  { sorry },
+  intros σ τ,
+  ext a ha,
+  rw [mem_root_set, alg_hom.map_sub, aeval_X_pow, aeval_one, sub_eq_zero_iff_eq] at ha,
+  have key1 : ∀ σ : (X ^ n - 1 : polynomial F).gal, ∃ m : ℕ, σ a = a ^ m,
+  { intro σ,
+    sorry },
+  obtain ⟨c, hc⟩ := key1 σ,
+  obtain ⟨d, hd⟩ := key1 τ,
+  change σ (τ a) = τ (σ a),
+  rw [hc, hd, σ.map_pow, τ.map_pow, hc, hd, ←pow_mul, pow_mul'],
   sorry,
 end
 
-lemma gal_X_pow_sub_C_is_solvable_aux (n : ℕ) (x : F)
-  (h : (X ^ n - 1 : polynomial F).splits (ring_hom.id F)) : is_solvable (X ^ n - C x).gal :=
+lemma gal_X_pow_sub_C_is_solvable_aux (n : ℕ) (a : F)
+  (h : (X ^ n - 1 : polynomial F).splits (ring_hom.id F)) : is_solvable (X ^ n - C a).gal :=
 begin
-  -- injective homomorphism to `ℤ/nℤ`
-  sorry,
+  by_cases ha : a = 0,
+  { rw [ha, C_0, sub_zero],
+    exact gal_X_pow_is_solvable n },
+  have ha' : algebra_map F (X ^ n - C a).splitting_field a ≠ 0 :=
+    mt ((ring_hom.injective_iff _).mp (ring_hom.injective _) a) ha,
+  by_cases hn : n = 0,
+  { rw [hn, pow_zero, ←C_1, ←C_sub],
+    exact gal_C_is_solvable (1 - a) },
+  have hn' : 0 < n := zero_lt_iff.mpr hn,
+  have hn'' : (X ^ n - C a).degree ≠ 0,
+  { rwa [degree_X_pow_sub_C hn', ne, with_bot.coe_eq_zero],
+    apply_instance },
+  have hn''' : X ^ n - C a ≠ 0,
+  { intro h,
+    replace h := congr_arg (eval 0) h,
+    rw [eval_sub, eval_zero, sub_eq_zero_iff_eq, eval_pow, eval_X, eval_C, zero_pow hn'] at h,
+    exact ha h.symm },
+  have key0 : ∀ {c}, c ^ n = 1 → ∃ d, algebra_map F (X ^ n - C a).splitting_field d = c,
+  { intros c hc,
+    rw [←ring_hom.mem_range],
+    apply minpoly.mem_range_of_degree_eq_one,
+    refine or.resolve_left h _ _ _,
+    { intro h,
+      replace h := congr_arg nat_degree h,
+      rw [←C_1, nat_degree_X_pow_sub_C hn', nat_degree_zero] at h,
+      exact hn h,
+      apply_instance },
+    { exact minpoly.irreducible ((splitting_field.normal (X ^ n - C a)).is_integral c) },
+    { apply minpoly.dvd,
+      rwa [map_id, alg_hom.map_sub, aeval_X_pow, aeval_one, sub_eq_zero_iff_eq] } },
+  suffices : ∀ σ τ : (X ^ n - C a).gal, σ * τ = τ * σ,
+  { sorry },
+  intros σ τ,
+  ext b hb,
+  rw [mem_root_set, alg_hom.map_sub, aeval_X_pow, aeval_C, sub_eq_zero_iff_eq] at hb,
+  have hb' : b ≠ 0,
+  { intro hb',
+    rw [hb', zero_pow hn'] at hb,
+    exact ha' hb.symm },
+  have key2 : ∀ σ : (X ^ n - C a).gal, ∃ c, σ b = b * algebra_map F _ c,
+  { intro σ,
+    have key : (σ b / b) ^ n = 1,
+    { rw [div_pow, ←σ.map_pow, hb, σ.commutes, div_self ha'] },
+    obtain ⟨c, hc⟩ := key0 key,
+    use c,
+    rw [hc, mul_div_cancel' (σ b) hb'] },
+  obtain ⟨c, hc⟩ := key2 σ,
+  obtain ⟨d, hd⟩ := key2 τ,
+  change σ (τ b) = τ (σ b),
+  rw [hc, hd, σ.map_mul, τ.map_mul, hc, hd, σ.commutes, τ.commutes],
+  ring,
+  exact map_ne_zero hn''',
 end
 
 lemma splits_X_pow_sub_one_of_X_pow_sub_C {F : Type*} [field F] {E : Type*} [field E]
   (i : F →+* E) (n : ℕ) {a : F} (ha : a ≠ 0) (h : (X ^ n - C a).splits i) : (X ^ n - 1).splits i :=
 begin
+  have ha' : i a ≠ 0 := mt (i.injective_iff.mp (i.injective) a) ha,
   by_cases hn : n = 0,
   { rw [hn, pow_zero, sub_self],
     exact splits_zero i },
@@ -129,6 +198,10 @@ begin
     apply_instance },
   obtain ⟨b, hb⟩ := exists_root_of_splits i h hn'',
   rw [eval₂_sub, eval₂_X_pow, eval₂_C, sub_eq_zero_iff_eq] at hb,
+  have hb' : b ≠ 0,
+  { intro hb',
+    rw [hb', zero_pow hn'] at hb,
+    exact ha' hb.symm },
   let s := ((X ^ n - C a).map i).roots,
   have hs : _ = _ * (s.map _).prod := eq_prod_roots_of_splits h,
   have hs' : s.card = n,
@@ -146,10 +219,7 @@ begin
     (λ c : E, C b * (X - C (c / b))),
   { ext1 c,
     change (X - C c).comp (C b * X) = C b * (X - C (c / b)),
-    rw [sub_comp, X_comp, C_comp, mul_sub, ←C_mul, mul_div_cancel'],
-    intro hb',
-    rw [hb', zero_pow hn'] at hb,
-    exact ha (i.injective_iff.mp (i.injective) a hb.symm) },
+    rw [sub_comp, X_comp, C_comp, mul_sub, ←C_mul, mul_div_cancel' c hb'] },
   rw [key', multiset.prod_map_mul, multiset.map_const, multiset.prod_repeat, hs', ←C_pow, hb,
       ←mul_assoc, ←C_mul, ←ring_hom.map_mul, inv_mul_cancel ha, ring_hom.map_one, C_1, one_mul],
   exact field.to_nontrivial F,
@@ -169,6 +239,8 @@ begin
     have key := splitting_field.splits (X ^ n - 1 : polynomial F),
     rwa [←splits_id_iff_splits, map_sub, map_pow, map_X, map_one] at key },
 end
+
+end gal_X_pow_sub_C
 
 variables (F)
 
