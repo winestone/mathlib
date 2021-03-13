@@ -21,83 +21,110 @@ variables {α E F G 𝕜 : Type*} [is_R_or_C 𝕜] {p : ℝ≥0∞}
   [normed_group F] [measurable_space F] [borel_space F] [second_countable_topology F]
   [normed_group G]
 
-/-- ae_measurable with mk being m-measurable -/
-def ae_measurable_sub {α β} (m : measurable_space α) [measurable_space α] [measurable_space β]
-  (f : α → β) (μ : measure α . measure_theory.volume_tac) : Prop :=
-∃ g : α → β, (@measurable α β m _ g) ∧ f =ᵐ[μ] g
-
-lemma ae_measurable.sub_self {α β} [m0 : measurable_space α] [measurable_space β]
-  {f : α → β} {μ : measure α} (hf : ae_measurable f μ) :
-  ae_measurable_sub m0 f μ :=
-hf
-
-lemma ae_measurable_sub.add {α β} (m : measurable_space α) [measurable_space α] [measurable_space β]
+lemma ae_measurable'.add {α β} (m : measurable_space α) [measurable_space α] [measurable_space β]
   [topological_space β] [borel_space β] [has_add β] [has_continuous_add β]
   [second_countable_topology β]
-  {f g : α → β} {μ : measure α} (hf : ae_measurable_sub m f μ) (hg : ae_measurable_sub m g μ) :
-  ae_measurable_sub m (f + g) μ :=
+  {f g : α → β} {μ : measure α} (hf : ae_measurable' m f μ) (hg : ae_measurable' m g μ) :
+  ae_measurable' m (f + g) μ :=
 sorry
 
 lemma ae_measurable_sub.smul {α} (m : measurable_space α) [measurable_space α]
-  {f : α → E} {μ : measure α} (hf : ae_measurable_sub m f μ) (c : 𝕜) :
-  ae_measurable_sub m (c • f) μ :=
+  {f : α → E} {μ : measure α} (hf : ae_measurable' m f μ) (c : 𝕜) :
+  ae_measurable' m (c • f) μ :=
 sorry
 
 lemma ae_measurable_sub_congr {α β} (m : measurable_space α) [measurable_space α]
   [measurable_space β] [topological_space β] [borel_space β] [has_add β] [has_continuous_add β]
   [second_countable_topology β]
-  {f g : α → β} {μ : measure α} (hf : ae_measurable_sub m f μ) (hfg : f =ᵐ[μ] g) :
-  ae_measurable_sub m g μ :=
+  {f g : α → β} {μ : measure α} (hf : ae_measurable' m f μ) (hfg : f =ᵐ[μ] g) :
+  ae_measurable' m g μ :=
 sorry
 
 def Lp_sub {α} (m : measurable_space α) {m0 : measurable_space α} (𝕜 E) [is_R_or_C 𝕜]
   [measurable_space E] [inner_product_space 𝕜 E] [borel_space E] [second_countable_topology E]
   (p : ℝ≥0∞) (μ : measure α) :
   subspace 𝕜 (Lp E p μ) :=
-{ carrier := {f : (Lp E p μ) | ae_measurable_sub m f μ} ,
+{ carrier := {f : (Lp E p μ) | ae_measurable' m f μ} ,
   zero_mem' := ⟨(0 : α → E),@measurable_zero _ α _ m _, Lp.coe_fn_zero _ _ _,⟩,
   add_mem' := λ f g hf hg,
-    ae_measurable_sub_congr m (ae_measurable_sub.add m hf hg) (Lp.coe_fn_add f g).symm,
+    ae_measurable_sub_congr m (ae_measurable'.add m hf hg) (Lp.coe_fn_add f g).symm,
   smul_mem':= λ c f hf,
     ae_measurable_sub_congr m (ae_measurable_sub.smul m hf c) (Lp.coe_fn_smul c f).symm, }
 
-lemma mem_Lp_sub_iff_ae_measurable_sub {α} (m : measurable_space α) {m0 : measurable_space α} {𝕜 E}
+lemma mem_Lp_sub_iff_ae_measurable' {α} {m m0 : measurable_space α} {𝕜 E}
   [is_R_or_C 𝕜] [measurable_space E] [inner_product_space 𝕜 E] [borel_space E]
-  [second_countable_topology E] {p : ℝ≥0∞} {μ : measure α} (f : Lp E p μ) :
-  f ∈ Lp_sub m 𝕜 E p μ ↔ ae_measurable_sub m f μ :=
-begin
-  rw [← submodule.mem_coe, ← submodule.mem_carrier],
-end
+  [second_countable_topology E] {p : ℝ≥0∞} {μ : measure α} {f : Lp E p μ} :
+  f ∈ Lp_sub m 𝕜 E p μ ↔ ae_measurable' m f μ :=
+by simp_rw [← submodule.mem_coe, ← submodule.mem_carrier, Lp_sub, set.mem_set_of_eq]
+
+lemma Lp_sub.ae_measurable' {α} {m m0 : measurable_space α} {𝕜 E}
+  [is_R_or_C 𝕜] [measurable_space E] [inner_product_space 𝕜 E] [borel_space E]
+  [second_countable_topology E] {p : ℝ≥0∞} {μ : measure α} (f : Lp_sub m 𝕜 E p μ) :
+  ae_measurable' m f μ :=
+mem_Lp_sub_iff_ae_measurable'.mp f.mem
 
 lemma mem_Lp_sub_self {α} {m0 : measurable_space α} (𝕜 E) [is_R_or_C 𝕜]
   [measurable_space E] [inner_product_space 𝕜 E] [borel_space E] [second_countable_topology E]
   (p : ℝ≥0∞) (μ : measure α) (f : Lp E p μ) :
   f ∈ Lp_sub m0 𝕜 E p μ :=
-begin
-  rw [← submodule.mem_coe, ← submodule.mem_carrier],
-  simp [Lp_sub, ae_measurable.sub_self (Lp.ae_measurable f)],
-end
+by { rw mem_Lp_sub_iff_ae_measurable', exact (Lp.ae_measurable f), }
 
-lemma ae_measurable_sub.lim_at_top {α β} {m : measurable_space α} [measurable_space α]
-  [measurable_space β] [topological_space β] [nonempty (α → β)] {μ : measure α} {f : ℕ → α → β} (hf : ∀ n, ae_measurable_sub m (f n) μ) :
-  ae_measurable_sub m (lim at_top f) μ :=
+lemma Lp_sub_coe {α 𝕜 E} {m m0 : measurable_space α} [is_R_or_C 𝕜]
+  [measurable_space E] [inner_product_space 𝕜 E] [borel_space E] [second_countable_topology E]
+  {p : ℝ≥0∞} {μ : measure α} {f : Lp_sub m 𝕜 E p μ} :
+  ⇑f = (f : Lp E p μ) :=
+by simp
+
+lemma ae_measurable'.tendsto {α β} {m : measurable_space α} [measurable_space α]
+  [measurable_space β] [topological_space β] {μ : measure α} {f : ℕ → α → β}
+  (hf : ∀ n, ae_measurable' m (f n) μ) {f_lim : α → β} (h_lim : tendsto f at_top (𝓝 f_lim)) :
+  ae_measurable' m f_lim μ :=
+sorry
+
+lemma ae_measurable'.tendsto_Lp [hp : fact(1 ≤ p)] {α 𝕜 E} {m : measurable_space α}
+  [measurable_space α] {μ : measure α} [is_R_or_C 𝕜]
+  [measurable_space E] [inner_product_space 𝕜 E] [borel_space E] [second_countable_topology E]
+  {f : ℕ → Lp E p μ}
+  (hf : ∀ n, ae_measurable' m (f n) μ) {f_lim : Lp E p μ} (h_lim : tendsto f at_top (𝓝 f_lim)) :
+  ae_measurable' m f_lim μ :=
 sorry
 
 instance {α} (m : measurable_space α) {m0 : measurable_space α} {μ : measure α}
   [complete_space E] [hp : fact(1 ≤ p)] : complete_space (Lp_sub m 𝕜 E p μ) :=
 begin
-  refine metric.complete_of_cauchy_seq_tendsto _,
-  intros f hf_cau,
+  refine metric.complete_of_cauchy_seq_tendsto (λ f hf_cau, _),
   let f' := λ n, (f n : Lp E p μ),
   have hf'_cau : cauchy_seq f',
-  { sorry},
-  have h_lim' := cauchy_seq.tendsto_lim hf'_cau,
-  suffices h_sub : lim at_top f' ∈ Lp_sub m 𝕜 E p μ,
-  { have h_lim : tendsto f at_top (𝓝 ⟨lim at_top f', h_sub⟩),
-    { sorry},
-    exact ⟨⟨lim at_top f', h_sub⟩, h_lim⟩, },
-
+  { rw cauchy_seq_iff_tendsto_dist_at_top_0 at hf_cau ⊢,
+    have hff' : ∀ n : ℕ × ℕ, dist (f' n.fst) (f' n.snd) = dist (f n.fst) (f n.snd),
+    { rw [prod.forall],
+      intros n m,
+      simp_rw [dist_eq_norm, f', ← submodule.coe_sub, submodule.norm_coe], },
+    simp_rw hff',
+    exact hf_cau, },
+  obtain ⟨f_lim, h_lim'⟩ := cauchy_seq_tendsto_of_complete hf'_cau,
+  suffices h_sub : f_lim ∈ Lp_sub m 𝕜 E p μ,
+  { have h_lim : tendsto f at_top (𝓝 ⟨f_lim, h_sub⟩),
+    { rw tendsto_iff_dist_tendsto_zero at h_lim' ⊢,
+      have h_lim_coe : ∀ b, dist (f b) ⟨f_lim, h_sub⟩ = dist (f' b) f_lim,
+      { intro b,
+        have h_dist_coe : dist (f' b) f_lim = dist (f' b) (⟨f_lim, h_sub⟩ : Lp_sub m 𝕜 E p μ),
+          by congr,
+        simp_rw [h_dist_coe, dist_eq_norm, f', ← submodule.coe_sub, submodule.norm_coe], },
+      simp_rw h_lim_coe,
+      exact h_lim', },
+    exact ⟨⟨f_lim, h_sub⟩, h_lim⟩, },
+  rw mem_Lp_sub_iff_ae_measurable',
+  refine ae_measurable'.tendsto_Lp (λ n, _) h_lim',
+  simp_rw [f', ← Lp_sub_coe],
+  exact Lp_sub.ae_measurable' (f n),
 end
+
+def is_conditional_expectation (m : measurable_space α) [m0 : measurable_space α] {μ : measure α}
+  [normed_group E] [borel_space E] [second_countable_topology E] [complete_space E]
+  (f : Lp E 1 μ) (g : Lp E 1 μ) : Prop :=
+ae_measurable' m f μ ∧ (∀ s (hs : @measurable_set α m s), ∫ a in s, f a ∂μ = ∫ a in s, g a ∂μ)
+
 
 /-- Conditional expectation of a function in L2 with respect to a sigma-algebra -/
 def condexp_L2 (m : measurable_space α) [m0 : measurable_space α] {μ : measure α} (f : Lp E 2 μ) :
