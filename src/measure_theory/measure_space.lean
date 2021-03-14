@@ -2317,9 +2317,39 @@ def measure.trim {α} {m m0 : measurable_space α} (μ : @measure_theory.measure
   @measure_theory.measure α m :=
 @outer_measure.to_measure α m μ.to_outer_measure (hm.trans (le_to_outer_measure_caratheodory μ))
 
-lemma trim_eq_self {α} {m0 : measurable_space α} {μ : measure α} :
+@[simp] lemma trim_eq_self {α} {m0 : measurable_space α} {μ : measure α} :
   μ.trim le_rfl = μ :=
 by simp [measure.trim]
+
+lemma outer_measure.to_measure_zero {α} [measurable_space α] :
+  (0 : outer_measure α).to_measure (by simp) = 0 :=
+begin
+  simp [outer_measure.to_measure],
+  sorry,
+end
+
+@[simp] lemma trim_zero {α} {m m0 : measurable_space α} (hm : m ≤ m0) :
+  (0 : measure α).trim hm = (0 : @measure α m) :=
+by simp [measure.trim, outer_measure.to_measure_zero]
+
+lemma trim_measurable {α} {m m0 : measurable_space α} {μ : measure α} {s : set α}
+  (hm : m ≤ m0) (hs : @measurable_set α m s) :
+  μ.trim hm s = μ s :=
+by simp [measure.trim, hs]
+
+lemma le_trim {α} {m m0 : measurable_space α} {μ : measure α} {s : set α} (hm : m ≤ m0) :
+  μ s ≤ μ.trim hm s :=
+by {simp_rw [measure.trim], exact (@le_to_measure_apply _ m _ _ _), }
+
+lemma ae_eq_null_of_trim {α} {m m0 : measurable_space α} {μ : measure α} {s : set α} (hm : m ≤ m0)
+  (h : μ.trim hm s = 0) :
+  μ s = 0 :=
+le_antisymm ((le_trim hm).trans (le_of_eq h)) (zero_le _)
+
+lemma measure_trim_to_measurable_null {α} {m m0 : measurable_space α} {μ : measure α} {s : set α}
+  {hm : m ≤ m0} (hs : μ.trim hm s = 0) :
+  μ (@to_measurable α m (μ.trim hm) s) = 0 :=
+ae_eq_null_of_trim hm (by rwa measure_to_measurable)
 
 end trim
 
@@ -2336,162 +2366,25 @@ that are analogous to properties of measurable functions.
 section
 open measure_theory
 
-section ae_measurable'
-
-variables {α β} [measurable_space β] {f g : α → β}
-
-/-- A function is almost everywhere `m`-measurable if it coincides almost everywhere with a
-  `m`-measurable function. -/
-def ae_measurable' (m : measurable_space α) [measurable_space α] (f : α → β)
-  (μ : measure α . measure_theory.volume_tac) : Prop :=
-∃ g : α → β, (@measurable α β m _ g) ∧ f =ᵐ[μ] g
-
-lemma measurable.ae_measurable' {m : measurable_space α} [measurable_space α] {μ : measure α}
-  (h : @measurable _ _ m _ f) :
-  ae_measurable' m f μ :=
-⟨f, h, ae_eq_refl f⟩
-
-@[nontriviality] lemma subsingleton.ae_measurable' {m : measurable_space α}
-  [measurable_space α] [subsingleton α] {μ : measure α} : ae_measurable' m f μ :=
-(@subsingleton.measurable α _ m _ _ f).ae_measurable'
-
-@[simp] lemma ae_measurable'_zero {m : measurable_space α} [measurable_space α] :
-  ae_measurable' m f 0 :=
-begin
-  nontriviality α, inhabit α,
-  exact ⟨λ x, f (default α), @measurable_const _ _ _ m _, rfl⟩,
-end
-
-namespace ae_measurable'
-
-/-- Given an almost everywhere measurable function `f`, associate to it a measurable function
-that coincides with it almost everywhere. `f` is explicit in the definition to make sure that
-it shows in pretty-printing. -/
-def mk {m mα0 : measurable_space α} {μ : measure α} (f : α → β) (h : ae_measurable' m f μ) :
-  α → β :=
-classical.some h
-
-lemma measurable_mk {m mα0 : measurable_space α} {μ : measure α} (h : ae_measurable' m f μ) :
-  @measurable _ _ m _ (h.mk f) :=
-(classical.some_spec h).1
-
-lemma ae_eq_mk {m mα0 : measurable_space α} {μ : measure α} (h : ae_measurable' m f μ) :
-  f =ᵐ[μ] (h.mk f) :=
-(classical.some_spec h).2
-
-lemma congr {m mα0 : measurable_space α} {μ : measure α} (hf : ae_measurable' m f μ)
-  (h : f =ᵐ[μ] g) :
-  ae_measurable' m g μ :=
-⟨hf.mk f, hf.measurable_mk, h.symm.trans hf.ae_eq_mk⟩
-
-lemma mono_measure {m mα0 : measurable_space α} {μ ν : measure α} (h : ae_measurable' m f μ)
-  (h' : ν ≤ μ) :
-  ae_measurable' m f ν :=
-⟨h.mk f, h.measurable_mk, eventually.filter_mono (ae_mono h') h.ae_eq_mk⟩
-
-lemma mono_set {m mα0 : measurable_space α} {μ : measure α} {s t} (h : s ⊆ t)
-  (ht : ae_measurable' m f (μ.restrict t)) :
-  ae_measurable' m f (μ.restrict s) :=
-ht.mono_measure (restrict_mono h le_rfl)
-
-protected lemma mono' {m mα0 : measurable_space α} {μ ν : measure α} (h : ae_measurable' m f μ)
-  (h' : ν ≪ μ) :
-  ae_measurable' m f ν :=
-⟨h.mk f, h.measurable_mk, h' h.ae_eq_mk⟩
-
-lemma mono_measurable_space {m1 m2 : measurable_space α} {μ : measure α} (hm : m1 ≤ m2)
-  (hf : ae_measurable' m1 f μ) :
-  ae_measurable' m2 f μ :=
-⟨hf.mk f, hf.measurable_mk.mono hm le_rfl, hf.ae_eq_mk⟩
-
-lemma ae_mem_imp_eq_mk {m mα0 : measurable_space α} {μ : measure α} {s}
-  (h : ae_measurable' m f (μ.restrict s)) :
-  ∀ᵐ x ∂μ, x ∈ s → f x = h.mk f x :=
-ae_imp_of_ae_restrict h.ae_eq_mk
-
-lemma ae_inf_principal_eq_mk {m mα0 : measurable_space α} {μ : measure α} {s}
-  (h : ae_measurable' m f (μ.restrict s)) :
-  f =ᶠ[μ.ae ⊓ 𝓟 s] h.mk f :=
-le_ae_restrict h.ae_eq_mk
-
-lemma smul_measure {m mα0 : measurable_space α} {μ : measure α} (h : ae_measurable' m f μ)
-  (c : ℝ≥0∞) :
-  ae_measurable' m f (c • μ) :=
-⟨h.mk f, h.measurable_mk, ae_smul_measure h.ae_eq_mk c⟩
-
-lemma measurable_comap {mβ : measurable_space β} {f : α → β} :
-  @measurable α β (measurable_space.comap f mβ) mβ f :=
-measurable_iff_comap_le.mpr le_rfl
-
-lemma comp_measurable {mα0 : measurable_space α} {μ : measure α} {mδ mδ0 : measurable_space δ}
-  {f : α → δ} {g : δ → β} (hg : ae_measurable' mδ g (map f μ)) (hf : measurable f) :
-  ae_measurable' (measurable_space.comap f mδ) (g ∘ f) μ :=
-⟨(hg.mk g) ∘ f,
-  @measurable.comp α δ β (measurable_space.comap f mδ) mδ _ _ f hg.measurable_mk measurable_comap,
-  ae_eq_comp hf hg.ae_eq_mk⟩
-
-lemma comp_measurable' {m : measurable_space α} {μ : measure α} {mδ mδ0 : measurable_space δ}
-  {f : α → δ} {g : δ → β} {ν : measure δ}
-  (hg : ae_measurable' mδ g ν) (hf : measurable f) (h : map f μ ≪ ν) :
-  ae_measurable' (measurable_space.comap f mδ) (g ∘ f) μ :=
-(hg.mono' h).comp_measurable hf
-
-lemma prod_mk {m mα0 : measurable_space α} {μ : measure α} {γ : Type*} [measurable_space γ]
-  {f : α → β} {g : α → γ}
-  (hf : ae_measurable' m f μ) (hg : ae_measurable' m g μ) :
-  ae_measurable' m (λ x, (f x, g x)) μ :=
-⟨λ a, (hf.mk f a, hg.mk g a),
-  @measurable.prod_mk _ _ _ m _ _ _ _ hf.measurable_mk hg.measurable_mk,
-  eventually_eq.prod_mk hf.ae_eq_mk hg.ae_eq_mk⟩
-
-end ae_measurable'
-
-variables {m : measurable_space α} [measurable_space α] {μ ν : measure α}
-
-lemma ae_measurable'_congr (h : f =ᵐ[μ] g) :
-  ae_measurable' m f μ ↔ ae_measurable' m g μ :=
-⟨λ hf, ae_measurable'.congr hf h, λ hg, ae_measurable'.congr hg h.symm⟩
-
-@[simp] lemma ae_measurable'_const {b : β} : ae_measurable' m (λ a : α, b) μ :=
-@measurable.ae_measurable' _ _ _ _ m _ μ (@measurable_const _ _ _ m _)
-
-@[simp] lemma ae_measurable'_smul_measure_iff {c : ℝ≥0∞} (hc : c ≠ 0) :
-  ae_measurable' m f (c • μ) ↔ ae_measurable' m f μ :=
-⟨λ h, ⟨h.mk f, h.measurable_mk, (ae_smul_measure_iff hc).1 h.ae_eq_mk⟩,
-  λ h, ⟨h.mk f, h.measurable_mk, (ae_smul_measure_iff hc).2 h.ae_eq_mk⟩⟩
-
-lemma measurable.comp_ae_measurable' {α β δ} {m m0 : measurable_space α} {μ : measure α}
-  [measurable_space β] [measurable_space δ] {f : α → δ} {g : δ → β}
-  (hg : measurable g) (hf : ae_measurable' m f μ) : ae_measurable' m (g ∘ f) μ :=
-⟨g ∘ hf.mk f, @measurable.comp α _ _ m _ _ _ _ hg hf.measurable_mk,
-  eventually_eq.fun_comp hf.ae_eq_mk _⟩
-
-lemma ae_measurable'_of_zero_measure {f : α → β} : ae_measurable' m f 0 :=
-begin
-  by_cases h : nonempty α,
-  { exact (@ae_measurable'_const _ _ _ m _ _ (f h.some)).congr rfl },
-  { exact (@measurable_of_not_nonempty _ _ m _ h f).ae_measurable' }
-end
-
-end ae_measurable'
-
 variables [measurable_space α] [measurable_space β]
 {f g : α → β} {μ ν : measure α}
 
 /-- A function is almost everywhere measurable if it coincides almost everywhere with a measurable
 function. -/
-def ae_measurable {α β} [m : measurable_space α] [measurable_space β]
-  (f : α → β) (μ : measure α . measure_theory.volume_tac) : Prop :=
-ae_measurable' m f μ
+def ae_measurable (f : α → β) (μ : measure α . measure_theory.volume_tac) : Prop :=
+∃ g : α → β, measurable g ∧ f =ᵐ[μ] g
 
 lemma measurable.ae_measurable (h : measurable f) : ae_measurable f μ :=
-measurable.ae_measurable' h
+⟨f, h, ae_eq_refl f⟩
 
 @[nontriviality] lemma subsingleton.ae_measurable [subsingleton α] : ae_measurable f μ :=
-subsingleton.ae_measurable'
+subsingleton.measurable.ae_measurable
 
 @[simp] lemma ae_measurable_zero : ae_measurable f 0 :=
-ae_measurable'_zero
+begin
+  nontriviality α, inhabit α,
+  exact ⟨λ x, f (default α), measurable_const, rfl⟩
+end
 
 lemma ae_measurable_iff_measurable [μ.is_complete] :
   ae_measurable f μ ↔ measurable f :=
@@ -2507,32 +2400,34 @@ namespace ae_measurable
 /-- Given an almost everywhere measurable function `f`, associate to it a measurable function
 that coincides with it almost everywhere. `f` is explicit in the definition to make sure that
 it shows in pretty-printing. -/
-def mk (f : α → β) (h : ae_measurable f μ) : α → β := h.mk f
+def mk (f : α → β) (h : ae_measurable f μ) : α → β := classical.some h
 
 lemma measurable_mk (h : ae_measurable f μ) : measurable (h.mk f) :=
-ae_measurable'.measurable_mk h
+(classical.some_spec h).1
 
 lemma ae_eq_mk (h : ae_measurable f μ) : f =ᵐ[μ] (h.mk f) :=
-ae_measurable'.ae_eq_mk h
+(classical.some_spec h).2
 
 lemma congr (hf : ae_measurable f μ) (h : f =ᵐ[μ] g) : ae_measurable g μ :=
-ae_measurable'.congr hf h
+⟨hf.mk f, hf.measurable_mk, h.symm.trans hf.ae_eq_mk⟩
 
 lemma mono_measure (h : ae_measurable f μ) (h' : ν ≤ μ) : ae_measurable f ν :=
-ae_measurable'.mono_measure h h'
+⟨h.mk f, h.measurable_mk, eventually.filter_mono (ae_mono h') h.ae_eq_mk⟩
 
 lemma mono_set {s t} (h : s ⊆ t) (ht : ae_measurable f (μ.restrict t)) :
   ae_measurable f (μ.restrict s) :=
-ae_measurable'.mono_set h ht
+ht.mono_measure (restrict_mono h le_rfl)
 
 protected lemma mono' (h : ae_measurable f μ) (h' : ν ≪ μ) : ae_measurable f ν :=
-ae_measurable'.mono' h h'
+⟨h.mk f, h.measurable_mk, h' h.ae_eq_mk⟩
 
-lemma ae_mem_imp_eq_mk {s} (h : ae_measurable f (μ.restrict s)) : ∀ᵐ x ∂μ, x ∈ s → f x = h.mk f x :=
-ae_measurable'.ae_mem_imp_eq_mk h
+lemma ae_mem_imp_eq_mk {s} (h : ae_measurable f (μ.restrict s)) :
+  ∀ᵐ x ∂μ, x ∈ s → f x = h.mk f x :=
+ae_imp_of_ae_restrict h.ae_eq_mk
 
-lemma ae_inf_principal_eq_mk {s} (h : ae_measurable f (μ.restrict s)) : f =ᶠ[μ.ae ⊓ 𝓟 s] h.mk f :=
-ae_measurable'.ae_inf_principal_eq_mk h
+lemma ae_inf_principal_eq_mk {s} (h : ae_measurable f (μ.restrict s)) :
+  f =ᶠ[μ.ae ⊓ 𝓟 s] h.mk f :=
+le_ae_restrict h.ae_eq_mk
 
 lemma add_measure {f : α → β} (hμ : ae_measurable f μ) (hν : ae_measurable f ν) :
   ae_measurable f (μ + ν) :=
@@ -2562,22 +2457,22 @@ begin
     ... = 0 : hν.ae_eq_mk }
 end
 
-lemma smul_measure (h : ae_measurable f μ) (c : ℝ≥0∞) : ae_measurable f (c • μ) :=
-ae_measurable'.smul_measure h c
+lemma smul_measure (h : ae_measurable f μ) (c : ℝ≥0∞) :
+  ae_measurable f (c • μ) :=
+⟨h.mk f, h.measurable_mk, ae_smul_measure h.ae_eq_mk c⟩
 
 lemma comp_measurable [measurable_space δ] {f : α → δ} {g : δ → β}
   (hg : ae_measurable g (map f μ)) (hf : measurable f) : ae_measurable (g ∘ f) μ :=
-ae_measurable'.mono_measurable_space (measurable_iff_comap_le.mp hf)
-  (ae_measurable'.comp_measurable hg hf)
+⟨hg.mk g ∘ f, hg.measurable_mk.comp hf, ae_eq_comp hf hg.ae_eq_mk⟩
 
 lemma comp_measurable' {δ} [measurable_space δ] {ν : measure δ} {f : α → δ} {g : δ → β}
   (hg : ae_measurable g ν) (hf : measurable f) (h : map f μ ≪ ν) : ae_measurable (g ∘ f) μ :=
-ae_measurable'.mono_measurable_space (measurable_iff_comap_le.mp hf)
-  (ae_measurable'.comp_measurable' hg hf h)
+(hg.mono' h).comp_measurable hf
 
 lemma prod_mk {γ : Type*} [measurable_space γ] {f : α → β} {g : α → γ}
   (hf : ae_measurable f μ) (hg : ae_measurable g μ) : ae_measurable (λ x, (f x, g x)) μ :=
-ae_measurable'.prod_mk hf hg
+⟨λ a, (hf.mk f a, hg.mk g a), hf.measurable_mk.prod_mk hg.measurable_mk,
+  eventually_eq.prod_mk hf.ae_eq_mk hg.ae_eq_mk⟩
 
 lemma null_measurable_set (h : ae_measurable f μ) {s : set β} (hs : measurable_set s) :
   null_measurable_set μ (f ⁻¹' s) :=
@@ -2592,8 +2487,9 @@ end
 
 end ae_measurable
 
-lemma ae_measurable_congr (h : f =ᵐ[μ] g) : ae_measurable f μ ↔ ae_measurable g μ :=
-ae_measurable'_congr h
+lemma ae_measurable_congr (h : f =ᵐ[μ] g) :
+  ae_measurable f μ ↔ ae_measurable g μ :=
+⟨λ hf, ae_measurable.congr hf h, λ hg, ae_measurable.congr hg h.symm⟩
 
 @[simp] lemma ae_measurable_add_measure_iff :
   ae_measurable f (μ + ν) ↔ ae_measurable f μ ∧ ae_measurable f ν :=
@@ -2602,18 +2498,23 @@ ae_measurable'_congr h
   λ h, h.1.add_measure h.2⟩
 
 @[simp] lemma ae_measurable_const {b : β} : ae_measurable (λ a : α, b) μ :=
-ae_measurable'_const
+measurable_const.ae_measurable
 
 @[simp] lemma ae_measurable_smul_measure_iff {c : ℝ≥0∞} (hc : c ≠ 0) :
   ae_measurable f (c • μ) ↔ ae_measurable f μ :=
-ae_measurable'_smul_measure_iff hc
+⟨λ h, ⟨h.mk f, h.measurable_mk, (ae_smul_measure_iff hc).1 h.ae_eq_mk⟩,
+  λ h, ⟨h.mk f, h.measurable_mk, (ae_smul_measure_iff hc).2 h.ae_eq_mk⟩⟩
 
 lemma measurable.comp_ae_measurable [measurable_space δ] {f : α → δ} {g : δ → β}
   (hg : measurable g) (hf : ae_measurable f μ) : ae_measurable (g ∘ f) μ :=
-measurable.comp_ae_measurable' hg hf
+⟨g ∘ hf.mk f, hg.comp hf.measurable_mk, eventually_eq.fun_comp hf.ae_eq_mk _⟩
 
 lemma ae_measurable_of_zero_measure {f : α → β} : ae_measurable f 0 :=
-ae_measurable'_of_zero_measure
+begin
+  by_cases h : nonempty α,
+  { exact (@ae_measurable_const _ _ _ _ _ (f h.some)).congr rfl },
+  { exact (measurable_of_not_nonempty h f).ae_measurable }
+end
 
 end
 
