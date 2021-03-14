@@ -19,53 +19,34 @@ namespace measure_theory
 variables {α E F G 𝕜 : Type*} [is_R_or_C 𝕜] {p : ℝ≥0∞}
   [measurable_space E] [inner_product_space 𝕜 E] [borel_space E] [second_countable_topology E]
   [normed_group F] [measurable_space F] [borel_space F] [second_countable_topology F]
-  [normed_group G] [measurable_space 𝕜] [borel_space 𝕜]
+  [normed_group G]
+  [measurable_space 𝕜] [borel_space 𝕜]
 
-lemma ae_measurable'.add {α β} (m : measurable_space α) [measurable_space α] [measurable_space β]
-  [topological_space β] [borel_space β] [has_add β] [has_continuous_add β]
-  [second_countable_topology β]
-  {f g : α → β} {μ : measure α} (hf : ae_measurable' m f μ) (hg : ae_measurable' m g μ) :
-  ae_measurable' m (f + g) μ :=
-begin
-  refine ⟨hf.mk f + hg.mk g, _, _⟩,
-  exact @measurable.add _ _ _ _ _ m _ _ _ _ _ hf.measurable_mk hg.measurable_mk,
-  exact eventually_eq.comp₂ hf.ae_eq_mk (+) hg.ae_eq_mk,
-end
-
-lemma ae_measurable'.smul {α} (m : measurable_space α) [measurable_space α]
-  {f : α → E} {μ : measure α} (hf : ae_measurable' m f μ) (c : 𝕜) :
-  ae_measurable' m (c • f) μ :=
-begin
-  refine ⟨c • hf.mk f, _, _⟩,
-  exact @measurable.const_smul _ m _ _ _ _ _ _ _ _ _ _ _ hf.measurable_mk c,
-  exact eventually_eq.fun_comp hf.ae_eq_mk (λ x, c • x),
-end
-
-def Lp_sub {α} (m : measurable_space α) {m0 : measurable_space α} (𝕜 E) [is_R_or_C 𝕜]
+def Lp_sub {α} {m m0 : measurable_space α} (hm : m ≤ m0) (𝕜 E) [is_R_or_C 𝕜]
   [measurable_space 𝕜] [borel_space 𝕜]
   [measurable_space E] [inner_product_space 𝕜 E] [borel_space E] [second_countable_topology E]
   (p : ℝ≥0∞) (μ : measure α) :
   submodule 𝕜 (Lp E p μ) :=
-{ carrier := {f : (Lp E p μ) | ae_measurable' m f μ} ,
-  zero_mem' := ⟨(0 : α → E),@measurable_zero _ α _ m _, Lp.coe_fn_zero _ _ _,⟩,
-  add_mem' := λ f g hf hg,
-    ae_measurable'.congr (ae_measurable'.add m hf hg) (Lp.coe_fn_add f g).symm,
-  smul_mem':= λ c f hf,
-    ae_measurable'.congr (ae_measurable'.smul m hf c) (Lp.coe_fn_smul c f).symm, }
+{ carrier := {f : (Lp E p μ) | @ae_measurable _ _ m _ f (μ.trim hm)} ,
+  zero_mem' := ⟨(0 : α → E), @measurable_zero _ α _ m _, @Lp.coe_fn_zero α E m _ _ _ _ _,⟩,
+  add_mem' := sorry,--λ f g hf hg,
+    --ae_measurable.congr (ae_measurable.add hf hg) (Lp.coe_fn_add f g).symm,
+  smul_mem':= sorry,--λ c f hf,
+    }--ae_measurable.congr (ae_measurable.smul hf c) (Lp.coe_fn_smul c f).symm, }
 
-lemma mem_Lp_sub_iff_ae_measurable' {α} {m m0 : measurable_space α} {𝕜 E}
+lemma mem_Lp_sub_iff_ae_measurable {α} {m m0 : measurable_space α} {hm : m ≤ m0} {𝕜 E}
   [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜]
   [measurable_space E] [inner_product_space 𝕜 E] [borel_space E]
   [second_countable_topology E] {p : ℝ≥0∞} {μ : measure α} {f : Lp E p μ} :
-  f ∈ Lp_sub m 𝕜 E p μ ↔ ae_measurable' m f μ :=
+  f ∈ Lp_sub hm 𝕜 E p μ ↔ @ae_measurable _ _ m _ f (μ.trim hm) :=
 by simp_rw [← submodule.mem_coe, ← submodule.mem_carrier, Lp_sub, set.mem_set_of_eq]
 
-lemma Lp_sub.ae_measurable' {α} {m m0 : measurable_space α} {𝕜 E}
+lemma Lp_sub.ae_measurable {α} {m m0 : measurable_space α} {hm : m ≤ m0} {𝕜 E}
   [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜]
   [measurable_space E] [inner_product_space 𝕜 E] [borel_space E]
-  [second_countable_topology E] {p : ℝ≥0∞} {μ : measure α} (f : Lp_sub m 𝕜 E p μ) :
-  ae_measurable' m f μ :=
-mem_Lp_sub_iff_ae_measurable'.mp f.mem
+  [second_countable_topology E] {p : ℝ≥0∞} {μ : measure α} (f : Lp_sub hm 𝕜 E p μ) :
+  @ae_measurable _ _ m _ f (μ.trim hm) :=
+mem_Lp_sub_iff_ae_measurable.mp f.mem
 
 lemma mem_Lp_sub_self {α} {m0 : measurable_space α} (𝕜 E) [is_R_or_C 𝕜]
   [measurable_space 𝕜] [borel_space 𝕜] [measurable_space E] [inner_product_space 𝕜 E]
