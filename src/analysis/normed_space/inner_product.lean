@@ -1148,7 +1148,8 @@ begin
     have hx0 : x ≠ 0,
     { intro hx0,
       rw [hx0, inner_zero_left, zero_div] at h,
-      norm_num at h, },
+      norm_num at h,
+      exact h },
     refine and.intro hx0 _,
     set r := ⟪x, y⟫ / (∥x∥ * ∥x∥) with hr,
     use r,
@@ -1801,208 +1802,217 @@ section orthogonal
 
 open filter
 
+lemma exists_seq_of_infi {K : set F} (ne : K.nonempty) (u : F) :
+  ∃ w : ℕ → K, ∀ n, ∥u - w n∥ < (⨅ w : K, ∥u - w∥) + 1 / (n + 1) :=
+begin
+  let δ := ⨅ w : K, ∥u - w∥,
+  letI : nonempty K := ne.to_subtype,
+  have hδ : ∀n:ℕ, δ < δ + 1 / (n + 1), from λ n, lt_add_of_le_of_pos le_rfl nat.one_div_pos_of_nat,
+  have h := λ n, exists_lt_of_cinfi_lt (hδ n),
+  exact ⟨λ n, classical.some (h n), λ n, classical.some_spec (h n)⟩,
+end
+
+private lemma some_calc_result (u wp wq : F) :
+  4 * ∥u - (1 / (2:ℝ)) • (wq + wp)∥ * ∥u - (1 / (2:ℝ)) • (wq + wp)∥ + ∥wp - wq∥ * ∥wp - wq∥ =
+      2 * (∥u - wq∥ * ∥u - wq∥ + ∥u - wp∥ * ∥u - wp∥) :=
+begin
+  let a := u - wq,
+  let b := u - wp,
+  let half := 1 / (2:ℝ),
+  calc
+  4 * ∥u - half•(wq + wp)∥ * ∥u - half•(wq + wp)∥ + ∥wp - wq∥ * ∥wp - wq∥
+      = (2*∥u - half•(wq + wp)∥) * (2 * ∥u - half•(wq + wp)∥) + ∥wp-wq∥*∥wp-wq∥ : by ring
+  ... = (absR ((2:ℝ)) * ∥u - half•(wq + wp)∥) * (absR ((2:ℝ)) * ∥u - half•(wq+wp)∥) +
+        ∥wp-wq∥*∥wp-wq∥ :
+  by { rw _root_.abs_of_nonneg, exact zero_le_two }
+  ... = ∥(2:ℝ) • (u - half • (wq + wp))∥ * ∥(2:ℝ) • (u - half • (wq + wp))∥ +
+        ∥wp-wq∥ * ∥wp-wq∥ :
+  by simp [norm_smul]
+  ... = ∥a + b∥ * ∥a + b∥ + ∥a - b∥ * ∥a - b∥ :
+  begin
+    rw [smul_sub, smul_smul, mul_one_div_cancel (_root_.two_ne_zero : (2 : ℝ) ≠ 0),
+        ← one_add_one_eq_two, add_smul],
+    simp only [one_smul],
+    have eq₁ : wp - wq = a - b, from (sub_sub_sub_cancel_left _ _ _).symm,
+    have eq₂ : u + u - (wq + wp) = a + b, show u + u - (wq + wp) = (u - wq) + (u - wp), abel,
+    rw [eq₁, eq₂],
+  end
+  ... = 2 * (∥a∥ * ∥a∥ + ∥b∥ * ∥b∥) : parallelogram_law_with_norm,
+end
+
+lemma some_seq_is_cauchy {K : set F} (u : F) (δ : ℝ) (w : ℕ → K) (h₂ : convex K)
+  (hw : ∀ n, ∥u - w n∥ < δ + 1 / (n + 1)) (zero_le_δ : 0 ≤ δ) (δ_le' : ∀ w ∈ K, δ ≤ ∥u - w∥) :
+  cauchy_seq (λ n, ((w n) : F)) :=
+begin
+  rw cauchy_seq_iff_le_tendsto_0, -- splits into three goals
+  let B := λ n:ℕ, (8 * δ * (1/(n+1)) + 4 * (1/(n+1)) * (1/(n+1))),
+  -- first goal :  `∀ (n : ℕ), 0 ≤ sqrt (B n)`
+  refine ⟨λ n, sqrt (B n), λ n, sqrt_nonneg _, λ p q N hp hq, _, _⟩,
+  -- second goal : `∀ (n m N : ℕ), N ≤ n → N ≤ m → dist ↑(w n) ↑(w m) ≤ sqrt (B N)`
+  let wp := ((w p):F), let wq := ((w q):F),
+  let a := u - wq, let b := u - wp,
+  let half := 1 / (2:ℝ), let div := 1 / ((N:ℝ) + 1),
+  have : 4 * ∥u - half • (wq + wp)∥ * ∥u - half • (wq + wp)∥ + ∥wp - wq∥ * ∥wp - wq∥ =
+    2 * (∥a∥ * ∥a∥ + ∥b∥ * ∥b∥) := some_calc_result u wp wq,
+  have eq : δ ≤ ∥u - half • (wq + wp)∥,
+  { rw smul_add,
+    apply δ_le',
+    exact h₂ (w q).mem (w p).mem one_half_pos.le one_half_pos.le (add_halves 1), },
+  have eq₁ : 4 * δ * δ ≤ 4 * ∥u - half • (wq + wp)∥ * ∥u - half • (wq + wp)∥,
+  { mono, mono, norm_num, apply mul_nonneg, norm_num, exact norm_nonneg _ },
+  have eq₂ : ∥a∥ * ∥a∥ ≤ (δ + div) * (δ + div) := mul_self_le_mul_self (norm_nonneg _)
+    ((hw q).le.trans (add_le_add_left (nat.one_div_le_one_div hq) _)),
+  have eq₂' : ∥b∥ * ∥b∥ ≤ (δ + div) * (δ + div) := mul_self_le_mul_self (norm_nonneg _)
+    ((hw p).le.trans (add_le_add_left (nat.one_div_le_one_div hp) _)),
+  rw dist_eq_norm,
+  apply nonneg_le_nonneg_of_squares_le (sqrt_nonneg _),
+  have h_BN_nonneg : 0 ≤ B N,
+  from add_nonneg
+    (mul_nonneg (mul_nonneg (by norm_num) zero_le_δ) nat.one_div_pos_of_nat.le)
+    (mul_nonneg (mul_nonneg (by norm_num) nat.one_div_pos_of_nat.le) nat.one_div_pos_of_nat.le),
+  rw mul_self_sqrt h_BN_nonneg,
+  exact calc
+    ∥wp - wq∥ * ∥wp - wq∥ = 2 * (∥a∥*∥a∥ + ∥b∥*∥b∥) -
+      4 * ∥u - half • (wq+wp)∥ * ∥u - half • (wq+wp)∥ : by { rw ← this, abel, }
+    ... ≤ 2 * (∥a∥ * ∥a∥ + ∥b∥ * ∥b∥) - 4 * δ * δ : sub_le_sub_left eq₁ _
+    ... ≤ 2 * ((δ + div) * (δ + div) + (δ + div) * (δ + div)) - 4 * δ * δ :
+      sub_le_sub_right (mul_le_mul_of_nonneg_left (add_le_add eq₂ eq₂') (by norm_num)) _
+    ... = 8 * δ * div + 4 * div * div : by ring,
+  -- third goal : `tendsto (λ (n : ℕ), sqrt (B n)) at_top (𝓝 0)`
+  rw ← sqrt_zero,
+  apply tendsto.comp continuous_sqrt.continuous_at,
+  rw ← add_zero (0 : ℝ),
+  refine tendsto.add _ _,
+  { rw ← mul_zero (8 * δ),
+    exact (@tendsto_const_nhds _ _ _ (8 * δ) _).mul tendsto_one_div_add_at_top_nhds_0_nat, },
+  { rw ← mul_zero (0 : ℝ),
+    refine tendsto.mul _ tendsto_one_div_add_at_top_nhds_0_nat,
+    rw ← mul_zero (4 : ℝ),
+    exact (@tendsto_const_nhds _ _ _ (4:ℝ) _).mul tendsto_one_div_add_at_top_nhds_0_nat, },
+end
+
 /--
 Existence of minimizers
 Let `u` be a point in a real inner product space, and let `K` be a nonempty complete convex subset.
 Then there exists a (unique) `v` in `K` that minimizes the distance `∥u - v∥` to `u`.
  -/
--- FIXME this monolithic proof causes a deterministic timeout with `-T50000`
--- It should be broken in a sequence of more manageable pieces,
--- perhaps with individual statements for the three steps below.
 theorem exists_norm_eq_infi_of_complete_convex {K : set F} (ne : K.nonempty) (h₁ : is_complete K)
-  (h₂ : convex K) : ∀ u : F, ∃ v ∈ K, ∥u - v∥ = ⨅ w : K, ∥u - w∥ := assume u,
+  (h₂ : convex K) (u : F) : ∃ v ∈ K, ∥u - v∥ = ⨅ w : K, ∥u - w∥ :=
 begin
   let δ := ⨅ w : K, ∥u - w∥,
   letI : nonempty K := ne.to_subtype,
   have zero_le_δ : 0 ≤ δ := le_cinfi (λ _, norm_nonneg _),
   have δ_le : ∀ w : K, δ ≤ ∥u - w∥,
-    from cinfi_le ⟨0, set.forall_range_iff.2 $ λ _, norm_nonneg _⟩,
-  have δ_le' : ∀ w ∈ K, δ ≤ ∥u - w∥ := assume w hw, δ_le ⟨w, hw⟩,
+    from cinfi_le ⟨0, set.forall_range_iff.mpr (λ _, norm_nonneg _)⟩,
+  have δ_le' : ∀ w ∈ K, δ ≤ ∥u - w∥ := λ w hw, δ_le ⟨w, hw⟩,
   -- Step 1: since `δ` is the infimum, can find a sequence `w : ℕ → K` in `K`
   -- such that `∥u - w n∥ < δ + 1 / (n + 1)` (which implies `∥u - w n∥ --> δ`);
-  -- maybe this should be a separate lemma
-  have exists_seq : ∃ w : ℕ → K, ∀ n, ∥u - w n∥ < δ + 1 / (n + 1),
-  { have hδ : ∀n:ℕ, δ < δ + 1 / (n + 1), from
-      λ n, lt_add_of_le_of_pos (le_refl _) nat.one_div_pos_of_nat,
-    have h := λ n, exists_lt_of_cinfi_lt (hδ n),
-    let w : ℕ → K := λ n, classical.some (h n),
-    exact ⟨w, λ n, classical.some_spec (h n)⟩ },
-  rcases exists_seq with ⟨w, hw⟩,
-  have norm_tendsto : tendsto (λ n, ∥u - w n∥) at_top (nhds δ),
-  { have h : tendsto (λ n:ℕ, δ) at_top (nhds δ) := tendsto_const_nhds,
-    have h' : tendsto (λ n:ℕ, δ + 1 / (n + 1)) at_top (nhds δ),
-    { convert h.add tendsto_one_div_add_at_top_nhds_0_nat, simp only [add_zero] },
-    exact tendsto_of_tendsto_of_tendsto_of_le_of_le h h'
-      (λ x, δ_le _) (λ x, le_of_lt (hw _)) },
+  obtain ⟨w, hw⟩ : ∃ w : ℕ → K, ∀ n, ∥u - w n∥ < δ + 1 / (n + 1) := exists_seq_of_infi ne u,
+  have norm_tendsto : tendsto (λ n, ∥u - w n∥) at_top (𝓝 δ),
+  { have h : tendsto (λ n:ℕ, δ) at_top (𝓝 δ) := tendsto_const_nhds,
+    have h' : tendsto (λ n:ℕ, δ + 1 / (n + 1)) at_top (𝓝 δ),
+      by simpa using h.add tendsto_one_div_add_at_top_nhds_0_nat,
+    exact tendsto_of_tendsto_of_tendsto_of_le_of_le h h' (λ x, δ_le _) (λ x, (hw _).le), },
   -- Step 2: Prove that the sequence `w : ℕ → K` is a Cauchy sequence
   have seq_is_cauchy : cauchy_seq (λ n, ((w n):F)),
-  { rw cauchy_seq_iff_le_tendsto_0, -- splits into three goals
-    let b := λ n:ℕ, (8 * δ * (1/(n+1)) + 4 * (1/(n+1)) * (1/(n+1))),
-    use (λn, sqrt (b n)),
-    split,
-    -- first goal :  `∀ (n : ℕ), 0 ≤ sqrt (b n)`
-    assume n, exact sqrt_nonneg _,
-    split,
-    -- second goal : `∀ (n m N : ℕ), N ≤ n → N ≤ m → dist ↑(w n) ↑(w m) ≤ sqrt (b N)`
-    assume p q N hp hq,
-    let wp := ((w p):F), let wq := ((w q):F),
-    let a := u - wq, let b := u - wp,
-    let half := 1 / (2:ℝ), let div := 1 / ((N:ℝ) + 1),
-    have : 4 * ∥u - half • (wq + wp)∥ * ∥u - half • (wq + wp)∥ + ∥wp - wq∥ * ∥wp - wq∥ =
-      2 * (∥a∥ * ∥a∥ + ∥b∥ * ∥b∥) :=
-    calc
-      4 * ∥u - half•(wq + wp)∥ * ∥u - half•(wq + wp)∥ + ∥wp - wq∥ * ∥wp - wq∥
-          = (2*∥u - half•(wq + wp)∥) * (2 * ∥u - half•(wq + wp)∥) + ∥wp-wq∥*∥wp-wq∥ : by ring
-      ... = (absR ((2:ℝ)) * ∥u - half•(wq + wp)∥) * (absR ((2:ℝ)) * ∥u - half•(wq+wp)∥) +
-            ∥wp-wq∥*∥wp-wq∥ :
-      by { rw _root_.abs_of_nonneg, exact zero_le_two }
-      ... = ∥(2:ℝ) • (u - half • (wq + wp))∥ * ∥(2:ℝ) • (u - half • (wq + wp))∥ +
-            ∥wp-wq∥ * ∥wp-wq∥ :
-      by simp [norm_smul]
-      ... = ∥a + b∥ * ∥a + b∥ + ∥a - b∥ * ∥a - b∥ :
-      begin
-        rw [smul_sub, smul_smul, mul_one_div_cancel (_root_.two_ne_zero : (2 : ℝ) ≠ 0),
-            ← one_add_one_eq_two, add_smul],
-        simp only [one_smul],
-        have eq₁ : wp - wq = a - b, from (sub_sub_sub_cancel_left _ _ _).symm,
-        have eq₂ : u + u - (wq + wp) = a + b, show u + u - (wq + wp) = (u - wq) + (u - wp), abel,
-        rw [eq₁, eq₂],
-      end
-      ... = 2 * (∥a∥ * ∥a∥ + ∥b∥ * ∥b∥) : parallelogram_law_with_norm,
-    have eq : δ ≤ ∥u - half • (wq + wp)∥,
-    { rw smul_add,
-      apply δ_le', apply h₂,
-        repeat {exact subtype.mem _},
-        repeat {exact le_of_lt one_half_pos},
-        exact add_halves 1 },
-    have eq₁ : 4 * δ * δ ≤ 4 * ∥u - half • (wq + wp)∥ * ∥u - half • (wq + wp)∥,
-    {  mono, mono, norm_num, apply mul_nonneg, norm_num, exact norm_nonneg _ },
-    have eq₂ : ∥a∥ * ∥a∥ ≤ (δ + div) * (δ + div) :=
-      mul_self_le_mul_self (norm_nonneg _)
-        (le_trans (le_of_lt $ hw q) (add_le_add_left (nat.one_div_le_one_div hq) _)),
-    have eq₂' : ∥b∥ * ∥b∥ ≤ (δ + div) * (δ + div) :=
-      mul_self_le_mul_self (norm_nonneg _)
-        (le_trans (le_of_lt $ hw p) (add_le_add_left (nat.one_div_le_one_div hp) _)),
-    rw dist_eq_norm,
-    apply nonneg_le_nonneg_of_squares_le, { exact sqrt_nonneg _ },
-    rw mul_self_sqrt,
-    exact calc
-      ∥wp - wq∥ * ∥wp - wq∥ = 2 * (∥a∥*∥a∥ + ∥b∥*∥b∥) -
-        4 * ∥u - half • (wq+wp)∥ * ∥u - half • (wq+wp)∥ : by { rw ← this, simp }
-      ... ≤ 2 * (∥a∥ * ∥a∥ + ∥b∥ * ∥b∥) - 4 * δ * δ : sub_le_sub_left eq₁ _
-      ... ≤ 2 * ((δ + div) * (δ + div) + (δ + div) * (δ + div)) - 4 * δ * δ :
-        sub_le_sub_right (mul_le_mul_of_nonneg_left (add_le_add eq₂ eq₂') (by norm_num)) _
-      ... = 8 * δ * div + 4 * div * div : by ring,
-    exact add_nonneg
-      (mul_nonneg (mul_nonneg (by norm_num) zero_le_δ) (le_of_lt nat.one_div_pos_of_nat))
-      (mul_nonneg (mul_nonneg (by norm_num) nat.one_div_pos_of_nat.le) nat.one_div_pos_of_nat.le),
-    -- third goal : `tendsto (λ (n : ℕ), sqrt (b n)) at_top (𝓝 0)`
-    apply tendsto.comp,
-    { convert continuous_sqrt.continuous_at, exact sqrt_zero.symm },
-    have eq₁ : tendsto (λ (n : ℕ), 8 * δ * (1 / (n + 1))) at_top (nhds (0:ℝ)),
-    { convert (@tendsto_const_nhds _ _ _ (8 * δ) _).mul tendsto_one_div_add_at_top_nhds_0_nat,
-      simp only [mul_zero] },
-    have : tendsto (λ (n : ℕ), (4:ℝ) * (1 / (n + 1))) at_top (nhds (0:ℝ)),
-    { convert (@tendsto_const_nhds _ _ _ (4:ℝ) _).mul tendsto_one_div_add_at_top_nhds_0_nat,
-      simp only [mul_zero] },
-    have eq₂ : tendsto (λ (n : ℕ), (4:ℝ) * (1 / (n + 1)) * (1 / (n + 1))) at_top (nhds (0:ℝ)),
-    { convert this.mul tendsto_one_div_add_at_top_nhds_0_nat,
-      simp only [mul_zero] },
-    convert eq₁.add eq₂, simp only [add_zero] },
+    from some_seq_is_cauchy u δ w h₂ hw zero_le_δ δ_le',
   -- Step 3: By completeness of `K`, let `w : ℕ → K` converge to some `v : K`.
   -- Prove that it satisfies all requirements.
-  rcases cauchy_seq_tendsto_of_is_complete h₁ (λ n, _) seq_is_cauchy with ⟨v, hv, w_tendsto⟩,
-  use v, use hv,
-  have h_cont : continuous (λ v, ∥u - v∥) :=
-    continuous.comp continuous_norm (continuous.sub continuous_const continuous_id),
-  have : tendsto (λ n, ∥u - w n∥) at_top (nhds ∥u - v∥),
-    convert (tendsto.comp h_cont.continuous_at w_tendsto),
-  exact tendsto_nhds_unique this norm_tendsto,
-  exact subtype.mem _
+  obtain ⟨v, hv, w_tendsto⟩ := cauchy_seq_tendsto_of_is_complete h₁ (λ n, _) seq_is_cauchy,
+  swap, { exact subtype.mem _, },
+  have h_cont : continuous (λ v, ∥u - v∥),
+    from continuous_norm.comp (continuous_const.sub continuous_id),
+  have : tendsto (λ n, ∥u - w n∥) at_top (𝓝 ∥u - v∥),
+    by convert (tendsto.comp h_cont.continuous_at w_tendsto),
+  exact ⟨v, hv, tendsto_nhds_unique this norm_tendsto⟩,
+end
+
+lemma sq_norm_sub_convex {u v : F} {θ : ℝ} (w : F) :
+  ∥u - (θ•w + (1-θ)•v)∥^2 = ∥u - v∥^2 - 2 * θ * ⟪u - v, w - v⟫_ℝ + θ*θ*∥w - v∥^2 :=
+begin
+  calc
+    ∥u - (θ•w + (1-θ)•v)∥^2 = ∥(u - v) - θ • (w - v)∥^2 :
+    begin
+      congr' 2,
+      rw [smul_sub, sub_smul, one_smul],
+      simp only [sub_eq_add_neg, add_comm, add_left_comm, add_assoc, neg_add_rev],
+    end
+  ... = ∥u - v∥^2 - 2 * θ * inner (u - v) (w - v) + θ*θ*∥w - v∥^2 :
+    begin
+      rw [norm_sub_pow_two, inner_smul_right, norm_smul, is_R_or_C.re_to_real, real.norm_eq_abs,
+        mul_pow, pow_abs, _root_.abs_of_nonneg (pow_two_nonneg θ)],
+      simp only [pow_two],
+      ring,
+    end,
+end
+
+theorem real_inner_le_zero_of_norm_eq_infi {K : set F} (h : convex K) {u v : F} (hv : v ∈ K)
+  (eq : ∥u - v∥ = (⨅ w : K, ∥u - w∥)) :
+  ∀ w ∈ K, ⟪u - v, w - v⟫_ℝ ≤ 0 :=
+begin
+  assume w hw,
+  let p := ⟪u - v, w - v⟫_ℝ,
+  let q := ∥w - v∥^2,
+  letI : nonempty K := ⟨⟨v, hv⟩⟩,
+  have zero_le_dist_uv : 0 ≤ ∥u - v∥, by{ rw eq, exact le_cinfi (λ _, norm_nonneg _), },
+  have dist_uv_le : ∀ w : K, ∥u - v∥ ≤ ∥u - w∥,
+    by { rw eq, exact λ w, cinfi_le ⟨(0:ℝ), set.forall_range_iff.mpr (λ _, norm_nonneg _)⟩ _, },
+  have dist_uv_le' : ∀ w ∈ K, ∥u - v∥ ≤ ∥u - w∥ := λ w hw, dist_uv_le ⟨w, hw⟩,
+  have two_mul_p_le_θ_mul_q : ∀ θ:ℝ, 0 < θ → θ ≤ 1 → 2 * p ≤ θ * q,
+  { assume θ hθ₁ hθ₂,
+    have h_sq_sub_le : ∥u - v∥^2 ≤ ∥u - v∥^2 - 2 * θ * ⟪u - v, w - v⟫_ℝ + θ*θ*∥w - v∥^2,
+    { calc ∥u - v∥^2 ≤ ∥u - (θ•w + (1-θ)•v)∥^2 :
+        begin
+          mono,
+          exact dist_uv_le' _ (h hw hv hθ₁.le (sub_nonneg.mpr hθ₂) (add_sub_cancel'_right _ _)),
+        end
+      ... = ∥u - v∥^2 - 2 * θ * inner (u - v) (w - v) + θ*θ*∥w - v∥^2 : sq_norm_sub_convex w, },
+    rw [sub_add_eq_add_sub, ← add_sub, le_add_iff_nonneg_right, mul_comm (2:ℝ), mul_assoc θ,
+      mul_assoc θ (2:ℝ), ← mul_sub θ] at h_sq_sub_le,
+    exact le_of_sub_nonneg (nonneg_of_mul_nonneg_left h_sq_sub_le hθ₁), },
+  by_cases hq : q = 0,
+  { rw hq at two_mul_p_le_θ_mul_q,
+    have := two_mul_p_le_θ_mul_q (1:ℝ) (by norm_num) (by norm_num),
+    linarith, },
+  { have q_pos : 0 < q, from (pow_two_nonneg _).lt_of_ne (λ h, absurd h.symm hq),
+    by_contradiction hp,
+    rw not_le at hp,
+    let θ := min (1:ℝ) (p / q),
+    have eq₁ : θ*q ≤ p := calc
+      θ*q ≤ (p/q) * q : mul_le_mul_of_nonneg_right (min_le_right _ _) (pow_two_nonneg _)
+      ... = p         : div_mul_cancel _ hq,
+    have : 2 * p ≤ p := calc
+      2 * p ≤ θ*q : two_mul_p_le_θ_mul_q θ (lt_min (by norm_num) (div_pos hp q_pos)) (by norm_num)
+        ... ≤ p   : eq₁,
+    linarith, },
+end
+
+theorem norm_eq_infi_of_real_inner_le_zero {K : set F} (h : convex K) {u v : F} (hv : v ∈ K)
+  (h : ∀ w ∈ K, ⟪u - v, w - v⟫_ℝ ≤ 0) :
+  ∥u - v∥ = (⨅ w : K, ∥u - w∥) :=
+begin
+  letI : nonempty K := ⟨⟨v, hv⟩⟩,
+  apply le_antisymm,
+  { refine le_cinfi (λ w, nonneg_le_nonneg_of_squares_le (norm_nonneg _) _),
+    have h_inner_nonpos := h w w.2,
+    calc
+      ∥u - v∥ * ∥u - v∥ ≤ ∥u - v∥ * ∥u - v∥ - 2 * inner (u - v) ((w:F) - v) :
+        by linarith
+      ... ≤ ∥u - v∥^2 - 2 * inner (u - v) ((w:F) - v) + ∥(w:F) - v∥^2 :
+        by { rw pow_two, exact le_add_of_nonneg_right (pow_two_nonneg _), }
+      ... = ∥(u - v) - (w - v)∥^2 :
+        norm_sub_pow_two.symm
+      ... = ∥u - w∥ * ∥u - w∥ :
+        by { have : (u - v) - (w - v) = u - w, by abel, rw [this, pow_two], } },
+  { show (⨅ (w : K), ∥u - w∥) ≤ (λw:K, ∥u - w∥) ⟨v, hv⟩,
+      from cinfi_le ⟨(0:ℝ), set.forall_range_iff.mpr (λ _, norm_nonneg _)⟩ _, }
 end
 
 /-- Characterization of minimizers for the projection on a convex set in a real inner product
 space. -/
-theorem norm_eq_infi_iff_real_inner_le_zero {K : set F} (h : convex K) {u : F} {v : F}
-  (hv : v ∈ K) : ∥u - v∥ = (⨅ w : K, ∥u - w∥) ↔ ∀ w ∈ K, ⟪u - v, w - v⟫_ℝ ≤ 0 :=
-iff.intro
-begin
-  assume eq w hw,
-  let δ := ⨅ w : K, ∥u - w∥, let p := ⟪u - v, w - v⟫_ℝ, let q := ∥w - v∥^2,
-  letI : nonempty K := ⟨⟨v, hv⟩⟩,
-  have zero_le_δ : 0 ≤ δ,
-    apply le_cinfi, intro, exact norm_nonneg _,
-  have δ_le : ∀ w : K, δ ≤ ∥u - w∥,
-    assume w, apply cinfi_le, use (0:ℝ), rintros _ ⟨_, rfl⟩, exact norm_nonneg _,
-  have δ_le' : ∀ w ∈ K, δ ≤ ∥u - w∥ := assume w hw, δ_le ⟨w, hw⟩,
-  have : ∀θ:ℝ, 0 < θ → θ ≤ 1 → 2 * p ≤ θ * q,
-    assume θ hθ₁ hθ₂,
-    have : ∥u - v∥^2 ≤ ∥u - v∥^2 - 2 * θ * ⟪u - v, w - v⟫_ℝ + θ*θ*∥w - v∥^2 :=
-    calc
-      ∥u - v∥^2 ≤ ∥u - (θ•w + (1-θ)•v)∥^2 :
-      begin
-        simp only [pow_two], apply mul_self_le_mul_self (norm_nonneg _),
-        rw [eq], apply δ_le',
-        apply h hw hv,
-        exacts [le_of_lt hθ₁, sub_nonneg.2 hθ₂, add_sub_cancel'_right _ _],
-      end
-      ... = ∥(u - v) - θ • (w - v)∥^2 :
-      begin
-        have : u - (θ•w + (1-θ)•v) = (u - v) - θ • (w - v),
-        { rw [smul_sub, sub_smul, one_smul],
-          simp only [sub_eq_add_neg, add_comm, add_left_comm, add_assoc, neg_add_rev] },
-        rw this
-      end
-      ... = ∥u - v∥^2 - 2 * θ * inner (u - v) (w - v) + θ*θ*∥w - v∥^2 :
-      begin
-        rw [norm_sub_pow_two, inner_smul_right, norm_smul],
-        simp only [pow_two],
-        show ∥u-v∥*∥u-v∥-2*(θ*inner(u-v)(w-v))+absR (θ)*∥w-v∥*(absR (θ)*∥w-v∥)=
-                ∥u-v∥*∥u-v∥-2*θ*inner(u-v)(w-v)+θ*θ*(∥w-v∥*∥w-v∥),
-        rw abs_of_pos hθ₁, ring
-      end,
-    have eq₁ : ∥u-v∥^2-2*θ*inner(u-v)(w-v)+θ*θ*∥w-v∥^2=∥u-v∥^2+(θ*θ*∥w-v∥^2-2*θ*inner(u-v)(w-v)),
-      by abel,
-    rw [eq₁, le_add_iff_nonneg_right] at this,
-    have eq₂ : θ*θ*∥w-v∥^2-2*θ*inner(u-v)(w-v)=θ*(θ*∥w-v∥^2-2*inner(u-v)(w-v)), ring,
-    rw eq₂ at this,
-    have := le_of_sub_nonneg (nonneg_of_mul_nonneg_left this hθ₁),
-    exact this,
-  by_cases hq : q = 0,
-  { rw hq at this,
-    have : p ≤ 0,
-      have := this (1:ℝ) (by norm_num) (by norm_num),
-      linarith,
-    exact this },
-  { have q_pos : 0 < q,
-      apply lt_of_le_of_ne, exact pow_two_nonneg _, intro h, exact hq h.symm,
-    by_contradiction hp, rw not_le at hp,
-    let θ := min (1:ℝ) (p / q),
-    have eq₁ : θ*q ≤ p := calc
-      θ*q ≤ (p/q) * q : mul_le_mul_of_nonneg_right (min_le_right _ _) (pow_two_nonneg _)
-      ... = p : div_mul_cancel _ hq,
-    have : 2 * p ≤ p := calc
-      2 * p ≤ θ*q : by { refine this θ (lt_min (by norm_num) (div_pos hp q_pos)) (by norm_num) }
-      ... ≤ p : eq₁,
-    linarith }
-end
-begin
-  assume h,
-  letI : nonempty K := ⟨⟨v, hv⟩⟩,
-  apply le_antisymm,
-  { apply le_cinfi, assume w,
-    apply nonneg_le_nonneg_of_squares_le (norm_nonneg _),
-    have := h w w.2,
-    exact calc
-      ∥u - v∥ * ∥u - v∥ ≤ ∥u - v∥ * ∥u - v∥ - 2 * inner (u - v) ((w:F) - v) : by linarith
-      ... ≤ ∥u - v∥^2 - 2 * inner (u - v) ((w:F) - v) + ∥(w:F) - v∥^2 :
-        by { rw pow_two, refine le_add_of_nonneg_right _, exact pow_two_nonneg _ }
-      ... = ∥(u - v) - (w - v)∥^2 : norm_sub_pow_two.symm
-      ... = ∥u - w∥ * ∥u - w∥ :
-        by { have : (u - v) - (w - v) = u - w, abel, rw [this, pow_two] } },
-  { show (⨅ (w : K), ∥u - w∥) ≤ (λw:K, ∥u - w∥) ⟨v, hv⟩,
-      apply cinfi_le, use 0, rintros y ⟨z, rfl⟩, exact norm_nonneg _ }
-end
+theorem norm_eq_infi_iff_real_inner_le_zero {K : set F} (h : convex K) {u v : F} (hv : v ∈ K) :
+  ∥u - v∥ = (⨅ w : K, ∥u - w∥) ↔ ∀ w ∈ K, ⟪u - v, w - v⟫_ℝ ≤ 0 :=
+⟨real_inner_le_zero_of_norm_eq_infi h hv, norm_eq_infi_of_real_inner_le_zero h hv⟩
 
 variables (K : submodule 𝕜 E)
 
@@ -2016,7 +2026,6 @@ theorem exists_norm_eq_infi_of_complete_subspace
   (h : is_complete (↑K : set E)) : ∀ u : E, ∃ v ∈ K, ∥u - v∥ = ⨅ w : (K : set E), ∥u - w∥ :=
 begin
   letI : inner_product_space ℝ E := inner_product_space.is_R_or_C_to_real 𝕜 E,
-  letI : module ℝ E := restrict_scalars.semimodule ℝ 𝕜 E,
   letI : is_scalar_tower ℝ 𝕜 E := restrict_scalars.is_scalar_tower _ _ _,
   let K' : submodule ℝ E := submodule.restrict_scalars ℝ K,
   exact exists_norm_eq_infi_of_complete_convex ⟨0, K'.zero_mem⟩ h K'.convex
@@ -2036,33 +2045,16 @@ iff.intro
 begin
   assume h,
   have h : ∀ w ∈ K, ⟪u - v, w - v⟫_ℝ ≤ 0,
-  { rwa [norm_eq_infi_iff_real_inner_le_zero] at h, exacts [K.convex, hv] },
-  assume w hw,
-  have le : ⟪u - v, w⟫_ℝ ≤ 0,
-    let w' := w + v,
-    have : w' ∈ K := submodule.add_mem _ hw hv,
-    have h₁ := h w' this,
-    have h₂ : w' - v = w, simp only [add_neg_cancel_right, sub_eq_add_neg],
-    rw h₂ at h₁, exact h₁,
-  have ge : ⟪u - v, w⟫_ℝ ≥ 0,
-    let w'' := -w + v,
-    have : w'' ∈ K := submodule.add_mem _ (submodule.neg_mem _ hw) hv,
-    have h₁ := h w'' this,
-    have h₂ : w'' - v = -w, simp only [neg_inj, add_neg_cancel_right, sub_eq_add_neg],
-    rw [h₂, inner_neg_right] at h₁,
-    linarith,
-    exact le_antisymm le ge
+    by rwa [norm_eq_infi_iff_real_inner_le_zero K.convex hv] at h,
+  refine λ w hw, le_antisymm _ _,
+  { have h₁ := h (w + v) (submodule.add_mem _ hw hv),
+    rwa [sub_eq_add_neg (w + v), add_neg_cancel_right] at h₁, },
+  { have h₁ := h (-w + v) (submodule.add_mem _ (submodule.neg_mem _ hw) hv),
+    rwa [sub_eq_add_neg (-w + v), add_neg_cancel_right, inner_neg_right, neg_le, neg_zero] at h₁, },
 end
 begin
-  assume h,
-  have : ∀ w ∈ K, ⟪u - v, w - v⟫_ℝ ≤ 0,
-    assume w hw,
-    let w' := w - v,
-    have : w' ∈ K := submodule.sub_mem _ hw hv,
-    have h₁ := h w' this,
-    exact le_of_eq h₁,
-  rwa norm_eq_infi_iff_real_inner_le_zero,
-  exacts [submodule.convex _, hv]
+  exact λ h, (norm_eq_infi_iff_real_inner_le_zero (submodule.convex _) hv).mpr
+    (λ w hw, (h (w - v) (submodule.sub_mem _ hw hv)).le),
 end
 
 /--
@@ -2071,30 +2063,23 @@ Let `u` be a point in an inner product space, and let `K` be a nonempty subspace
 Then point `v` minimizes the distance `∥u - v∥` over points in `K` if and only if
 for all `w ∈ K`, `⟪u - v, w⟫ = 0` (i.e., `u - v` is orthogonal to the subspace `K`)
 -/
-theorem norm_eq_infi_iff_inner_eq_zero {u : E} {v : E}
-  (hv : v ∈ K) : ∥u - v∥ = (⨅ w : (↑K : set E), ∥u - w∥) ↔ ∀ w ∈ K, ⟪u - v, w⟫ = 0 :=
+theorem norm_eq_infi_iff_inner_eq_zero {u v : E} (hv : v ∈ K) :
+  ∥u - v∥ = (⨅ w : (↑K : set E), ∥u - w∥) ↔ ∀ w ∈ K, ⟪u - v, w⟫ = 0 :=
 begin
   letI : inner_product_space ℝ E := inner_product_space.is_R_or_C_to_real 𝕜 E,
-  letI : module ℝ E := restrict_scalars.semimodule ℝ 𝕜 E,
   letI : is_scalar_tower ℝ 𝕜 E := restrict_scalars.is_scalar_tower _ _ _,
   let K' : submodule ℝ E := K.restrict_scalars ℝ,
-  split,
-  { assume H,
-    have A : ∀ w ∈ K, re ⟪u - v, w⟫ = 0 := (norm_eq_infi_iff_real_inner_eq_zero K' hv).1 H,
-    assume w hw,
-    apply ext,
-    { simp [A w hw] },
-    { symmetry, calc
-      im (0 : 𝕜) = 0 : im.map_zero
-      ... = re ⟪u - v, (-I) • w⟫ : (A _ (K.smul_mem (-I) hw)).symm
-      ... = re ((-I) * ⟪u - v, w⟫) : by rw inner_smul_right
-      ... = im ⟪u - v, w⟫ : by simp } },
-  { assume H,
-    have : ∀ w ∈ K', ⟪u - v, w⟫_ℝ = 0,
-    { assume w hw,
-      rw [real_inner_eq_re_inner, H w hw],
-      exact zero_re' },
-    exact (norm_eq_infi_iff_real_inner_eq_zero K' hv).2 this }
+  split; intro H,
+  { have A : ∀ w ∈ K, re ⟪u - v, w⟫ = 0 := (norm_eq_infi_iff_real_inner_eq_zero K' hv).1 H,
+    refine λ w hw, is_R_or_C.ext (by simp [A w hw]) _,
+    rw im.map_zero,
+    calc
+      im ⟪u - v, w⟫ = re ((-I) * ⟪u - v, w⟫) : by simp only [neg_mul_eq_neg_mul_symm, I_re,
+                        zero_sub, I_im', zero_mul, add_monoid_hom.map_neg, neg_neg, mul_re]
+                ... = re ⟪u - v, (-I) • w⟫   : by rw ← inner_smul_right
+                ... = 0                      : (A _ (K.smul_mem (-I) hw)), },
+  { refine (norm_eq_infi_iff_real_inner_eq_zero K' hv).2 (λ w hw, _),
+    rw [real_inner_eq_re_inner, H w hw, zero_re'], },
 end
 
 section orthogonal_projection
