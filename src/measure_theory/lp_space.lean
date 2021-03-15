@@ -343,6 +343,100 @@ lemma mem_ℒp.of_le [measurable_space F] {f : α → E} {g : α → F}
 section opens_measurable_space
 variable [opens_measurable_space E]
 
+section trim
+
+lemma lintegral_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0)
+  {f : α → ℝ≥0∞}
+  (hf : @measurable _ _ m _ f) :
+  @lintegral _ m (μ.trim hm) f = ∫⁻ a, f a ∂μ :=
+begin
+  refine @measurable.ennreal_induction α m
+    (λ f, @lintegral _ m (μ.trim hm) f = ∫⁻ a, f a ∂μ) _ _ _ f hf,
+  { intros c s hs,
+    rw @lintegral_indicator α m _ _ _ hs,
+    rw @lintegral_indicator α _ _ _ _ (hm s hs),
+    dsimp only,
+    rw @set_lintegral_const α m,
+    rw set_lintegral_const,
+    suffices h_trim_s : μ.trim hm s = μ s,
+    { rw h_trim_s, },
+    exact trim_measurable hm hs, },
+  { intros f g hfg hf hg hf_prop hg_prop,
+    have h_m := @lintegral_add _ m (μ.trim hm) f g hf hg,
+    have h_m0 := @lintegral_add _ m0 μ f g (measurable.mono hf hm le_rfl)
+      (measurable.mono hg hm le_rfl),
+    rw [hf_prop, hg_prop, ← h_m0] at h_m,
+    exact h_m, },
+  { intros f hf hf_mono hf_prop,
+    rw @lintegral_supr α m (μ.trim hm) _ hf hf_mono,
+    rw @lintegral_supr α m0 μ _ (λ n, measurable.mono (hf n) hm le_rfl) hf_mono,
+    congr,
+    ext1 n,
+    exact hf_prop n, },
+end
+
+lemma snorm'_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0) {f : α → E}
+  (hf : @measurable _ _ m _ f) :
+  @snorm' α E m _ f q (μ.trim hm) = snorm' f q μ :=
+begin
+  simp_rw snorm',
+  congr' 1,
+  refine lintegral_trim hm _,
+  refine @measurable.ennreal_rpow_const α m _ _ _,
+  refine @measurable.ennreal_coe α m _ _,
+  exact @measurable.nnnorm E α _ _ _ m _ hf,
+end
+
+lemma limsup_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0)
+  {f : α → ℝ≥0∞} (hf : @measurable _ _ m _ f) :
+  (@measure.ae α m (μ.trim hm)).limsup f = μ.ae.limsup f :=
+begin
+  simp_rw limsup_eq,
+  suffices h_set_eq : {a : ℝ≥0∞ | filter.eventually (λ n, f n ≤ a) (@measure.ae α m (μ.trim hm))}
+    = {a : ℝ≥0∞ | ∀ᵐ (n : α) ∂μ, f n ≤ a},
+  { rw h_set_eq, },
+  ext1 a,
+  simp_rw set.mem_set_of_eq,
+  suffices h_meas_eq : μ {x | ¬ f x ≤ a} = μ.trim hm {x | ¬ f x ≤ a},
+  { simp_rw [ae_iff, h_meas_eq], },
+  refine (trim_measurable hm _).symm,
+  refine @measurable_set.compl α _ m (@measurable_set_le ℝ≥0∞ α _ _ _ m _ _ _ _ _ hf _),
+  exact @measurable_const _ α _ m _,
+end
+
+lemma ess_sup_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0)
+  {f : α → ℝ≥0∞} (hf : @measurable _ _ m _ f) :
+  @ess_sup α _ m _ f (μ.trim hm) = ess_sup f μ :=
+begin
+  simp_rw ess_sup,
+  exact limsup_trim hm hf,
+end
+
+lemma snorm_ess_sup_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0)
+  {f : α → E} (hf : @measurable _ _ m _ f) :
+  @snorm_ess_sup α E m _ f (μ.trim hm) = snorm_ess_sup f μ :=
+begin
+  simp_rw snorm_ess_sup,
+  refine ess_sup_trim hm _,
+  refine @measurable.ennreal_coe α m _ _,
+  exact @measurable.nnnorm E α _ _ _ m _ hf,
+end
+
+lemma snorm_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0) {f : α → E}
+  (hf : @measurable _ _ m _ f) :
+  @snorm α E m _ f p (μ.trim hm) = snorm f p μ :=
+begin
+  by_cases h0 : p = 0,
+  { simp [h0], },
+  by_cases h_top : p = ∞,
+  { simp only [h_top, snorm_exponent_top],
+    exact snorm_ess_sup_trim hm hf, },
+  simp only [snorm_eq_snorm' h0 h_top],
+  exact snorm'_trim hm hf,
+end
+
+end trim
+
 lemma mem_ℒp.norm {f : α → E} (h : mem_ℒp f p μ) : mem_ℒp (λ x, ∥f x∥) p μ :=
 h.of_le h.ae_measurable.norm (eventually_of_forall (λ x, by simp))
 
@@ -1338,6 +1432,35 @@ begin
     rw [pi.sub_apply, pi.sub_apply, hx], },
   rw snorm_congr_ae h_coe.symm,
   exact lt_of_le_of_lt h_tendsto (ennreal.half_lt_self hε_pos.ne.symm ennreal.of_real_ne_top),
+end
+
+lemma tendsto_Lp_iff_tendsto_ℒp {ι} [linear_order ι] [hp : fact (1 ≤ p)]
+  {f : ι → Lp E p μ} (f_lim : α → E) (f_lim_ℒp : mem_ℒp f_lim p μ) :
+  at_top.tendsto f (𝓝 (f_lim_ℒp.to_Lp f_lim))
+    ↔ at_top.tendsto (λ n, snorm (f n - f_lim) p μ) (𝓝 0) :=
+begin
+  refine ⟨λ h_tendsto, _, tendsto_Lp_of_tendsto_ℒp f_lim f_lim_ℒp⟩,
+  by_cases hι : nonempty ι,
+  swap, { exact tendsto_of_not_nonempty hι, },
+  haveI : nonempty ι := hι,
+  rw ennreal.tendsto_at_top_zero,
+  rw metric.tendsto_at_top at h_tendsto,
+  refine λ ε hε, _,
+  by_cases hε_top : ε = ∞,
+  { simp_rw hε_top, exact ⟨hι.some, λ n hn, le_top⟩, },
+  have hε_pos : 0 < ε.to_real, from ennreal.to_real_pos_iff.mpr ⟨hε, hε_top⟩,
+  cases (h_tendsto ε.to_real hε_pos) with N h_tendsto,
+  refine ⟨N, λ n hn, _⟩,
+  specialize h_tendsto n hn,
+  rw [dist_def, ennreal.to_real_lt_to_real _ hε_top] at h_tendsto,
+  swap, { rw [←lt_top_iff_ne_top, snorm_congr_ae (Lp.coe_fn_sub _ _).symm],
+    exact Lp.snorm_lt_top _, },
+  have h_eq : snorm (⇑(f n) - ⇑(mem_ℒp.to_Lp f_lim f_lim_ℒp)) p μ = snorm (⇑(f n) - f_lim) p μ,
+  { have h_coe_fn : ⇑(mem_ℒp.to_Lp f_lim f_lim_ℒp) =ᵐ[μ] f_lim, from f_lim_ℒp.coe_fn_to_Lp,
+    refine snorm_congr_ae _,
+    sorry, },
+  rw h_eq at h_tendsto,
+  exact h_tendsto.le,
 end
 
 lemma complete_space_Lp_of_cauchy_complete_ℒp [hp : fact (1 ≤ p)]
