@@ -1435,7 +1435,7 @@ begin
 end
 
 lemma tendsto_Lp_iff_tendsto_ℒp {ι} [linear_order ι] [hp : fact (1 ≤ p)]
-  {f : ι → Lp E p μ} (f_lim : α → E) (f_lim_ℒp : mem_ℒp f_lim p μ) :
+  (f : ι → Lp E p μ) (f_lim : α → E) (f_lim_ℒp : mem_ℒp f_lim p μ) :
   at_top.tendsto f (𝓝 (f_lim_ℒp.to_Lp f_lim))
     ↔ at_top.tendsto (λ n, snorm (f n - f_lim) p μ) (𝓝 0) :=
 begin
@@ -1462,6 +1462,17 @@ begin
   rw h_eq at h_tendsto,
   exact h_tendsto.le,
 end
+
+lemma tendsto_Lp_iff_tendsto_ℒp' {ι} [linear_order ι] [hp : fact (1 ≤ p)]
+  (f : ι → Lp E p μ) (f_lim : Lp E p μ) :
+  at_top.tendsto f (𝓝 f_lim)
+    ↔ at_top.tendsto (λ n, snorm (f n - f_lim) p μ) (𝓝 0) :=
+begin
+  rw tendsto_iff_dist_tendsto_zero,
+  simp_rw dist_def,
+  sorry
+end
+
 
 lemma complete_space_Lp_of_cauchy_complete_ℒp [hp : fact (1 ≤ p)]
   (H : ∀ (f : ℕ → α → E) (hf : ∀ n, mem_ℒp (f n) p μ) (B : ℕ → ℝ≥0∞) (hB : ∑' i, B i < ∞)
