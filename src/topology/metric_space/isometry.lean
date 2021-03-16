@@ -73,9 +73,13 @@ assume x y, calc
   edist ((g ∘ f) x) ((g ∘ f) y) = edist (f x) (f y) : hg _ _
                             ... = edist x y : hf _ _
 
-/-- An isometry is an embedding -/
+/-- An isometry is a uniform embedding -/
 theorem isometry.uniform_embedding (hf : isometry f) : uniform_embedding f :=
 hf.antilipschitz.uniform_embedding hf.lipschitz.uniform_continuous
+
+/-- An isometry on a complete space is a closed embedding -/
+theorem isometry.closed_embedding [complete_space α] (hf : isometry f) : closed_embedding f :=
+hf.antilipschitz.closed_embedding hf.lipschitz.uniform_continuous
 
 /-- An isometry is continuous. -/
 lemma isometry.continuous (hf : isometry f) : continuous f :=
@@ -155,6 +159,10 @@ lemma coe_eq_to_equiv (h : α ≃ᵢ β) (a : α) : h a = h.to_equiv a := rfl
 
 protected lemma isometry (h : α ≃ᵢ β) : isometry h := h.isometry_to_fun
 
+protected lemma bijective (h : α ≃ᵢ β) : bijective h := h.to_equiv.bijective
+protected lemma injective (h : α ≃ᵢ β) : injective h := h.to_equiv.injective
+protected lemma surjective (h : α ≃ᵢ β) : surjective h := h.to_equiv.surjective
+
 protected lemma edist_eq (h : α ≃ᵢ β) (x y : α) : edist (h x) (h y) = edist x y :=
 h.isometry.edist_eq x y
 
@@ -221,7 +229,7 @@ lemma self_comp_symm (h : α ≃ᵢ β) : ⇑h ∘ ⇑h.symm = id :=
 funext $ assume a, h.to_equiv.right_inv a
 
 @[simp] lemma range_eq_univ (h : α ≃ᵢ β) : range h = univ :=
-eq_univ_of_forall $ assume b, ⟨h.symm b, congr_fun h.self_comp_symm b⟩
+h.to_equiv.range_eq_univ
 
 lemma image_symm (h : α ≃ᵢ β) : image h.symm = preimage h :=
 image_eq_preimage_of_inverse h.symm.to_equiv.left_inv h.symm.to_equiv.right_inv
