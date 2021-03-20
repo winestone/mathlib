@@ -70,7 +70,7 @@ funext $ λ x, (has_deriv_at_exp x).deriv
 | 0 := rfl
 | (n+1) := by rw [iterate_succ_apply, deriv_exp, iter_deriv_exp n]
 
-lemma continuous_exp : continuous exp :=
+@[continuity] lemma continuous_exp : continuous exp :=
 differentiable_exp.continuous
 
 lemma times_cont_diff_exp : ∀ {n}, times_cont_diff ℂ n exp :=

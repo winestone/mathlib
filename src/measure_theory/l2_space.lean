@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import analysis.normed_space.inner_product
-import measure_theory.set_integral
+import measure_theory.interval_integral
 
 /-! # `L^2` space
 
@@ -135,4 +135,62 @@ instance inner_product_space : inner_product_space 𝕜 (α →₂[μ] E) :=
 end inner_product_space
 
 end L2
+
 end measure_theory
+
+section fourier
+open set measure_theory complex
+open_locale real
+
+/-- Restriction of the Lebesgue measure on `ℝ` to the interval (0, 2π]. -/
+def μ : measure ℝ := (volume : measure ℝ).restrict (Ioc 0 (2 * π))
+
+/-- The functions exp (n I t) / √ 2π, for each integer `n`, considered as elements of L². -/
+def f (n : ℤ) : ℝ →₂[μ] ℂ :=
+continuous_on.to_Lp volume compact_Icc Ioc_subset_Icc_self measurable_set_Ioc (by simp) 2
+  (λ t, (real.sqrt (2 * π))⁻¹ * exp (n * I * t)) (by continuity : continuous _).continuous_on
+
+lemma f_ae (n : ℤ) :
+  f n =ᵐ[volume.restrict (Ioc 0 (2 * π))] (λ t, (real.sqrt (2 * π))⁻¹ * exp (n * I * t)) :=
+continuous_on.coe_fn_to_Lp volume 2 (λ t, (real.sqrt (2 * π))⁻¹ * exp (n * I * t))
+
+lemma f_mul (m n : ℤ) :
+  (conj ∘ (f m)) * (f n) =ᵐ[volume.restrict (Ioc 0 (2 * π))]
+  (λ t, (2 * π)⁻¹ * exp ((n - m) * I * t)) :=
+begin
+  filter_upwards [f_ae n, f_ae m],
+  intros t h₁ h₂,
+  simp [h₁, h₂, ← exp_conj, ← exp_add],
+  sorry -- stupid algebra
+end
+
+/-- The functions exp (n I t) / √ 2π on (0, 2π] are orthonormal with respect to the L² inner
+product. -/
+lemma orthonormal_exp_mul : orthonormal ℂ f :=
+begin
+  rw orthonormal_iff_ite,
+  intros m n,
+  rw L2.inner_def,
+  have := set_integral_congr_ae_restrict measurable_set_Ioc (f_mul m n),
+  simp [μ],
+  simp at this,
+  convert this,
+  { sorry }, -- same diamond as in #6760
+  rw ← interval_integral.integral_of_le sorry,
+  split_ifs,
+  { rw h,
+    simp,
+    sorry }, -- casting pain
+  { have : ∀ x ∈ interval 0 (2 * π), has_deriv_at
+      (λ x : ℝ, (↑n - ↑m)⁻¹ * (2 * ↑π)⁻¹ * exp ((↑n - ↑m) * I * x))
+      ((2 * ↑π)⁻¹ * exp ((↑n - ↑m) * I * ↑x)) x,
+    { intros x hx,
+      sorry }, -- rather painful algebra
+    rw interval_integral.integral_eq_sub_of_has_deriv_at this,
+    { simp,
+      sorry }, -- both terms are `exp (n * I * 2 * π)`, simplifying to `1`
+    { apply continuous.continuous_on,
+      continuity } }
+end
+
+end fourier

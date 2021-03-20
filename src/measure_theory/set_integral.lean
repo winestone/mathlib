@@ -380,6 +380,10 @@ lemma set_integral_congr_ae (hs : measurable_set s) (h : ∀ᵐ x ∂μ, x ∈ s
   ∫ x in s, f x ∂μ = ∫ x in s, g x ∂μ :=
 integral_congr_ae ((ae_restrict_iff' hs).2 h)
 
+lemma set_integral_congr_ae_restrict (hs : measurable_set s) (h : f =ᵐ[μ.restrict s] g) :
+  ∫ x in s, f x ∂μ = ∫ x in s, g x ∂μ :=
+integral_congr_ae h
+
 lemma set_integral_congr (hs : measurable_set s) (h : eq_on f g s) :
   ∫ x in s, f x ∂μ = ∫ x in s, g x ∂μ :=
 set_integral_congr_ae hs $ eventually_of_forall h
@@ -819,6 +823,48 @@ begin
 end
 
 end
+
+section continuous_Lp
+
+open measure_theory filter
+variables [topological_space α] [borel_space α] [t2_space α] (μ : measure α)
+variables {s t : set α} (ht : is_compact t) (hst : s ⊆ t) (hs : measurable_set s) (hs' : μ s < ∞)
+variables [borel_space E] [second_countable_topology E]
+
+open_locale nnreal
+
+include hs ht hst hs'
+
+lemma continuous_on.mem_ℒp (p : ℝ≥0) (f : α → E) (hf : continuous_on f t) :
+  mem_ℒp f p (μ.restrict s) :=
+begin
+  by_cases h' : s = ∅,
+  { split; simp [h'] },
+  { have h' : s.nonempty := set.ne_empty_iff_nonempty.mp h',
+    obtain ⟨p, hps, hp⟩ := ht.exists_forall_ge (h'.mono hst) (continuous_norm.comp_continuous_on hf),
+    have := mem_ℒp_const (f p),
+    refine mem_ℒp.of_le this ((hf.mono hst).ae_measurable hs) _,
+    rw ae_restrict_iff',
+    refine eventually_of_forall _,
+    intros q hq,
+    exact hp q (hst hq),
+    exact hs,
+    convert restrict.finite_measure μ,
+    exact hs' }
+end
+
+/-- Useful criterion for a continuous function to induce an element of Lp.  Maybe better to divide
+the argument in two, one for compact sets and another general fact about the behaviour of
+membership in ℒp under restriction of measure. -/
+def continuous_on.to_Lp (p : ℝ≥0) (f : α → E) (hf : continuous_on f t) : Lp E p (μ.restrict s) :=
+mem_ℒp.to_Lp f (hf.mem_ℒp μ ht hst hs hs' p f)
+
+variables {ht hst hs hs'}
+lemma continuous_on.coe_fn_to_Lp (p : ℝ≥0) (f : α → E) {hf : continuous_on f t} :
+  hf.to_Lp μ ht hst hs hs' p f =ᵐ[μ.restrict s] f :=
+(hf.mem_ℒp μ ht hst hs hs' p f).coe_fn_to_Lp
+
+end continuous_Lp
 
 /-
 namespace integrable

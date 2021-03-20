@@ -2555,6 +2555,12 @@ by simp [cos_add, sin_add, cos_int_mul_two_pi]
 lemma exp_pi_mul_I : exp (π * I) = -1 :=
 by rw exp_mul_I; simp
 
+lemma exp_int_mul_two_pi (n : ℤ) : complex.exp (n * (2 * π) * I) = 1 :=
+begin
+  have : sin (n * (2 * π)) = 0 := by simpa [mul_assoc] using sin_int_mul_pi (n * 2),
+  simp [exp_mul_I, cos_int_mul_two_pi, this]
+end
+
 theorem cos_eq_zero_iff {θ : ℂ} : cos θ = 0 ↔ ∃ k : ℤ, θ = (2 * k + 1) * π / 2 :=
 begin
   have h : (exp (θ * I) + exp (-θ * I)) / 2 = 0 ↔ exp (2 * θ * I) = -1,
