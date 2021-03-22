@@ -220,13 +220,14 @@ by rw [finprod_def, dif_pos hf]
   ∏ᶠ i : α, f i = ∏ i, f i :=
 finprod_eq_prod_of_mul_support_to_finset_subset _ (finite.of_fintype _) $ finset.subset_univ _
 
-@[to_additive] lemma finprod_in_eq_prod_of_mem_iff (f : α → M) {s : set α} {t : finset α}
-  (h : ∀ {x}, f x ≠ 1 → (x ∈ s ↔ x ∈ t)) :
-  ∏ᶠ i ∈ s, f i = ∏ i in t, f i :=
+@[to_additive] lemma finprod_in_eq_prod_of_mem_iff (f : α → M) {p : α → Prop} {t : finset α}
+  (h : ∀ {x}, f x ≠ 1 → (p x ↔ x ∈ t)) :
+  ∏ᶠ i (hi : p i), f i = ∏ i in t, f i :=
 begin
+  set s := {x | p x},
   have : mul_support (s.mul_indicator f) ⊆ t,
   { rw [set.mul_support_mul_indicator], intros x hx, exact (h hx.2).1 hx.1 },
-  rw [finprod_in_def, finprod_eq_prod_of_mul_support_subset _ this],
+  erw [finprod_in_def, finprod_eq_prod_of_mul_support_subset _ this],
   refine finset.prod_congr rfl (λ x hx, mul_indicator_apply_eq_self.2 $ λ hxs, _),
   contrapose! hxs,
   exact (h hxs).2 hx
