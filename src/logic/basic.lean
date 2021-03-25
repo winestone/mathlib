@@ -787,6 +787,11 @@ by simp [decidable.not_not]
 
 @[simp] theorem not_exists_not : (¬ ∃ x, ¬ p x) ↔ ∀ x, p x := decidable.not_exists_not
 
+theorem forall_imp_iff_exists_imp [ha : nonempty α] : ((∀ x, p x) → b) ↔ ∃ x, p x → b :=
+let ⟨a⟩ := ha in
+⟨λ h, not_forall_not.1 $ λ h', classical.by_cases (λ hb : b, h' a $ λ _, hb)
+  (λ hb, hb $ h $ λ x, (not_imp.1 (h' x)).1), λ ⟨x, hx⟩ h, hx (h x)⟩
+
 -- TODO: duplicate of a lemma in core
 theorem forall_true_iff : (α → true) ↔ true :=
 implies_true_iff α
