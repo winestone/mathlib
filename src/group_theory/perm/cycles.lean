@@ -166,6 +166,18 @@ calc sign f = sign (swap x (f x) * (swap x (f x) * f)) :
         pow_one, units.neg_mul_neg] }
 using_well_founded {rel_tac := λ _ _, `[exact ⟨_, measure_wf (λ f, f.support.card)⟩]}
 
+lemma is_cycle_of_is_cycle_pow [fintype α] {σ : perm α} {n : ℤ}
+  (h1 : is_cycle (σ ^ n)) (h2 : σ.support.card ≤ (σ ^ n).support.card) : is_cycle σ :=
+begin
+  have key : ∀ x : α, (σ ^ n) x ≠ x ↔ σ x ≠ x,
+  { simp_rw [←mem_support],
+    exact finset.ext_iff.mp (finset.eq_of_subset_of_card_le (support_pow_le σ n) h2) },
+  obtain ⟨x, hx1, hx2⟩ := h1,
+  refine ⟨x, (key x).mp hx1, λ y hy, _⟩,
+  cases (hx2 y ((key y).mpr hy)) with i _,
+  exact ⟨n * i, by rwa gpow_mul⟩,
+end
+
 end sign_cycle
 
 /-!
@@ -354,5 +366,32 @@ begin
 end
 
 end fixed_points
+
+section order_of
+
+lemma order_of_is_cycle [fintype α] {σ : perm α} (hσ : is_cycle σ) : order_of σ = σ.support.card :=
+begin
+  obtain ⟨x, hx, hσ⟩ := hσ,
+  rw [order_eq_card_gpowers, ←fintype.card_coe],
+  apply fintype.card_congr,
+  refine equiv.of_bijective (λ τ, ⟨τ x, _⟩) ⟨_, _⟩,
+  { obtain ⟨τ, n, rfl⟩ := τ,
+    rw [finset.mem_coe, mem_support],
+    exact λ h, hx ((σ ^ n).injective (by rwa [←mul_apply, mul_gpow_self, ←mul_self_gpow])) },
+  { rintros ⟨a, m, rfl⟩ ⟨b, n, rfl⟩ h,
+    ext y,
+    by_cases hy : σ y = y,
+    { simp_rw [subtype.coe_mk, gpow_apply_eq_self_of_apply_eq_self hy] },
+    { obtain ⟨i, rfl⟩ := hσ y hy,
+      rw [subtype.coe_mk, subtype.coe_mk, ←mul_apply, ←mul_apply, ←gpow_add, ←gpow_add,
+          add_comm m i, add_comm n i, gpow_add, gpow_add, mul_apply, mul_apply],
+      exact congr_arg _ (subtype.ext_iff.mp h) } },
+  { rintros ⟨y, hy⟩,
+    rw [finset.mem_coe, mem_support] at hy,
+    obtain ⟨n, rfl⟩ := hσ y hy,
+    exact ⟨⟨σ ^ n, n, rfl⟩, rfl⟩ },
+end
+
+end order_of
 
 end equiv.perm

@@ -71,30 +71,6 @@ begin
   exact step4 y z,
 end
 
-lemma order_of_is_cycle {α : Type*} [fintype α] [decidable_eq α] {σ : perm α}
-  (hσ : is_cycle σ) : order_of σ = σ.support.card :=
-begin
-  obtain ⟨x, hx, hσ⟩ := hσ,
-  rw [order_eq_card_gpowers, support, ←fintype.card_coe],
-  apply fintype.card_congr,
-  refine equiv.of_bijective (λ τ, ⟨τ x, _⟩) ⟨_, _⟩,
-  { obtain ⟨τ, n, rfl⟩ := τ,
-    rw [finset.mem_coe, finset.mem_filter, and_iff_right (finset.mem_univ _)],
-    exact λ h, hx ((σ ^ n).injective (by rwa [←mul_apply, mul_gpow_self, ←mul_self_gpow])) },
-  { rintros ⟨a, m, rfl⟩ ⟨b, n, rfl⟩ h,
-    ext y,
-    change (σ ^ m) y = (σ ^ n) y,
-    by_cases hy : σ y = y,
-    { simp only [gpow_apply_eq_self_of_apply_eq_self hy] },
-    { obtain ⟨i, rfl⟩ := hσ y hy,
-      rw [←mul_apply, ←gpow_add, add_comm, gpow_add, mul_apply, (show (σ ^ m) x = (σ ^ n) x,
-        from subtype.ext_iff.mp h), ←mul_apply, ←gpow_add, add_comm, gpow_add, mul_apply] } },
-  { rintros ⟨y, hy⟩,
-    rw [finset.mem_coe, finset.mem_filter] at hy,
-    cases hσ y hy.2 with n h,
-    exact ⟨⟨σ ^ n, n, rfl⟩, subtype.ext h⟩ },
-end
-
 lemma lem2 {G : Type*} [group G] [fintype G] [decidable_eq G] {n : ℕ} {g : G}
   (h0 : nat.coprime n (order_of g)) : ∃ m : ℤ, (g ^ n) ^ m = g :=
 begin
@@ -114,28 +90,12 @@ begin
   exact int.mod_nonneg _ (int.coe_nat_ne_zero.mpr (ne_of_gt (order_of_pos g))),
 end
 
-lemma lem4 {α : Type*} [fintype α] [decidable_eq α] (σ : perm α) (n : ℤ) :
-  (σ ^ n).support ≤ σ.support :=
-λ x h1, finset.mem_filter.mpr ⟨finset.mem_univ x,
-  λ h2, (finset.mem_filter.mp h1).2 (gpow_apply_eq_self_of_apply_eq_self h2 n)⟩
-
-lemma is_cycle_of_is_cycle_pow {α : Type*} [fintype α] [decidable_eq α] {σ : perm α} {n : ℤ}
-  (h1 : is_cycle (σ ^ n)) (h2 : σ.support.card ≤ (σ ^ n).support.card) : is_cycle σ :=
-begin
-  have key : ∀ x : α, (σ ^ n) x ≠ x ↔ σ x ≠ x,
-  { simp only [←mem_support],
-    exact finset.ext_iff.mp (finset.eq_of_subset_of_card_le (lem4 σ n) h2) },
-  obtain ⟨x, hx1, hx2⟩ := h1,
-  refine ⟨x, (key x).mp hx1, λ y hy, _⟩,
-  cases (hx2 y ((key y).mpr hy)) with i _,
-  exact ⟨n * i, by rwa gpow_mul⟩,
-end
-
 lemma support_pow_coprime {α : Type*} [fintype α] [decidable_eq α] {σ : perm α} {n : ℕ}
   (h : nat.coprime n (order_of σ)) : (σ ^ n).support = σ.support :=
 begin
   cases lem3 h with m hm,
-  exact le_antisymm (lem4 σ n) (le_trans (ge_of_eq (congr_arg support hm)) (lem4 (σ ^ n) m)),
+  exact le_antisymm (support_pow_le σ n)
+    (le_trans (ge_of_eq (congr_arg support hm)) (support_pow_le (σ ^ n) m)),
 end
 
 lemma closure_cycle_coprime_swap {α : Type*} [fintype α] [linear_order α] {n : ℕ} {σ : perm α}
