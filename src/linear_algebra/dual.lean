@@ -455,6 +455,15 @@ begin
     rw [linear_map.map_add, h.1 _ hx, h.2 _ hy, add_zero] }
 end
 
+lemma le_double_dual_annihilator_comap_eval (U : submodule R M) :
+  U ≤ U.dual_annihilator.dual_annihilator.comap (module.dual.eval R M) :=
+begin
+  intros x hx,
+  simp_rw [submodule.mem_comap, submodule.mem_dual_annihilator],
+  intros φ hφ,
+  exact hφ _ hx,
+end
+
 end submodule
 
 namespace subspace
@@ -569,6 +578,36 @@ begin
     haveI := classical.choice hB.2,
     exact is_basis.to_dual_equiv _ hB.1 },
 end
+
+lemma double_dual_annihilator_findim_eq (U : subspace K V) :
+  finite_dimensional.findim K U.dual_annihilator.dual_annihilator =
+  finite_dimensional.findim K U :=
+begin
+  let D := U.dual_annihilator.dual_annihilator,
+  suffices : (finite_dimensional.findim K V : ℤ) - finite_dimensional.findim K D =
+    finite_dimensional.findim K V - finite_dimensional.findim K U, linarith,
+  symmetry,
+  rw ← (subspace.quot_equiv_annihilator U.dual_annihilator).findim_eq,
+  conv_lhs { rw [← submodule.findim_quotient_add_findim U,
+                 (subspace.quot_equiv_annihilator U).findim_eq] },
+  conv_rhs { rw [← subspace.dual_findim_eq,
+                 ← submodule.findim_quotient_add_findim U.dual_annihilator] },
+  simp,
+end
+
+lemma double_dual_annihilator_findim_eq_comap_eval (U : subspace K V) :
+  finite_dimensional.findim K (U.dual_annihilator.dual_annihilator.comap (module.dual.eval K V)) =
+  finite_dimensional.findim K U :=
+begin
+  conv_rhs { rw ← double_dual_annihilator_findim_eq },
+  rw [show module.dual.eval K V = vector_space.eval_equiv.to_linear_map, by refl],
+  exact linear_equiv.findim_eq (linear_equiv.comap _ _),
+end
+
+lemma submodule.eq_double_dual_annihilator_comap_eval (U : submodule K V₁) :
+  U.dual_annihilator.dual_annihilator.comap (module.dual.eval K V₁) = U :=
+(eq_of_le_of_findim_eq U.le_double_dual_annihilator_comap_eval
+  (double_dual_annihilator_findim_eq_comap_eval U).symm).symm
 
 end
 
