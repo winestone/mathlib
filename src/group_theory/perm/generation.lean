@@ -71,29 +71,10 @@ begin
   exact step4 y z,
 end
 
-lemma lem2 {G : Type*} [group G] [fintype G] [decidable_eq G] {n : ℕ} {g : G}
-  (h0 : nat.coprime n (order_of g)) : ∃ m : ℤ, (g ^ n) ^ m = g :=
-begin
-  use n.gcd_a (order_of g),
-  dsimp only [nat.coprime] at h0,
-  conv { to_rhs, rw [←pow_one g, ←h0, ←gpow_coe_nat, nat.gcd_eq_gcd_ab, gpow_add, gpow_mul,
-    gpow_mul, gpow_coe_nat, gpow_coe_nat, pow_order_of_eq_one, one_gpow, mul_one] },
-end
-
-lemma lem3 {G : Type*} [group G] [fintype G] [decidable_eq G] {n : ℕ} {g : G}
-  (h0 : nat.coprime n (order_of g)) : ∃ m : ℕ, (g ^ n) ^ m = g :=
-begin
-  cases lem2 h0 with m hm,
-  use (m % (order_of g)).to_nat,
-  rwa [←pow_mul, mul_comm, pow_mul, ←gpow_coe_nat, ←gpow_coe_nat, int.to_nat_of_nonneg,
-      ←gpow_eq_mod_order_of, ←gpow_mul, mul_comm, gpow_mul, gpow_coe_nat],
-  exact int.mod_nonneg _ (int.coe_nat_ne_zero.mpr (ne_of_gt (order_of_pos g))),
-end
-
 lemma support_pow_coprime {α : Type*} [fintype α] [decidable_eq α] {σ : perm α} {n : ℕ}
   (h : nat.coprime n (order_of σ)) : (σ ^ n).support = σ.support :=
 begin
-  cases lem3 h with m hm,
+  cases exists_gpow_eq_self_of_coprime h with m hm,
   exact le_antisymm (support_pow_le σ n)
     (le_trans (ge_of_eq (congr_arg support hm)) (support_pow_le (σ ^ n) m)),
 end
@@ -103,11 +84,11 @@ lemma closure_cycle_coprime_swap {α : Type*} [fintype α] [linear_order α] {n 
 closure ({σ, swap x ((σ ^ n) x)} : set (perm α)) = ⊤ :=
 begin
   rw [←finset.card_univ, ←h2, ←order_of_is_cycle h1] at h0,
-  cases lem3 h0 with m hm,
+  cases exists_gpow_eq_self_of_coprime h0 with m hm,
   have h2' : (σ ^ n).support = ⊤ := eq.trans (support_pow_coprime h0) h2,
   have h1' : is_cycle ((σ ^ n) ^ (m : ℤ)) := by rwa ← hm at h1,
   replace h1' : is_cycle (σ ^ n) := is_cycle_of_is_cycle_pow h1'
-    (finset.card_le_of_subset (le_trans (lem4 σ n) (ge_of_eq (congr_arg support hm)))),
+    (finset.card_le_of_subset (le_trans (support_pow_le σ n) (ge_of_eq (congr_arg support hm)))),
   rw [eq_top_iff, ←closure_cycle_adjacent_swap h1' h2' x, closure_le, set.insert_subset],
   exact ⟨subgroup.pow_mem (closure _) (subset_closure (set.mem_insert σ _)) n,
     set.singleton_subset_iff.mpr (subset_closure (set.mem_insert_of_mem _ (set.mem_singleton _)))⟩,
@@ -146,7 +127,7 @@ lemma lem6 {α : Type*} [fintype α] [linear_order α] {H : subgroup (perm α)} 
   (h0 : (fintype.card α).prime) (h1 : fintype.card α ∣ fintype.card H) (h2 : τ ∈ H) (h3 : is_swap τ) :
 H = ⊤ :=
 begin
-  haveI : fact (fintype.card α).prime := h0,
+  haveI : fact (fintype.card α).prime := ⟨h0⟩,
   obtain ⟨σ, hσ⟩ := sylow.exists_prime_order_of_dvd_card (fintype.card α) h1,
   replace hσ : order_of (σ : (perm α)) = fintype.card α := sorry,
   rw [eq_top_iff, ←lem5 h0 hσ h3, closure_le, set.insert_subset, set.singleton_subset_iff],
