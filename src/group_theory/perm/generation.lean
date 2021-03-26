@@ -110,15 +110,18 @@ begin
     pow_order_of_eq_one, one_pow, one_apply] at hi,
 end
 
+lemma lem4 {α : Type*} [fintype α] {σ : perm α}
+  (h0 : (fintype.card α).prime) (h1 : order_of σ = fintype.card α) :
+  is_cycle σ :=
+begin
+
+end
+
 lemma lem5 {α : Type*} [fintype α] [linear_order α] {σ τ : perm α}
   (h0 : (fintype.card α).prime) (h1 : order_of σ = fintype.card α) (h2 : is_swap τ) :
-closure ({σ, τ} : set (perm α)) = ⊤ :=
-begin
-  suffices : is_cycle σ,
-  { refine closure_prime_cycle_swap h0 this (finset.eq_univ_of_card σ.support _) h2,
-    rwa ← order_of_is_cycle this },
-  sorry,
-end
+  closure ({σ, τ} : set (perm α)) = ⊤ :=
+closure_prime_cycle_swap h0 (lem4 h0 h1)
+  (finset.eq_univ_of_card σ.support ((order_of_is_cycle (lem4 h0 h1)).symm.trans h1)) h2
 
 noncomputable instance tada' {G : Type*} [group G] [fintype G] (H : subgroup G) : fintype H :=
   fintype.of_injective coe subtype.coe_injective
@@ -129,7 +132,7 @@ H = ⊤ :=
 begin
   haveI : fact (fintype.card α).prime := ⟨h0⟩,
   obtain ⟨σ, hσ⟩ := sylow.exists_prime_order_of_dvd_card (fintype.card α) h1,
-  replace hσ : order_of (σ : (perm α)) = fintype.card α := sorry,
+  rw ← order_of_subgroup at hσ,
   rw [eq_top_iff, ←lem5 h0 hσ h3, closure_le, set.insert_subset, set.singleton_subset_iff],
   exact ⟨subtype.mem σ, h2⟩,
 end
