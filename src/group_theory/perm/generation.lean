@@ -74,7 +74,7 @@ end
 lemma support_pow_coprime {α : Type*} [fintype α] [decidable_eq α] {σ : perm α} {n : ℕ}
   (h : nat.coprime n (order_of σ)) : (σ ^ n).support = σ.support :=
 begin
-  cases exists_gpow_eq_self_of_coprime h with m hm,
+  obtain ⟨m, hm⟩ := exists_pow_eq_self_of_coprime h,
   exact le_antisymm (support_pow_le σ n)
     (le_trans (ge_of_eq (congr_arg support hm)) (support_pow_le (σ ^ n) m)),
 end
@@ -84,7 +84,7 @@ lemma closure_cycle_coprime_swap {α : Type*} [fintype α] [linear_order α] {n 
 closure ({σ, swap x ((σ ^ n) x)} : set (perm α)) = ⊤ :=
 begin
   rw [←finset.card_univ, ←h2, ←order_of_is_cycle h1] at h0,
-  cases exists_gpow_eq_self_of_coprime h0 with m hm,
+  obtain ⟨m, hm⟩ := exists_pow_eq_self_of_coprime h0,
   have h2' : (σ ^ n).support = ⊤ := eq.trans (support_pow_coprime h0) h2,
   have h1' : is_cycle ((σ ^ n) ^ (m : ℤ)) := by rwa ← hm at h1,
   replace h1' : is_cycle (σ ^ n) := is_cycle_of_is_cycle_pow h1'
