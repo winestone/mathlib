@@ -617,7 +617,9 @@ begin
   exact linear_equiv.findim_eq (linear_equiv.comap _ _),
 end
 
-lemma submodule.eq_double_dual_annihilator_comap_eval (U : submodule K V₁) :
+/-- The the pullback of the double dual annihilator of a subspace along the evaluation
+map is that subspace. -/
+lemma eq_double_dual_annihilator_comap_eval (U : submodule K V₁) :
   U.dual_annihilator.dual_annihilator.comap (module.dual.eval K V₁) = U :=
 (eq_of_le_of_findim_eq U.le_double_dual_annihilator_comap_eval
   (double_dual_annihilator_findim_eq_comap_eval U).symm).symm
