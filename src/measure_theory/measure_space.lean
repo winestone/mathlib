@@ -85,7 +85,7 @@ measure, almost everywhere, measure space, completion, null set, null measurable
 noncomputable theory
 
 open classical set filter (hiding map) function measurable_space
-open_locale classical topological_space big_operators filter ennreal
+open_locale classical topological_space big_operators filter ennreal nnreal
 
 variables {α β γ δ ι : Type*}
 
@@ -1473,6 +1473,9 @@ open measure
 @[simp] lemma ae_eq_bot : μ.ae = ⊥ ↔ μ = 0 :=
 by rw [← empty_in_sets_eq_bot, mem_ae_iff, compl_empty, measure_univ_eq_zero]
 
+@[simp] lemma ae_ne_bot : μ.ae.ne_bot ↔ μ ≠ 0 :=
+ne_bot_iff.trans (not_congr ae_eq_bot)
+
 @[simp] lemma ae_zero : (0 : measure α).ae = ⊥ := ae_eq_bot.2 rfl
 
 @[mono] lemma ae_mono {μ ν : measure α} (h : μ ≤ ν) : μ.ae ≤ ν.ae :=
@@ -1628,6 +1631,29 @@ lemma measure_lt_top (μ : measure α) [finite_measure μ] (s : set α) : μ s <
 
 lemma measure_ne_top (μ : measure α) [finite_measure μ] (s : set α) : μ s ≠ ∞ :=
 ne_of_lt (measure_lt_top μ s)
+
+/-- The measure of the whole space with respect to a finite measure, considered as `ℝ≥0`. -/
+def measure_univ_nnreal (μ : measure α) [finite_measure μ] : ℝ≥0 := (μ univ).to_nnreal
+
+@[simp] lemma coe_measure_univ_nnreal (μ : measure α) [finite_measure μ] :
+  ↑(measure_univ_nnreal μ) = μ univ :=
+ennreal.coe_to_nnreal (measure_ne_top μ univ)
+
+instance finite_measure_zero : finite_measure (0 : measure α) := ⟨by simp⟩
+
+@[simp] lemma measure_univ_nnreal_zero : measure_univ_nnreal (0 : measure α) = 0 := rfl
+
+@[simp] lemma measure_univ_nnreal_eq_zero [finite_measure μ] : measure_univ_nnreal μ = 0 ↔ μ = 0 :=
+begin
+  rw [← measure_theory.measure.measure_univ_eq_zero, ← coe_measure_univ_nnreal],
+  norm_cast
+end
+
+lemma measure_univ_nnreal_pos [finite_measure μ] (hμ : μ ≠ 0) : 0 < measure_univ_nnreal μ :=
+begin
+  contrapose! hμ,
+  simpa [measure_univ_nnreal_eq_zero, le_zero_iff] using hμ
+end
 
 /-- `le_of_add_le_add_left` is normally applicable to `ordered_cancel_add_comm_monoid`,
 but it holds for measures with the additional assumption that μ is finite. -/
@@ -1823,7 +1849,7 @@ lemma sigma_finite_of_not_nonempty (μ : measure α) (hα : ¬ nonempty α) : si
 ⟨⟨⟨λ _, ∅, λ n, measurable_set.empty, λ n, by simp, by simp [eq_empty_of_not_nonempty hα univ]⟩⟩⟩
 
 lemma sigma_finite_of_countable {S : set (set α)} (hc : countable S)
-  (hμ : ∀ s ∈ S, μ s < ∞)  (hU : ⋃₀ S = univ) :
+  (hμ : ∀ s ∈ S, μ s < ∞) (hU : ⋃₀ S = univ) :
   sigma_finite μ :=
 begin
   obtain ⟨s, hμ, hs⟩ : ∃ s : ℕ → set α, (∀ n, μ (s n) < ∞) ∧ (⋃ n, s n) = univ,
@@ -1852,7 +1878,7 @@ instance sum.sigma_finite {ι} [fintype ι] (μ : ι → measure α) [∀ i, sig
 begin
   haveI : encodable ι := (encodable.trunc_encodable_of_fintype ι).out,
   have : ∀ n, measurable_set (⋂ (i : ι), spanning_sets (μ i) n) :=
-  λ n, measurable_set.Inter (λ i, measurable_spanning_sets (μ i) n),
+    λ n, measurable_set.Inter (λ i, measurable_spanning_sets (μ i) n),
   refine ⟨⟨⟨λ n, ⋂ i, spanning_sets (μ i) n, this, λ n, _, _⟩⟩⟩,
   { rw [sum_apply _ (this n), tsum_fintype, ennreal.sum_lt_top_iff],
     rintro i -,
@@ -1864,6 +1890,14 @@ end
 instance add.sigma_finite (μ ν : measure α) [sigma_finite μ] [sigma_finite ν] :
   sigma_finite (μ + ν) :=
 by { rw [← sum_cond], refine @sum.sigma_finite _ _ _ _ _ (bool.rec _ _); simpa }
+
+lemma sigma_finite.of_map (μ : measure α) {f : α → β} (hf : measurable f)
+  (h : sigma_finite (map f μ)) :
+  sigma_finite μ :=
+⟨⟨⟨λ n, f ⁻¹' (spanning_sets (map f μ) n),
+   λ n, hf $ measurable_spanning_sets _ _,
+   λ n, by simp only [← map_apply hf, measurable_spanning_sets, measure_spanning_sets_lt_top],
+   by rw [← preimage_Union, Union_spanning_sets, preimage_univ]⟩⟩⟩
 
 /-- A measure is called locally finite if it is finite in some neighborhood of each point. -/
 class locally_finite_measure [topological_space α] (μ : measure α) : Prop :=

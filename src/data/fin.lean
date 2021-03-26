@@ -72,16 +72,16 @@ open fin nat function
 /-- Elimination principle for the empty set `fin 0`, dependent version. -/
 def fin_zero_elim {α : fin 0 → Sort u} (x : fin 0) : α x := x.elim0
 
-lemma fact.succ.pos {n} : fact (0 < succ n) := zero_lt_succ _
+lemma fact.succ.pos {n} : fact (0 < succ n) := ⟨zero_lt_succ _⟩
 
 lemma fact.bit0.pos {n} [h : fact (0 < n)] : fact (0 < bit0 n) :=
-nat.zero_lt_bit0 $ ne_of_gt h
+⟨nat.zero_lt_bit0 $ ne_of_gt h.1⟩
 
 lemma fact.bit1.pos {n} : fact (0 < bit1 n) :=
-nat.zero_lt_bit1 _
+⟨nat.zero_lt_bit1 _⟩
 
 lemma fact.pow.pos {p n : ℕ} [h : fact $ 0 < p] : fact (0 < p ^ n) :=
-pow_pos h _
+⟨pow_pos h.1 _⟩
 
 localized "attribute [instance] fact.succ.pos" in fin_fact
 localized "attribute [instance] fact.bit0.pos" in fin_fact
@@ -311,7 +311,7 @@ section add
 -/
 
 /-- convert a `ℕ` to `fin n`, provided `n` is positive -/
-def of_nat' [h : fact (0 < n)] (i : ℕ) : fin n := ⟨i%n, mod_lt _ h⟩
+def of_nat' [h : fact (0 < n)] (i : ℕ) : fin n := ⟨i%n, mod_lt _ h.1⟩
 
 lemma one_val {n : ℕ} : (1 : fin (n+1)).val = 1 % (n+1) := rfl
 lemma coe_one' {n : ℕ} : ((1 : fin (n+1)) : ℕ) = 1 % (n+1) := rfl
@@ -1105,6 +1105,9 @@ variables {α : fin (n+1) → Type u} (x : α 0) (q : Πi, α i) (p : Π(i : fin
 /-- The tail of an `n+1` tuple, i.e., its last `n` entries. -/
 def tail (q : Πi, α i) : (Π(i : fin n), α (i.succ)) := λ i, q i.succ
 
+lemma tail_def {n : ℕ} {α : fin (n+1) → Type*} {q : Π i, α i} :
+  tail (λ k : fin (n+1), q k) = (λ k : fin n, q k.succ) := rfl
+
 /-- Adding an element at the beginning of an `n`-tuple, to get an `n+1`-tuple. -/
 def cons (x : α 0) (p : Π(i : fin n), α (i.succ)) : Πi, α i :=
 λ j, fin.cases x p j
@@ -1237,6 +1240,9 @@ variables {α : fin (n+1) → Type u} (x : α (last n)) (q : Πi, α i) (p : Π(
 /-- The beginning of an `n+1` tuple, i.e., its first `n` entries -/
 def init (q : Πi, α i) (i : fin n) : α i.cast_succ :=
 q i.cast_succ
+
+lemma init_def {n : ℕ} {α : fin (n+1) → Type*} {q : Π i, α i} :
+  init (λ k : fin (n+1), q k) = (λ k : fin n, q k.cast_succ) := rfl
 
 /-- Adding an element at the end of an `n`-tuple, to get an `n+1`-tuple. The name `snoc` comes from
 `cons` (i.e., adding an element to the left of a tuple) read in reverse order. -/
