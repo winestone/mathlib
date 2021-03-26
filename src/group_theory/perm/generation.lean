@@ -110,11 +110,24 @@ begin
     pow_order_of_eq_one, one_pow, one_apply] at hi,
 end
 
-lemma lem4 {α : Type*} [fintype α] {σ : perm α}
+lemma lem3 {α : Type*} [fintype α] [linear_order α] {σ : perm α}
+  (h0 : (order_of σ).prime) (h1 : order_of σ < 2 * fintype.card α) :
+  is_cycle σ :=
+begin
+  obtain ⟨s, h2, h3⟩ := cycle_factors σ,
+  sorry,
+end
+
+example {n : ℕ} (hn : 0 < n) (hn' : 1 < 2) : n < 2 * n := (lt_mul_iff_one_lt_left hn).mpr hn'
+
+lemma lem4 {α : Type*} [fintype α] [linear_order α] {σ : perm α}
   (h0 : (fintype.card α).prime) (h1 : order_of σ = fintype.card α) :
   is_cycle σ :=
 begin
-
+  have key := lem3,
+  rw h1 at key,
+  exact key h0 ((lt_mul_iff_one_lt_left (nat.prime.pos h0)).mpr one_lt_two),
+  apply_instance,
 end
 
 lemma lem5 {α : Type*} [fintype α] [linear_order α] {σ τ : perm α}
