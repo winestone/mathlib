@@ -813,6 +813,92 @@ is_condexp_congr_ae' hm (condexp_L1s_ae_eq_condexp_L2 hm _).symm
   (is_condexp_condexp_L2_L1s_to_L2 hm f)
 variables {𝕜}
 
+variables (𝕜)
+lemma integral_condexp_L1s [complete_space E] {m m0 : measurable_space α} (hm : m ≤ m0)
+  {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] E) {s : set α} (hs : @measurable_set α m s) :
+  ∫ a in s, (condexp_L1s_lm 𝕜 hm f) a ∂μ = ∫ a in s, f a ∂μ :=
+(is_condexp_condexp_L1s 𝕜 hm f).2.2 s hs
+variables {𝕜}
+
+lemma ae_le_iff_forall_lt_measure_zero [measurable_space α] {μ : measure α} (f : α → ℝ) (c : ℝ) :
+  (∀ᵐ x ∂μ, c ≤ f x) ↔ ∀ b < c, μ {x | f x ≤ b} = 0 :=
+begin
+  rw ae_iff,
+  push_neg,
+  have h_le : {x | f x < c} = ⋃ (r : ℚ) (hr : ↑r < c), {x | f x ≤ r},
+  { sorry, },
+  rw h_le,
+  rw measure_Union_null_iff,
+  split; intros h b,
+  { intro hbc,
+    obtain ⟨r, hr⟩ := exists_rat_btwn hbc,
+    specialize h r,
+    simp only [hr.right, set.Union_pos] at h,
+    refine measure_mono_null (λ x hx, _) h,
+    rw set.mem_set_of_eq at hx ⊢,
+    exact hx.trans hr.1.le, },
+  { by_cases hbc : ↑b < c,
+    { simp only [hbc, set.Union_pos],
+      exact h _ hbc, },
+    { simp [hbc], }, },
+end
+
+lemma condexp_L1s_const_le {m m0 : measurable_space α} (hm : m ≤ m0)
+  {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (c : ℝ) (hf : ∀ᵐ x ∂μ, c ≤ f x) :
+  ∀ᵐ x ∂μ, c ≤ condexp_L1s_lm ℝ hm f x :=
+begin
+  refine (ae_le_iff_forall_lt_measure_zero _ c).mpr (λ b hb, _),
+  obtain ⟨h_int, ⟨f', h_meas, hff'⟩, h_int_eq⟩ := is_condexp_condexp_L1s ℝ hm f,
+  have h_int' : integrable f' μ := (integrable_congr hff').mp h_int,
+  let s := {x | f' x ≤ b},
+  have hsm : @measurable_set _ m s,
+    from @measurable_set_le _ _ _ _ _ m _ _ _ _ _ h_meas (@measurable_const _ _ _ m _),
+  have hs : measurable_set s, from hm s hsm,
+  have hf's : ∀ x ∈ s, f' x ≤ b, from λ x hx, hx,
+  specialize h_int_eq s hsm,
+  rw set_integral_congr_ae hs (hff'.mono (λ x hx hxs, hx)) at h_int_eq,
+  have h_int_le : c * (μ s).to_real ≤ ∫ x in s, f' x ∂μ,
+  { rw h_int_eq,
+    have h_const_le : ∫ x in s, c ∂μ ≤ ∫ x in s, f x ∂μ,
+      from set_integral_mono_ae_restrict (integrable_on_const.mpr (or.inr (measure_lt_top _ _)))
+        (Lp.integrable _ le_rfl).integrable_on (ae_restrict_of_ae hf),
+    refine le_trans _ h_const_le,
+    rw [set_integral_const, smul_eq_mul, mul_comm], },
+  have h_int_lt : (μ s).to_real ≠ 0 → ∫ x in s, f' x ∂μ < c * (μ s).to_real,
+  { intro h_ne_zero,
+    suffices h_le_b : ∫ (x : α) in s, f' x ∂μ ≤ b * (μ s).to_real,
+    { refine h_le_b.trans_lt _,
+      sorry, },
+    have h_const_le : ∫ x in s, f' x ∂μ ≤ ∫ x in s, b ∂μ,
+    { refine set_integral_mono_ae_restrict h_int'.integrable_on
+        (integrable_on_const.mpr (or.inr (measure_lt_top _ _))) _,
+      sorry, },
+    refine h_const_le.trans _,
+    rw [set_integral_const, smul_eq_mul, mul_comm], },
+  have hμs_eq_zero : μ s = 0,
+  { suffices hμs0 : (μ s).to_real = 0,
+    { cases (ennreal.to_real_eq_zero_iff _).mp hμs0,
+      { exact h, },
+      { exact absurd h (measure_ne_top _ _), }, },
+    by_contra,
+    exact (lt_self_iff_false (c * (μ s).to_real)).mp (h_int_le.trans_lt (h_int_lt h)), },
+  rw ← hμs_eq_zero,
+  refine measure_congr _,
+  sorry,
+end
+
+lemma condexp_L1s_le_const {m m0 : measurable_space α} (hm : m ≤ m0)
+  {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (c : ℝ) (hf : ∀ᵐ x ∂μ, f x ≤ c) :
+  ∀ᵐ x ∂μ, condexp_L1s_lm ℝ hm f x ≤ c :=
+begin
+  have h_neg := condexp_L1s_const_le hm (-f) (-c) _,
+  swap, { sorry, },
+  rw linear_map.map_neg at h_neg,
+  refine (Lp.coe_fn_neg ((condexp_L1s_lm ℝ hm) f)).mp (h_neg.mono (λ x hx hx_neg, _)),
+  rw [hx_neg, pi.neg_apply] at hx,
+  exact le_of_neg_le_neg hx,
+end
+
 lemma condexp_L1s_nonneg {m m0 : measurable_space α} (hm : m ≤ m0)
   {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (hf : 0 ≤ᵐ[μ] f) :
   0 ≤ᵐ[μ] condexp_L1s_lm ℝ hm f :=
@@ -824,13 +910,6 @@ lemma condexp_L1s_R_jensen {m m0 : measurable_space α} (hm : m ≤ m0) {μ : me
 begin
   sorry
 end
-
-variables (𝕜)
-lemma integral_condexp_L1s [complete_space E] {m m0 : measurable_space α} (hm : m ≤ m0)
-  {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] E) {s : set α} (hs : @measurable_set α m s) :
-  ∫ a in s, (condexp_L1s_lm 𝕜 hm f) a ∂μ = ∫ a in s, f a ∂μ :=
-(is_condexp_condexp_L1s 𝕜 hm f).2.2 s hs
-variables {𝕜}
 
 lemma norm_condexp_L1s_le_R {m m0 : measurable_space α} (hm : m ≤ m0)
   {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) :
@@ -908,6 +987,15 @@ variables {𝕜}
 --  (c : E) :
 --  condexp_L1s_lm 𝕜 hm (λ x, (f x) • c) =ᵐ[μ] λ x, (condexp_L1s_lm ℝ hm f x) • c :=
 
+lemma indicator_L1s_coe_ae_le [measurable_space α] {μ : measure α} [probability_measure μ]
+  {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : ℝ) :
+  ∀ᵐ x ∂μ, abs (indicator_L1s hs hμs c x) ≤ abs c :=
+begin
+  refine (@indicator_L1s_coe_fn α ℝ _ _ _ _ _ _ μ _ s hs hμs c).mono (λ x hx, _),
+  rw hx,
+  by_cases hx_mem : x ∈ s; simp [hx_mem, abs_nonneg c],
+end
+
 lemma condexp_L1s_indicator_L1s_eq {m m0 : measurable_space α} (hm : m ≤ m0) [complete_space E]
   {μ : measure α} [probability_measure μ] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞)
   (c : E) :
@@ -919,14 +1007,31 @@ begin
   obtain ⟨h_int₁, ⟨f₁', h_meas₁, hff'₁⟩, h_int_eq₁⟩ := is_condexp_condexp_L1s ℝ hm
     (@indicator_L1s α ℝ _ _ _ _ _ _ μ _ s hs hμs 1),
   refine ⟨_, _, _⟩,
-  { sorry, },
+  { refine integrable.mono (integrable_const c) _ _,
+    { exact ae_measurable.smul (Lp.ae_measurable _) ae_measurable_const, },
+    { simp_rw norm_smul _ _,
+      suffices h_le_1 : ∀ᵐ a ∂μ, ∥((condexp_L1s_lm ℝ hm) (indicator_L1s hs hμs (1:ℝ))) a∥ ≤ 1,
+      { refine h_le_1.mono (λ x hx, _),
+        nth_rewrite 1 ← one_mul (∥c∥),
+        exact mul_le_mul hx le_rfl (norm_nonneg _) zero_le_one, },
+      simp_rw real.norm_eq_abs,
+      simp_rw abs_le,
+      refine eventually.and _ _,
+      { refine condexp_L1s_const_le hm _ (-1 : ℝ) _,
+        refine (indicator_L1s_coe_ae_le hs hμs (1 : ℝ)).mono (λ x hx, _),
+        refine neg_le_of_abs_le _,
+        exact hx.trans (le_of_eq abs_one), },
+      { refine condexp_L1s_le_const hm _ (1 : ℝ) _,
+        refine (indicator_L1s_coe_ae_le hs hμs (1 : ℝ)).mono (λ x hx, _),
+        refine le_of_abs_le _,
+        exact hx.trans (le_of_eq abs_one), }, }, },
   { refine ⟨λ x, (f₁' x) • c, _, _⟩,
     { exact @measurable.smul _ _ _ _ _ _ _ _ _ m _ _ _ _ _ _ f₁' _ h_meas₁
         (@measurable_const _ _ _ m c), },
     { exact eventually_eq.fun_comp hff'₁ (λ x, x • c), }, },
   { intros t ht,
     have h_smul : ∫ a in t, (indicator_L1s hs hμs c) a ∂μ
-        = ∫ (a : α) in t, ((indicator_L1s hs hμs (1 : ℝ)) a) • c ∂μ,
+        = ∫ a in t, ((indicator_L1s hs hμs (1 : ℝ)) a) • c ∂μ,
       from set_integral_congr_ae (hm t ht)  ((indicator_L1s_eq_smul 𝕜 _ _ c).mono (λ x hx hxs, hx)),
     refine eq.trans _ h_smul.symm,
     rw [integral_smul_const, integral_smul_const, h_int_eq₁ t ht], },
