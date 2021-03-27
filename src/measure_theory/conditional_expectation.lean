@@ -778,7 +778,12 @@ lemma L1.simple_func.map_coe [measurable_space α] [normed_group E] [borel_space
   {μ : measure α} [finite_measure μ] (g : E → F) (f : α →₁ₛ[μ] E) :
   ⇑(L1.simple_func.map g f) =ᵐ[μ] g ∘ f :=
 begin
-  sorry,
+  rw L1.simple_func.map,
+  rw ← L1.simple_func.coe_coe,
+  rw L1.simple_func.to_L1_eq_to_L1,
+  refine (integrable.coe_fn_to_L1 _).trans _,
+  rw simple_func.coe_map,
+  exact eventually_eq.fun_comp (L1.simple_func.to_simple_func_eq_to_fun _) g,
 end
 
 variables (𝕜)
@@ -825,9 +830,9 @@ lemma ae_le_iff_forall_lt_measure_zero [measurable_space α] {μ : measure α} (
 begin
   rw ae_iff,
   push_neg,
-  have h_le : {x | f x < c} = ⋃ (r : ℚ) (hr : ↑r < c), {x | f x ≤ r},
+  have h_Union : {x | f x < c} = ⋃ (r : ℚ) (hr : ↑r < c), {x | f x ≤ r},
   { sorry, },
-  rw h_le,
+  rw h_Union,
   rw measure_Union_null_iff,
   split; intros h b,
   { intro hbc,
@@ -868,11 +873,12 @@ begin
   { intro h_ne_zero,
     suffices h_le_b : ∫ (x : α) in s, f' x ∂μ ≤ b * (μ s).to_real,
     { refine h_le_b.trans_lt _,
-      sorry, },
+      exact mul_lt_mul_of_pos_right hb (ennreal.to_real_nonneg.lt_of_ne h_ne_zero.symm), },
     have h_const_le : ∫ x in s, f' x ∂μ ≤ ∫ x in s, b ∂μ,
     { refine set_integral_mono_ae_restrict h_int'.integrable_on
         (integrable_on_const.mpr (or.inr (measure_lt_top _ _))) _,
-      sorry, },
+      rw [eventually_le, ae_restrict_iff hs],
+      exact eventually_of_forall hf's, },
     refine h_const_le.trans _,
     rw [set_integral_const, smul_eq_mul, mul_comm], },
   have hμs_eq_zero : μ s = 0,
@@ -892,7 +898,12 @@ lemma condexp_L1s_le_const {m m0 : measurable_space α} (hm : m ≤ m0)
   ∀ᵐ x ∂μ, condexp_L1s_lm ℝ hm f x ≤ c :=
 begin
   have h_neg := condexp_L1s_const_le hm (-f) (-c) _,
-  swap, { sorry, },
+  swap,
+  { rw ← L1.simple_func.coe_coe,
+    rw L1.simple_func.coe_neg,
+    refine (Lp.coe_fn_neg (f : Lp ℝ 1 μ)).mp (hf.mono (λ x hx hfx, _)),
+    rw [hfx, pi.neg_apply],
+    exact neg_le_neg hx, },
   rw linear_map.map_neg at h_neg,
   refine (Lp.coe_fn_neg ((condexp_L1s_lm ℝ hm) f)).mp (h_neg.mono (λ x hx hx_neg, _)),
   rw [hx_neg, pi.neg_apply] at hx,
@@ -902,7 +913,26 @@ end
 lemma condexp_L1s_nonneg {m m0 : measurable_space α} (hm : m ≤ m0)
   {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (hf : 0 ≤ᵐ[μ] f) :
   0 ≤ᵐ[μ] condexp_L1s_lm ℝ hm f :=
-sorry
+condexp_L1s_const_le hm f 0 hf
+
+lemma condexp_L1s_mono {m m0 : measurable_space α} (hm : m ≤ m0)
+  {μ : measure α} [probability_measure μ] (f g : α →₁ₛ[μ] ℝ) (hfg : f ≤ᵐ[μ] g) :
+  condexp_L1s_lm ℝ hm f ≤ᵐ[μ] condexp_L1s_lm ℝ hm g :=
+begin
+  suffices h_sub : condexp_L1s_lm ℝ hm (f-g) ≤ᵐ[μ] 0,
+  { rw linear_map.map_sub at h_sub,
+    refine (Lp.coe_fn_sub (condexp_L1s_lm ℝ hm f) (condexp_L1s_lm ℝ hm g)).mp
+      (h_sub.mono (λ x hx h_sub_fg, _)),
+    rw [h_sub_fg, pi.zero_apply] at hx,
+    rwa ← sub_nonpos, },
+  have h_sub_fg : ⇑(f - g) ≤ᵐ[μ] 0,
+  { rw ← L1.simple_func.coe_coe,
+    rw L1.simple_func.coe_sub,
+    refine (Lp.coe_fn_sub (f : α→₁[μ] ℝ) (g: α→₁[μ] ℝ)).mp (hfg.mono (λ x hx h_sub_fg, _)),
+    rwa [h_sub_fg, L1.simple_func.coe_coe, L1.simple_func.coe_coe, pi.sub_apply, pi.zero_apply,
+      sub_nonpos], },
+  exact condexp_L1s_le_const hm (f-g) 0 h_sub_fg,
+end
 
 lemma condexp_L1s_R_jensen {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
   [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (F : ℝ → ℝ) (hF : convex_on (set.univ : set ℝ) F) :
@@ -929,26 +959,27 @@ begin
       = ∫⁻ a, ennreal.of_real (∥(f : Lp ℝ 1 μ) a∥) ∂μ,
     by { congr, ext1 x, rw ← of_real_norm_eq_coe_nnnorm, },
   rw [h_left, h_right],
-  refine le_trans _ _,
-  exact (∫⁻ a, ennreal.of_real (condexp_L1s_lm ℝ hm (L1.simple_func.map F f) a) ∂μ),
+  have h_le : ∫⁻ a, ennreal.of_real (∥((condexp_L1s_lm ℝ hm) f) a∥) ∂μ
+    ≤ ∫⁻ a, ennreal.of_real (condexp_L1s_lm ℝ hm (L1.simple_func.map F f) a) ∂μ,
   { refine lintegral_mono_ae ((condexp_L1s_R_jensen hm f F hF).mono (λ x hx, _)),
     rwa ennreal.of_real_le_of_real_iff ((norm_nonneg _).trans hx), },
-  { have h_integral_eq := integral_condexp_L1s ℝ hm (L1.simple_func.map F f)
-      (@measurable_set.univ α m),
-    rw [integral_univ, integral_univ] at h_integral_eq,
-    rw [← (ennreal.to_real_le_to_real _ _), ← integral_eq_lintegral_of_nonneg_ae,
-      ← integral_eq_lintegral_of_nonneg_ae, h_integral_eq,
-      integral_congr_ae (L1.simple_func.map_coe F f)],
-    simp,
-    { exact eventually_of_forall (by simp [norm_nonneg]), },
-    { exact measurable.comp_ae_measurable measurable_norm (Lp.ae_measurable _), },
-    { refine condexp_L1s_nonneg hm (L1.simple_func.map F f) _,
-      refine (L1.simple_func.map_coe F f).mono (λ x hx, _),
-      rw [hx, pi.zero_apply],
-      simp [F, norm_nonneg], },
-    { exact Lp.ae_measurable _, },
-    { sorry, },
-    { sorry, }, },
+  refine h_le.trans _,
+  have h_integral_eq := integral_condexp_L1s ℝ hm (L1.simple_func.map F f)
+    (@measurable_set.univ α m),
+  rw [integral_univ, integral_univ] at h_integral_eq,
+  rw [← (ennreal.to_real_le_to_real _ _), ← integral_eq_lintegral_of_nonneg_ae,
+    ← integral_eq_lintegral_of_nonneg_ae, h_integral_eq,
+    integral_congr_ae (L1.simple_func.map_coe F f)],
+  simp,
+  { exact eventually_of_forall (by simp [norm_nonneg]), },
+  { exact measurable.comp_ae_measurable measurable_norm (Lp.ae_measurable _), },
+  { refine condexp_L1s_nonneg hm (L1.simple_func.map F f) _,
+    refine (L1.simple_func.map_coe F f).mono (λ x hx, _),
+    rw [hx, pi.zero_apply],
+    simp [F, norm_nonneg], },
+  { exact Lp.ae_measurable _, },
+  { sorry, },
+  { sorry, },
 end
 
 lemma norm_indicator_L1s [normed_group E] [borel_space E] [second_countable_topology E]
