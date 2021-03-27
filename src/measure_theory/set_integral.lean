@@ -705,8 +705,9 @@ the composition, as we are dealing with classes of functions, but it has already
 as `continuous_linear_map.comp_Lp`. We take advantage of this construction here.
 -/
 
-variables {μ : measure α} [normed_space ℝ E]
-variables [normed_group F] [normed_space ℝ F]
+variables {μ : measure α} [normed_space ℝ E] {𝕜 : Type*} [is_R_or_C 𝕜] [normed_space 𝕜 E]
+  [is_scalar_tower ℝ 𝕜 E]
+variables [normed_group F] [normed_space ℝ F] [normed_space 𝕜 F] [is_scalar_tower ℝ 𝕜 F]
 variables {p : ennreal}
 
 local attribute [instance] fact_one_le_one_ennreal
@@ -715,7 +716,7 @@ namespace continuous_linear_map
 
 variables [measurable_space F] [borel_space F]
 
-lemma integrable_comp [opens_measurable_space E] {φ : α → E} (L : E →L[ℝ] F)
+lemma integrable_comp [opens_measurable_space E] {φ : α → E} (L : E →L[𝕜] F)
   (φ_int : integrable φ μ) : integrable (λ (a : α), L (φ a)) μ :=
 ((integrable.norm φ_int).const_mul ∥L∥).mono' (L.measurable.comp_ae_measurable φ_int.ae_measurable)
   (eventually_of_forall $ λ a, L.le_op_norm (φ a))
@@ -723,11 +724,11 @@ lemma integrable_comp [opens_measurable_space E] {φ : α → E} (L : E →L[ℝ
 variables [second_countable_topology F] [complete_space F]
 [borel_space E] [second_countable_topology E]
 
-lemma integral_comp_Lp (L : E →L[ℝ] F) (φ : Lp E p μ) :
+lemma integral_comp_Lp (L : E →L[𝕜] F) (φ : Lp E p μ) :
   ∫ a, (L.comp_Lp φ) a ∂μ = ∫ a, L (φ a) ∂μ :=
 integral_congr_ae $ coe_fn_comp_Lp _ _
 
-lemma continuous_integral_comp_L1 (L : E →L[ℝ] F) :
+lemma continuous_integral_comp_L1 (L : E →L[𝕜] F) :
   continuous (λ (φ : α →₁[μ] E), ∫ (a : α), L (φ a) ∂μ) :=
 begin
   rw ← funext L.integral_comp_Lp,
@@ -736,13 +737,14 @@ end
 
 variables [complete_space E]
 
-lemma integral_comp_comm (L : E →L[ℝ] F) {φ : α → E} (φ_int : integrable φ μ) :
+lemma integral_comp_comm (L : E →L[𝕜] F) {φ : α → E} (φ_int : integrable φ μ) :
   ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
 begin
   apply integrable.induction (λ φ, ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ)),
   { intros e s s_meas s_finite,
-    rw [integral_indicator_const e s_meas, continuous_linear_map.map_smul,
-        ← integral_indicator_const (L e) s_meas],
+    rw [integral_indicator_const e s_meas, ← @smul_one_smul E ℝ 𝕜 _ _ _ _ _ (μ s).to_real e,
+      continuous_linear_map.map_smul, @smul_one_smul F ℝ 𝕜 _ _ _ _ _ (μ s).to_real (L e),
+      ← integral_indicator_const (L e) s_meas],
     congr' 1 with a,
     rw set.indicator_comp_of_zero L.map_zero },
   { intros f g H f_int g_int hf hg,
@@ -756,7 +758,7 @@ begin
   all_goals { assumption }
 end
 
-lemma integral_comp_comm' (L : E →L[ℝ] F) {K} (hL : antilipschitz_with K L) (φ : α → E) :
+lemma integral_comp_comm' (L : E →L[𝕜] F) {K} (hL : antilipschitz_with K L) (φ : α → E) :
   ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
 begin
   by_cases h : integrable φ μ,
@@ -766,7 +768,7 @@ begin
   simp [integral_undef, h, this]
 end
 
-lemma integral_comp_L1_comm (L : E →L[ℝ] F) (φ : α →₁[μ] E) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
+lemma integral_comp_L1_comm (L : E →L[𝕜] F) (φ : α →₁[μ] E) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
 L.integral_comp_comm (L1.integrable_coe_fn φ)
 
 end continuous_linear_map
@@ -777,7 +779,7 @@ variables [measurable_space F] [borel_space F] [complete_space E]
 [second_countable_topology F] [complete_space F]
 [borel_space E] [second_countable_topology E]
 
-lemma integral_comp_comm (L : E →ₗᵢ[ℝ] F) (φ : α → E) :
+lemma integral_comp_comm (L : E →ₗᵢ[𝕜] F) (φ : α → E) :
   ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
 L.to_continuous_linear_map.integral_comp_comm' L.antilipschitz _
 
