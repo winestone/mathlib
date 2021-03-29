@@ -6,44 +6,26 @@ variables {α : Type u} (R : Type v) [ordered_comm_ring R]
 open function set
 open_locale big_operators
 
-section finprod
-
-variable {R}
-
-lemma finprod_nonneg {α : Sort*} {f : α → R} (hf : ∀ x, 0 ≤ f x) :
-  0 ≤ ∏ᶠ x, f x :=
-begin
-  rw finprod,
-  split_ifs,
-  { exact finset.prod_nonneg (λ x _, hf _) },
-  { exact zero_le_one }
-end
-
-lemma finprod_in_nonneg {p : α → Prop} {f : α → R} (hf : ∀ x, p x → 0 ≤ f x) :
-  0 ≤ ∏ᶠ x (h : p x), f x :=
-finprod_nonneg $ λ x, finprod_nonneg $ hf x
-
-lemma finprod_eq_zero {f : α → R} {x : α}
-  (hx : f x = 0) (hf : finite (mul_support f)) :
-  ∏ᶠ x, f x = 0 :=
-begin
-  nontriviality,
-  rw [finprod_eq_prod f hf],
-  refine finset.prod_eq_zero (hf.mem_to_finset.2 _) hx,
-  simp [hx]
-end
-
-end finprod
-
 noncomputable theory
 
+/-- Partition of unity, purely algebraic version. -/
 structure partition_of_unity (s : set α) :=
 (ι : Type u)
 (to_fun : ι → α → R)
 (point_finite' : ∀ x, finite {i | to_fun i x ≠ 0})
-(nonneg' : ∀ i x, 0 ≤ to_fun i x)
+(nonneg' : 0 ≤ to_fun)
 (sum_eq_one' : ∀ x ∈ s, ∑ᶠ i, to_fun i x = 1)
 (sum_le_one' : ∀ x, ∑ᶠ i, to_fun i x ≤ 1)
+
+structure bump_covering (s : set α) :=
+(ι : Type u)
+(to_fun : ι → α → R)
+(point_finite' : ∀ x, finite {i | to_fun i x ≠ 0})
+(nonneg' : 0 ≤ to_fun)
+(le_one' : to_fun ≤ 1)
+(exists_eq_one' : ∀ x ∈ s, ∃ i, to_fun i x = 1)
+
+namespace bump_covering
 
 namespace partition_of_unity
 
@@ -51,12 +33,15 @@ section gen
 
 variables {R} {ι : Type u} [linear_order ι]
 
+/-- Given a point finite family of "bump" functions `f`, `partition_of_unity.gen_fun f` is a family
+of functions that define the partition of unity corresponding to the family `f`. See
+`parition_of_unity.of_bump_functions` for the bundled version. -/
 def gen_fun (f : ι → α → R) (i : ι) (x : α) : R :=
 f i x * ∏ᶠ j < i, (1 - f j x)
 
 lemma gen_fun_nonneg (f : ι → α → R) (h₀ : ∀ i, 0 ≤ f i) (h₁ : ∀ i, f i ≤ 1) (i : ι) (x : α) :
   0 ≤ gen_fun f i x :=
-mul_nonneg (h₀ i x) $ finprod_in_nonneg $ λ j hj, sub_nonneg.2 $ h₁ _ _
+mul_nonneg (h₀ i x) $ finprod_cond_nonneg $ λ j hj, sub_nonneg.2 $ h₁ _ _
 
 lemma gen_fun_zero_of_zero (f : ι → α → R) {i : ι} {x : α} (h : f i x = 0) :
   gen_fun f i x = 0 :=
@@ -76,7 +61,7 @@ begin
     finset.prod_one_sub_ordered, sub_sub_cancel],
   refine finset.sum_congr rfl (λ i hi, _),
   simp only [gen_fun],
-  refine congr_arg _ (finprod_in_eq_prod_of_mem_iff _ _),
+  refine congr_arg _ (finprod_cond_eq_prod_of_cond_iff _ _),
   simp { contextual := tt }
 end
 
@@ -96,7 +81,9 @@ begin
   exact finprod_nonneg (λ i, sub_nonneg.2 (h₁ _ _))
 end
 
-def of_gen_fun (f : ι → α → R) (h₀ : 0 ≤ f) (h₁ : f ≤ 1) (h : ∀ x, finite {i | f i x ≠ 0}) (s : set α) (hs : ∀ x ∈ s, ∃ i, f i x = 1) :
+/-- A point finite family of "bump" functions defines a partition of unity, bundled version. -/
+def of_bump_functions (f : ι → α → R) (h₀ : 0 ≤ f) (h₁ : f ≤ 1) (h : ∀ x, finite {i | f i x ≠ 0})
+  (s : set α) (hs : ∀ x ∈ s, ∃ i, f i x = 1) :
   partition_of_unity R s :=
 { ι := ι,
   to_fun := gen_fun f,
@@ -104,6 +91,8 @@ def of_gen_fun (f : ι → α → R) (h₀ : 0 ≤ f) (h₁ : f ≤ 1) (h : ∀ 
   nonneg' := gen_fun_nonneg _ h₀ h₁,
   sum_eq_one' := λ x hx, sum_gen_fun_of_eq_one _ _ (h _) (hs x hx),
   sum_le_one' := λ x, sum_gen_fun_le_one _ _ (h _) h₁ }
+
+lemma of_bump_function_eq_zero_of_zero
 
 end gen
 
