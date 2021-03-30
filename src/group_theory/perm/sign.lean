@@ -213,6 +213,77 @@ def support [fintype α] (f : perm α) : finset α := univ.filter (λ x, f x ≠
 @[simp] lemma mem_support [fintype α] {f : perm α} {x : α} : x ∈ f.support ↔ f x ≠ x :=
 by simp only [support, true_and, mem_filter, mem_univ]
 
+@[simp] lemma support_eq_empty_iff [fintype α] {σ : perm α} : σ.support = ∅ ↔ σ = 1 :=
+by simp_rw [finset.ext_iff, mem_support, finset.not_mem_empty, iff_false, not_not,
+  equiv.perm.ext_iff, one_apply]
+
+@[simp] lemma support_one [fintype α] : (1 : perm α).support = ∅ :=
+by rw support_eq_empty_iff
+
+@[simp] lemma card_support_eq_zero_iff [fintype α] {σ : perm α} : σ.support.card = 0 ↔ σ = 1 :=
+by rw [finset.card_eq_zero, support_eq_empty_iff]
+
+@[simp] lemma card_support_one [fintype α] : (1 : perm α).support.card = 0 :=
+by rw card_support_eq_zero_iff
+
+lemma card_support_ne_one [fintype α] (σ : perm α) : σ.support.card ≠ 1 :=
+begin
+  intro h,
+  obtain ⟨a, ha⟩ := finset.card_eq_one.mp h,
+  have h1 : σ a ≠ a,
+  { rw [←mem_support, ha, finset.mem_singleton] },
+  have h2 : σ (σ a) = σ a,
+  { rwa [←@not_not (σ (σ a) = σ a), ←ne, ←mem_support, ha, finset.mem_singleton] },
+  exact h1 (σ.apply_eq_iff_eq.mp h2),
+end
+
+lemma disjoint_iff_support_disjoint [fintype α] {σ τ : equiv.perm α} :
+  disjoint σ τ ↔ _root_.disjoint σ.support τ.support :=
+begin
+  rw [disjoint, _root_.disjoint, finset.inf_eq_inter, finset.le_iff_subset, finset.subset_iff],
+  apply forall_congr,
+  intro a,
+  rw [finset.mem_inter, mem_support, mem_support, ←not_or_distrib, not_imp_comm],
+  rw [imp_iff_right],
+  exact finset.not_mem_empty a,
+end
+
+lemma support_mul_of_disjoint [fintype α] {σ τ : equiv.perm α} (h : disjoint σ τ) :
+  (σ * τ).support = σ.support ∪ τ.support :=
+begin
+  ext a,
+  simp_rw [finset.mem_union, mem_support, mul_apply, ←not_and_distrib, not_iff_not],
+  cases h a with hσ hτ,
+  { rw [and_iff_right hσ],
+    cases h (τ a) with hτ hτ,
+    { rw hτ },
+    { rw τ.apply_eq_iff_eq at hτ,
+      rw [hτ, hσ] } },
+  { rw [hτ, and_iff_left rfl] },
+end
+
+lemma card_support_mul_of_disjoint [fintype α] {σ τ : equiv.perm α} (h : equiv.perm.disjoint σ τ) :
+  (σ * τ).support.card = σ.support.card + τ.support.card :=
+by rw [support_mul_of_disjoint h, finset.card_disjoint_union (disjoint_iff_support_disjoint.mp h)]
+
+lemma support_prod_of_disjoint [fintype α] {l : list (equiv.perm α)}
+  (hl : list.pairwise disjoint l) : l.prod.support = (l.map support).foldr (∪) ∅ :=
+begin
+  induction l with σ l ih,
+  { exact support_one },
+  { rw [list.prod_cons, list.map_cons, list.foldr_cons, ←ih (list.pairwise_cons.mp hl).2],
+    exact support_mul_of_disjoint (disjoint_prod_right l (list.pairwise_cons.mp hl).1) },
+end
+
+lemma card_support_prod_of_disjoint [fintype α] {l : list (equiv.perm α)}
+  (hl : list.pairwise disjoint l) : l.prod.support.card = (l.map (finset.card ∘ support)).sum :=
+begin
+  induction l with σ l ih,
+  { exact congr_arg finset.card support_one },
+  { rw [list.prod_cons, list.map_cons, list.sum_cons, ←ih (list.pairwise_cons.mp hl).2],
+    exact card_support_mul_of_disjoint (disjoint_prod_right l (list.pairwise_cons.mp hl).1) },
+end
+
 lemma support_pow_le [fintype α] (σ : perm α) (n : ℤ) :
   (σ ^ n).support ≤ σ.support :=
 λ x h1, mem_support.mpr (λ h2, mem_support.mp h1 (gpow_apply_eq_self_of_apply_eq_self h2 n))

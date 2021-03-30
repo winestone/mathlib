@@ -9,26 +9,50 @@ namespace equiv.perm
 
 variables {α : Type*} [decidable_eq α] [fintype α]
 
-lemma card_support_eq_zero {σ : equiv.perm α} : σ.support.card = 0 ↔ σ = 1 :=
-by simp_rw [finset.card_eq_zero, finset.ext_iff, mem_support, finset.not_mem_empty, iff_false,
-  not_not, equiv.perm.ext_iff, one_apply]
-
-lemma support_one : (1 : equiv.perm α).support = ∅ :=
+lemma cycle_factors_one [linear_order α] : (1 : equiv.perm α).cycle_factors =
+  ⟨list.nil, rfl, λ g hg, false.rec _ hg, list.pairwise.nil⟩ :=
 begin
-  ext a,
-  rw [support, finset.mem_filter, one_apply, ne, ne_self_iff_false a, and_false],
-  refl,
+  ext1,
+  apply list.eq_nil_iff_forall_not_mem.mpr,
+  intros τ hτ,
+  have h1 := card_support_prod_of_disjoint (1 : equiv.perm α).cycle_factors.2.2.2,
+  rw [(1 : equiv.perm α).cycle_factors.2.1, support_one, finset.card_empty] at h1,
+  have h3 := (1 : equiv.perm α).cycle_factors.2.2.1 τ hτ,
+  rw card_support_eq_zero_iff.mp ((list.sum_eq_zero_iff _).mp h1.symm τ.support.card
+    (list.mem_map_of_mem (finset.card ∘ support) hτ)) at h3,
+  obtain ⟨a, ha1, ha2⟩ := h3,
+  exact ha1 rfl,
 end
 
-lemma card_support_ne_one (σ : equiv.perm α) : σ.support.card ≠ 1 :=
+lemma card_cycle_type_eq_zero_iff {σ : equiv.perm α} :
+  σ.cycle_type.parts.card = 0 ↔ σ = 1 :=
 begin
-  intro h,
-  obtain ⟨a, ha⟩ := finset.card_eq_one.mp h,
-  have h1 : σ a ≠ a,
-  { rw [←mem_support, ha, finset.mem_singleton] },
-  have h2 : σ (σ a) = σ a,
-  { rwa [←@not_not (_ = _), ←ne, ←mem_support, ha, finset.mem_singleton] },
-  exact h1 (σ.apply_eq_iff_eq.mp h2),
+  rw [cycle_type, multiset.coe_card, list.length_map, list.length_eq_zero],
+  split,
+  { intro h,
+    rw [←σ.cycle_factors.2.1, h, list.prod_nil] },
+  { rintro rfl,
+    rw cycle_factors_one },
+end
+
+lemma cycle_factors_is_cycle {σ : equiv.perm α} (hσ : is_cycle σ) : σ.cycle_factors =
+  ⟨[σ], one_mul σ, λ g hg, (congr_arg is_cycle (list.mem_singleton.mp hg)).mpr hσ,
+  list.pairwise_singleton disjoint σ⟩ :=
+begin
+  ext1,
+  change ↑σ.cycle_factors = [σ],
+  sorry,
+end
+
+lemma card_cycle_type_eq_one_iff {σ : equiv.perm α} :
+  σ.cycle_type.parts.card = 1 ↔ is_cycle σ :=
+begin
+  rw [cycle_type, multiset.coe_card, list.length_map, list.length_eq_one],
+  split,
+  { rintro ⟨τ, hτ⟩,
+    apply σ.cycle_factors.2.2.1,
+    rw [hτ, list.mem_singleton, ←σ.cycle_factors.2.1, hτ, list.prod_singleton] },
+  { exact λ h, ⟨σ, by rw cycle_factors_is_cycle h⟩ },
 end
 
 lemma disjoint_iff_support_disjoint {σ τ : equiv.perm α} :
@@ -116,7 +140,7 @@ begin
   have h1 := card_support_prod_of_disjoint (1 : equiv.perm α).cycle_factors.2.2.2,
   rw [(1 : equiv.perm α).cycle_factors.2.1, support_one, finset.card_empty] at h1,
   have h3 := (1 : equiv.perm α).cycle_factors.2.2.1 τ hτ,
-  rw card_support_eq_zero.mp ((list.sum_eq_zero_iff _).mp h1.symm τ.support.card
+  rw card_support_eq_zero_iff.mp ((list.sum_eq_zero_iff _).mp h1.symm τ.support.card
     (list.mem_map_of_mem (finset.card ∘ support) hτ)) at h3,
   obtain ⟨a, ha1, ha2⟩ := h3,
   exact ha1 rfl,
