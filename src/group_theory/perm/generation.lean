@@ -9,21 +9,23 @@ namespace equiv.perm
 
 variables {α : Type*} [decidable_eq α] [fintype α]
 
-/-lemma support_one : (1 : equiv.perm α).support = ∅ :=
+lemma support_one : (1 : equiv.perm α).support = ∅ :=
 begin
   ext a,
   rw [support, finset.mem_filter, one_apply, ne, ne_self_iff_false a, and_false],
   refl,
-end-/
+end
 
-/-lemma support_mul_le (σ τ : equiv.perm α) : (σ * τ).support ≤ σ.support ∪ τ.support :=
+lemma card_support_ne_one (σ : equiv.perm α) : σ.support.card ≠ 1 :=
 begin
-  intros a,
-  rw [finset.mem_union, mem_support, mem_support, mem_support, mul_apply, ←not_and_distrib,
-      not_imp_not, and_imp],
-  intros hσ hτ,
-  rw [hτ, hσ],
-end-/
+  intro h,
+  obtain ⟨a, ha⟩ := finset.card_eq_one.mp h,
+  have h1 : σ a ≠ a,
+  { rw [←mem_support, ha, finset.mem_singleton] },
+  have h2 : σ (σ a) = σ a,
+  { rwa [←@not_not (_ = _), ←ne, ←mem_support, ha, finset.mem_singleton] },
+  exact h1 (σ.apply_eq_iff_eq.mp h2),
+end
 
 lemma disjoint_iff_support_disjoint {σ τ : equiv.perm α} :
   disjoint σ τ ↔ _root_.disjoint σ.support τ.support :=
@@ -50,43 +52,80 @@ begin
   { rw [hτ, and_iff_left rfl] },
 end
 
-lemma card_support_mul_of_disjoint {α : Type*} [decidable_eq α] [fintype α]
-  {σ τ : equiv.perm α} (h : equiv.perm.disjoint σ τ) :
+lemma card_support_mul_of_disjoint {σ τ : equiv.perm α} (h : equiv.perm.disjoint σ τ) :
   (σ * τ).support.card = σ.support.card + τ.support.card :=
 by rw [support_mul_of_disjoint h, finset.card_disjoint_union (disjoint_iff_support_disjoint.mp h)]
 
---support_prod_of_disjoint
-
---card_support_prod_of_disjoint
-
-lemma key_lemma {α : Type*} [decidable_eq α] [fintype α] {l : list (equiv.perm α)}
-  (hl : list.pairwise equiv.perm.disjoint l) :
-  l.prod.support.card = (l.map (finset.card ∘ equiv.perm.support)).sum :=
+lemma support_prod_of_disjoint {l : list (equiv.perm α)} (hl : list.pairwise disjoint l) :
+  l.prod.support = (l.map support).foldr (∪) ∅ :=
 begin
   induction l with σ l ih,
-  { rw [list.prod_nil, list.map_nil, list.sum_nil, equiv.perm.support_one, finset.card_empty] },
-  { rw [list.prod_cons, list.map_cons, list.sum_cons, ←ih (list.pairwise_cons.mp hl).2],
-    have key := equiv.perm.disjoint_prod_right l (list.pairwise_cons.mp hl).1,
-    sorry },
+  { exact support_one },
+  { rw [list.prod_cons, list.map_cons, list.foldr_cons, ←ih (list.pairwise_cons.mp hl).2],
+    exact support_mul_of_disjoint (disjoint_prod_right l (list.pairwise_cons.mp hl).1) },
 end
 
-noncomputable def equiv.perm.to_partition {α : Type*} [fintype α] [linear_order α] (σ : equiv.perm α) :
-  partition σ.support.card :=
+lemma card_support_prod_of_disjoint {l : list (equiv.perm α)} (hl : list.pairwise disjoint l) :
+  l.prod.support.card = (l.map (finset.card ∘ support)).sum :=
+begin
+  induction l with σ l ih,
+  { exact congr_arg finset.card support_one },
+  { rw [list.prod_cons, list.map_cons, list.sum_cons, ←ih (list.pairwise_cons.mp hl).2],
+    exact card_support_mul_of_disjoint (disjoint_prod_right l (list.pairwise_cons.mp hl).1) },
+end
+
+--todo: avoid this
+variables [linear_order α]
+
+noncomputable def cycle_type (σ : equiv.perm α) : partition σ.support.card :=
 ⟨↑(list.map (λ τ : equiv.perm α, τ.support.card) σ.cycle_factors.val), λ n hn, by
 { rw [multiset.mem_coe, list.mem_map] at hn,
   obtain ⟨τ, hτ, rfl⟩ := hn,
-  rw ← equiv.perm.order_of_is_cycle (σ.cycle_factors.mem.2.1 τ hτ),
-  exact order_of_pos τ }, by rw [subtype.val_eq_coe, multiset.coe_sum,
-    ←σ.cycle_factors.mem.1, key_lemma σ.cycle_factors.mem.2.2, σ.cycle_factors.mem.1]⟩
+  rw ← order_of_is_cycle (σ.cycle_factors.mem.2.1 τ hτ),
+  exact order_of_pos τ },
+  by rw [subtype.val_eq_coe, multiset.coe_sum, ←σ.cycle_factors.mem.1,
+    card_support_prod_of_disjoint σ.cycle_factors.mem.2.2, σ.cycle_factors.mem.1]⟩
 
-lemma lem3 {α : Type*} [fintype α] [linear_order α] {σ : equiv.perm α}
-  (h0 : (order_of σ).prime) (h1 : order_of σ < 2 * fintype.card α) :
-  equiv.perm.is_cycle σ :=
+lemma one_lt_of_mem_cycle_type {σ : equiv.perm α} {n : ℕ} (h : n ∈ σ.cycle_type.parts) :
+  1 < n :=
 begin
-  obtain ⟨s, h2, h3, h4⟩ := equiv.perm.cycle_factors σ,
+  rw nat.one_lt_iff_ne_zero_and_ne_one,
+  split,
+  { exact ne_of_gt (σ.cycle_type.parts_pos h) },
+  { rw [cycle_type, multiset.mem_coe, list.mem_map] at h,
+    obtain ⟨τ, hτ, rfl⟩ := h,
+    have key := σ.cycle_factors.2.2.1 τ hτ,
+    exact τ.card_support_ne_one },
+end
 
+lemma dvd_of_mem_cycle_type {σ : equiv.perm α} {n : ℕ} (h : n ∈ σ.cycle_type.parts) :
+  n ∣ order_of σ :=
+begin
   sorry,
 end
+
+lemma card_cycle_type_eq_one_iff {σ : equiv.perm α} :
+  σ.cycle_type.parts.card = 1 ↔ is_cycle σ :=
+begin
+  sorry,
+end
+
+lemma lem2 {σ : equiv.perm α} (h0 : (order_of σ).prime) (h1 : σ.support.card < 2 * order_of σ) :
+  is_cycle σ :=
+begin
+  have step1 : ∀ n ∈ σ.cycle_type.parts, n = order_of σ :=
+  λ n hn, (h0.2 n (dvd_of_mem_cycle_type hn)).resolve_left
+    (ne_of_gt (one_lt_of_mem_cycle_type hn)),
+  have step2 := multiset.eq_repeat_of_mem step1,
+  rw [←σ.cycle_type.parts_sum, step2, multiset.sum_repeat, nat.nsmul_eq_mul] at h1,
+  have step3 : σ.cycle_type.parts.card = 1,
+  { sorry },
+  exact card_cycle_type_eq_one_iff.mp step3,
+end
+
+lemma lem3 {σ : equiv.perm α} (h0 : (order_of σ).prime) (h1 : fintype.card α < 2 * order_of σ) :
+  equiv.perm.is_cycle σ :=
+lem2 h0 (lt_of_le_of_lt σ.support.card_le_univ h1)
 
 end equiv.perm
 
@@ -207,6 +246,7 @@ begin
   have key := lem3,
   rw h1 at key,
   exact key h0 ((lt_mul_iff_one_lt_left (nat.prime.pos h0)).mpr one_lt_two),
+  apply_instance,
   apply_instance,
 end
 
