@@ -1,6 +1,96 @@
 import group_theory.perm.cycles
 import group_theory.group_action.basic
 import group_theory.sylow
+import combinatorics.partition
+
+section preliminaries
+
+namespace equiv.perm
+
+variables {α : Type*} [decidable_eq α] [fintype α]
+
+/-lemma support_one : (1 : equiv.perm α).support = ∅ :=
+begin
+  ext a,
+  rw [support, finset.mem_filter, one_apply, ne, ne_self_iff_false a, and_false],
+  refl,
+end-/
+
+/-lemma support_mul_le (σ τ : equiv.perm α) : (σ * τ).support ≤ σ.support ∪ τ.support :=
+begin
+  intros a,
+  rw [finset.mem_union, mem_support, mem_support, mem_support, mul_apply, ←not_and_distrib,
+      not_imp_not, and_imp],
+  intros hσ hτ,
+  rw [hτ, hσ],
+end-/
+
+lemma disjoint_iff_support_disjoint {σ τ : equiv.perm α} :
+  disjoint σ τ ↔ _root_.disjoint σ.support τ.support :=
+begin
+  rw [disjoint, _root_.disjoint, finset.inf_eq_inter, finset.le_iff_subset, finset.subset_iff],
+  apply forall_congr,
+  intro a,
+  rw [finset.mem_inter, mem_support, mem_support, ←not_or_distrib, not_imp_comm],
+  rw [imp_iff_right],
+  exact finset.not_mem_empty a,
+end
+
+lemma support_mul_of_disjoint {σ τ : equiv.perm α} (h : disjoint σ τ) :
+  (σ * τ).support = σ.support ∪ τ.support :=
+begin
+  ext a,
+  simp_rw [finset.mem_union, mem_support, mul_apply, ←not_and_distrib, not_iff_not],
+  cases h a with hσ hτ,
+  { rw [and_iff_right hσ],
+    cases h (τ a) with hτ hτ,
+    { rw hτ },
+    { rw τ.apply_eq_iff_eq at hτ,
+      rw [hτ, hσ] } },
+  { rw [hτ, and_iff_left rfl] },
+end
+
+lemma card_support_mul_of_disjoint {α : Type*} [decidable_eq α] [fintype α]
+  {σ τ : equiv.perm α} (h : equiv.perm.disjoint σ τ) :
+  (σ * τ).support.card = σ.support.card + τ.support.card :=
+by rw [support_mul_of_disjoint h, finset.card_disjoint_union (disjoint_iff_support_disjoint.mp h)]
+
+--support_prod_of_disjoint
+
+--card_support_prod_of_disjoint
+
+lemma key_lemma {α : Type*} [decidable_eq α] [fintype α] {l : list (equiv.perm α)}
+  (hl : list.pairwise equiv.perm.disjoint l) :
+  l.prod.support.card = (l.map (finset.card ∘ equiv.perm.support)).sum :=
+begin
+  induction l with σ l ih,
+  { rw [list.prod_nil, list.map_nil, list.sum_nil, equiv.perm.support_one, finset.card_empty] },
+  { rw [list.prod_cons, list.map_cons, list.sum_cons, ←ih (list.pairwise_cons.mp hl).2],
+    have key := equiv.perm.disjoint_prod_right l (list.pairwise_cons.mp hl).1,
+    sorry },
+end
+
+noncomputable def equiv.perm.to_partition {α : Type*} [fintype α] [linear_order α] (σ : equiv.perm α) :
+  partition σ.support.card :=
+⟨↑(list.map (λ τ : equiv.perm α, τ.support.card) σ.cycle_factors.val), λ n hn, by
+{ rw [multiset.mem_coe, list.mem_map] at hn,
+  obtain ⟨τ, hτ, rfl⟩ := hn,
+  rw ← equiv.perm.order_of_is_cycle (σ.cycle_factors.mem.2.1 τ hτ),
+  exact order_of_pos τ }, by rw [subtype.val_eq_coe, multiset.coe_sum,
+    ←σ.cycle_factors.mem.1, key_lemma σ.cycle_factors.mem.2.2, σ.cycle_factors.mem.1]⟩
+
+lemma lem3 {α : Type*} [fintype α] [linear_order α] {σ : equiv.perm α}
+  (h0 : (order_of σ).prime) (h1 : order_of σ < 2 * fintype.card α) :
+  equiv.perm.is_cycle σ :=
+begin
+  obtain ⟨s, h2, h3, h4⟩ := equiv.perm.cycle_factors σ,
+
+  sorry,
+end
+
+end equiv.perm
+
+end preliminaries
 
 open subgroup equiv equiv.perm
 
@@ -109,16 +199,6 @@ begin
   rwa [hm, pow_mul, ←finset.card_univ, ←h2, ←order_of_is_cycle h1,
     pow_order_of_eq_one, one_pow, one_apply] at hi,
 end
-
-lemma lem3 {α : Type*} [fintype α] [linear_order α] {σ : perm α}
-  (h0 : (order_of σ).prime) (h1 : order_of σ < 2 * fintype.card α) :
-  is_cycle σ :=
-begin
-  obtain ⟨s, h2, h3⟩ := cycle_factors σ,
-  sorry,
-end
-
-example {n : ℕ} (hn : 0 < n) (hn' : 1 < 2) : n < 2 * n := (lt_mul_iff_one_lt_left hn).mpr hn'
 
 lemma lem4 {α : Type*} [fintype α] [linear_order α] {σ : perm α}
   (h0 : (fintype.card α).prime) (h1 : order_of σ = fintype.card α) :
