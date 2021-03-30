@@ -793,6 +793,18 @@ variables [borel_space E] [second_countable_topology E] [complete_space E]
   ∫ a, (f a : 𝕜) ∂μ = ↑∫ a, f a ∂μ :=
 linear_isometry.integral_comp_comm is_R_or_C.of_real_li f
 
+lemma integral_re {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜] {f : α → 𝕜}
+  (hf : integrable f μ) :
+  ∫ a, is_R_or_C.re (f a) ∂μ = is_R_or_C.re ∫ a, f a ∂μ :=
+@continuous_linear_map.integral_comp_comm α 𝕜 ℝ _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  is_R_or_C.re_clm _ hf
+
+lemma integral_im {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜] {f : α → 𝕜}
+  (hf : integrable f μ) :
+  ∫ a, is_R_or_C.im (f a) ∂μ = is_R_or_C.im ∫ a, f a ∂μ :=
+@continuous_linear_map.integral_comp_comm α 𝕜 ℝ _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  is_R_or_C.im_clm _ hf
+
 lemma integral_conj {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜] {f : α → 𝕜} :
   ∫ a, is_R_or_C.conj (f a) ∂μ = is_R_or_C.conj ∫ a, f a ∂μ :=
 linear_isometry.integral_comp_comm is_R_or_C.conj_li f
