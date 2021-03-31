@@ -299,8 +299,11 @@ lemma ae_eq_of_ae_eq_trim {m m0 : measurable_space α} (hm : m ≤ m0) {μ : mea
   f₁ =ᵐ[μ] f₂ :=
 ae_eq_null_of_trim hm h12
 
-lemma ae_const_le_iff_forall_lt_measure_zero [measurable_space α] {μ : measure α} (f : α → ℝ)
-  (c : ℝ) :
+section ae_eq_of_forall_set_integral_eq
+variables [measurable_space α] {μ : measure α}
+
+/-- TODO: write a statement about ess_inf -/
+lemma ae_const_le_iff_forall_lt_measure_zero (f : α → ℝ) (c : ℝ) :
   (∀ᵐ x ∂μ, c ≤ f x) ↔ ∀ b < c, μ {x | f x ≤ b} = 0 :=
 begin
   rw ae_iff,
@@ -323,14 +326,8 @@ begin
     { simp [hbc], }, },
 end
 
-lemma ae_le_const_iff_forall_lt_measure_zero [measurable_space α] {μ : measure α} (f : α → ℝ)
-  (c : ℝ) :
-  (∀ᵐ x ∂μ, f x ≤ c) ↔ ∀ b > c, μ {x | b ≤ f x} = 0 :=
-sorry
-
-lemma ae_nonneg_of_forall_set_ℝ_measurable [measurable_space α] {μ : measure α} [finite_measure μ]
-  (f : α → ℝ) (hf : integrable f μ) (hfm : measurable f)
-  (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
+lemma ae_nonneg_of_forall_set_ℝ_measurable [finite_measure μ] (f : α → ℝ) (hf : integrable f μ)
+  (hfm : measurable f) (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
   0 ≤ᵐ[μ] f :=
 begin
   simp_rw [eventually_le, pi.zero_apply],
@@ -359,9 +356,8 @@ begin
   { exact absurd hμs_to_real (measure_ne_top _ _), },
 end
 
-lemma ae_eq_zero_of_forall_set_ℝ_measurable [measurable_space α] {μ : measure α} [finite_measure μ]
-  (f : α → ℝ) (hf : integrable f μ) (hfm : measurable f)
-  (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
+lemma ae_eq_zero_of_forall_set_ℝ_measurable [finite_measure μ] (f : α → ℝ) (hf : integrable f μ)
+  (hfm : measurable f) (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
   f =ᵐ[μ] 0 :=
 begin
   suffices h_and : f ≤ᵐ[μ] 0 ∧ 0 ≤ᵐ[μ] f,
@@ -383,8 +379,8 @@ begin
   exact ae_nonneg_of_forall_set_ℝ_measurable (-f) hf_neg hfm_neg hf_zero_neg,
 end
 
-lemma ae_eq_zero_of_forall_set_ℝ [measurable_space α] {μ : measure α} [finite_measure μ] (f : α → ℝ)
-  (hf : integrable f μ) (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
+lemma ae_eq_zero_of_forall_set_ℝ [finite_measure μ] (f : α → ℝ) (hf : integrable f μ)
+  (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
   f =ᵐ[μ] 0 :=
 begin
   rcases hf with ⟨⟨f', hf'_meas, hf_ae⟩, hf_finite_int⟩,
@@ -397,16 +393,10 @@ begin
   exact hf_ae.trans (ae_eq_zero_of_forall_set_ℝ_measurable f' hf'_integrable hf'_meas hf'_zero),
 end
 
-lemma forall_inner_eq_zero_iff (x : E) :
-  (∀ c : E, inner c x = (0 : 𝕜)) ↔ x = 0 :=
-begin
-  split; intro hx,
-  { rw ← inner_self_eq_zero,
-    exact hx x, },
-  { simp [hx], },
-end
+lemma forall_inner_eq_zero_iff (x : E) : (∀ c : E, inner c x = (0 : 𝕜)) ↔ x = 0 :=
+⟨λ hx, inner_self_eq_zero.mp (hx x), λ hx, by simp [hx]⟩
 
-lemma ae_eq_zero_of_forall_inner_ae_eq_zero [measurable_space α] (μ : measure α) (f : α → E)
+lemma ae_eq_zero_of_forall_inner_ae_eq_zero (μ : measure α) (f : α → E)
   (hf : ∀ c : E, ∀ᵐ x ∂μ, inner c (f x) = (0 : 𝕜)) :
   f =ᵐ[μ] 0 :=
 begin
@@ -425,18 +415,15 @@ begin
   exact @is_closed_property ℕ E _ s (λ c, inner c (f x) = (0 : 𝕜)) hs h_closed (λ n, hx n) _,
 end
 
-lemma ae_measurable.re [measurable_space α] {μ : measure α}
-  [finite_measure μ] {f : α → 𝕜} (hf : ae_measurable f μ) :
+lemma ae_measurable.re [finite_measure μ] {f : α → 𝕜} (hf : ae_measurable f μ) :
   ae_measurable (λ x, is_R_or_C.re (f x)) μ :=
 measurable.comp_ae_measurable is_R_or_C.continuous_re.measurable hf
 
-lemma ae_measurable.im [measurable_space α] {μ : measure α}
-  [finite_measure μ] {f : α → 𝕜} (hf : ae_measurable f μ) :
+lemma ae_measurable.im [finite_measure μ] {f : α → 𝕜} (hf : ae_measurable f μ) :
   ae_measurable (λ x, is_R_or_C.im (f x)) μ :=
 measurable.comp_ae_measurable is_R_or_C.continuous_im.measurable hf
 
-lemma integrable.re [measurable_space α] {μ : measure α}
-  [finite_measure μ] {f : α → 𝕜} (hf : integrable f μ) :
+lemma integrable.re [finite_measure μ] {f : α → 𝕜} (hf : integrable f μ) :
   integrable (λ x, is_R_or_C.re (f x)) μ :=
 begin
   have h_norm_le : ∀ a, ∥is_R_or_C.re (f a)∥ ≤ ∥f a∥,
@@ -446,8 +433,7 @@ begin
   exact integrable.mono hf (ae_measurable.re hf.1) (eventually_of_forall h_norm_le),
 end
 
-lemma integrable.im [measurable_space α] {μ : measure α}
-  [finite_measure μ] {f : α → 𝕜} (hf : integrable f μ) :
+lemma integrable.im [finite_measure μ] {f : α → 𝕜} (hf : integrable f μ) :
   integrable (λ x, is_R_or_C.im (f x)) μ :=
 begin
   have h_norm_le : ∀ a, ∥is_R_or_C.im (f a)∥ ≤ ∥f a∥,
@@ -458,8 +444,8 @@ begin
 end
 
 include 𝕜
-lemma integrable.const_inner [measurable_space α] {μ : measure α}
-  [finite_measure μ] [complete_space E] {f : α → E} (hf : integrable f μ) (c : E) :
+lemma integrable.const_inner [finite_measure μ] [complete_space E] {f : α → E} (hf : integrable f μ)
+  (c : E) :
   integrable (λ x, (inner c (f x) : 𝕜)) μ :=
 begin
   have hf_const_mul : integrable (λ x, ∥c∥ * ∥f x∥) μ, from integrable.const_mul hf.norm (∥c∥),
@@ -470,15 +456,13 @@ begin
   simp,
 end
 
-lemma integral_const_inner [measurable_space α] {μ : measure α}
-  [complete_space E] {f : α → E} (hf : integrable f μ) (c : E) :
+lemma integral_const_inner [complete_space E] {f : α → E} (hf : integrable f μ) (c : E) :
   ∫ x, (inner c (f x) : 𝕜) ∂μ = inner c (∫ x, f x ∂μ) :=
 @continuous_linear_map.integral_comp_comm α E 𝕜 _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
   (inner_right c) _ hf
 
-lemma ae_eq_zero_of_forall_set [measurable_space α] {μ : measure α}
-  [finite_measure μ] [complete_space E] (f : α → E) (hf : integrable f μ)
-  (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
+lemma ae_eq_zero_of_forall_set [finite_measure μ] [complete_space E] (f : α → E)
+  (hf : integrable f μ) (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
   f =ᵐ[μ] 0 :=
 begin
   refine ae_eq_zero_of_forall_inner_ae_eq_zero μ f (λ c, _),
@@ -515,8 +499,8 @@ begin
   exact ⟨h_zero_re, h_zero_im⟩,
 end
 
-lemma ae_eq_of_forall_set_integral_eq [measurable_space α] {μ : measure α} [finite_measure μ]
-  [complete_space E] (f g : α → E) (hf : integrable f μ) (hg : integrable g μ)
+lemma ae_eq_of_forall_set_integral_eq [finite_measure μ] [complete_space E] (f g : α → E)
+  (hf : integrable f μ) (hg : integrable g μ)
   (hfg : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = ∫ x in s, g x ∂μ) :
   f =ᵐ[μ] g :=
 begin
@@ -531,6 +515,8 @@ begin
   exact ae_eq_zero_of_forall_set (f-g) (hf.sub hg) hfg',
 end
 omit 𝕜
+
+end ae_eq_of_forall_set_integral_eq
 
 lemma integral_trim {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
   [normed_group E] [borel_space E] [second_countable_topology E] [complete_space E]
