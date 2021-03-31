@@ -544,7 +544,7 @@ begin
   exact subtype.coe_injective
 end
 
-@[to_additive] lemma finprod_set_coe_eq_finprod_finprod (p : α → Prop) :
+@[to_additive] lemma finprod_subtype_eq_finprod_cond (p : α → Prop) :
   ∏ᶠ j : subtype p, f j = ∏ᶠ i (hi : p i), f i :=
 finprod_set_coe_eq_finprod_mem {i | p i}
 
@@ -635,7 +635,7 @@ lemma finprod_cond_nonneg {R : Type*} [ordered_comm_semiring R] {p : α → Prop
   0 ≤ ∏ᶠ x (h : p x), f x :=
 finprod_nonneg $ λ x, finprod_nonneg $ hf x
 
-lemma finprod_eq_zero {M₀ : Type*} [comm_monoid_with_zero M₀] {f : α → M₀} {x : α}
+lemma finprod_eq_zero {M₀ : Type*} [comm_monoid_with_zero M₀] (f : α → M₀) (x : α)
   (hx : f x = 0) (hf : finite (mul_support f)) :
   ∏ᶠ x, f x = 0 :=
 begin
