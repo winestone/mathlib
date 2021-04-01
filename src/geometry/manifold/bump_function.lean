@@ -6,6 +6,7 @@ Authors: Yury Kudryashov
 import analysis.calculus.specific_functions
 import geometry.manifold.diffeomorph
 import geometry.manifold.instances.real
+import topology.partition_of_unity
 
 /-!
 # Smooth bump functions on a smooth manifold
@@ -341,6 +342,8 @@ end
 
 protected lemma smooth_at {x} : smooth_at I 𝓘(ℝ) f x := f.smooth.smooth_at
 
+protected lemma continuous : continuous f := f.smooth.continuous
+
 /-- If `f : smooth_bump_function I c` is a smooth bump function and `g : M → G` is a function smooth
 on the source of the chart at `c`, then `f • g` is smooth on the whole manifold. -/
 lemma smooth_smul {G} [normed_group G] [normed_space ℝ G]
@@ -496,6 +499,19 @@ lemma mem_ext_chart_at_ind_source (x : M) (hx : x ∈ s) :
   x ∈ (ext_chart_at I (fs.c (fs.ind x hx))).source :=
 fs.mem_ext_chart_at_source_of_eq_one (fs.apply_ind x hx)
 
+def to_bump_covering [t2_space M] : bump_covering M s :=
+{ ι := fs.ι,
+  to_fun := λ i, ⟨fs i, (fs i).continuous⟩,
+  locally_finite' := fs.locally_finite,
+  nonneg' := λ i x, (fs i).nonneg,
+  le_one' := λ i x, (fs i).le_one,
+  eventually_eq_one' := fs.eventually_eq_one' }
+
+lemma smooth_to_bump_covering_to_partition_of_unity [t2_space M] (i : fs.ι) :
+  smooth I 𝓘(ℝ) (fs.to_bump_covering.to_partition_of_unity i) :=
+(fs i).smooth.mul $ smooth_finprod_cond (λ j _, smooth_const.sub (fs j).smooth) $
+  by { simp only [mul_support_one_sub], exact fs.locally_finite }
+
 section embedding
 
 /-!
@@ -602,3 +618,14 @@ begin
     with ⟨n, e, hsmooth, hinj, hinj_mfderiv⟩,
   exact ⟨n, e, hsmooth, hsmooth.continuous.closed_embedding hinj, hinj_mfderiv⟩
 end
+
+variable (M)
+
+/-- Smooth partition of unity. -/
+structure smooth_partition_of_unity (s : set M := univ) :=
+(ι : Type uM)
+(to_fun : ι → C^∞⟮I, M; 𝓘(ℝ), ℝ⟯)
+(locally_finite' : locally_finite (λ i, support (to_fun i)))
+(nonneg' : ∀ i x, 0 ≤ to_fun i x)
+(sum_eq_one' : ∀ x ∈ s, ∑ᶠ i, to_fun i x = 1)
+(sum_le_one' : ∀ x, ∑ᶠ i, to_fun i x ≤ 1)

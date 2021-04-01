@@ -35,7 +35,7 @@ end
 
 noncomputable theory
 
-/-- Partition of unity, purely algebraic version. -/
+/-- Continuous partition of unity. -/
 structure partition_of_unity (s : set X := univ) :=
 (ι : Type u)
 (to_fun : ι → C(X, ℝ))
