@@ -213,13 +213,6 @@ def support [fintype α] (f : perm α) : finset α := univ.filter (λ x, f x ≠
 @[simp] lemma mem_support [fintype α] {f : perm α} {x : α} : x ∈ f.support ↔ f x ≠ x :=
 by simp only [support, true_and, mem_filter, mem_univ]
 
-@[simp] lemma support_eq_empty_iff [fintype α] {σ : perm α} : σ.support = ∅ ↔ σ = 1 :=
-by simp_rw [finset.ext_iff, mem_support, finset.not_mem_empty, iff_false, not_not,
-  equiv.perm.ext_iff, one_apply]
-
-@[simp] lemma support_one [fintype α] : (1 : perm α).support = ∅ :=
-by rw support_eq_empty_iff
-
 lemma disjoint.mul_apply_eq_iff {σ τ : perm α} (hστ : disjoint σ τ) {a : α} :
   (σ * τ) a = a ↔ σ a = a ∧ τ a = a :=
 begin
@@ -248,28 +241,6 @@ begin
     (nat.lcm_dvd
       (order_of_dvd_of_pow_eq_one ((h (order_of (σ * τ))).mp (pow_order_of_eq_one (σ * τ))).1)
       (order_of_dvd_of_pow_eq_one ((h (order_of (σ * τ))).mp (pow_order_of_eq_one (σ * τ))).2)),
-end
-
-lemma card_support_mul_of_disjoint [fintype α] {σ τ : equiv.perm α} (h : equiv.perm.disjoint σ τ) :
-  (σ * τ).support.card = σ.support.card + τ.support.card :=
-by rw [support_mul_of_disjoint h, finset.card_disjoint_union (disjoint_iff_support_disjoint.mp h)]
-
-lemma support_prod_of_disjoint [fintype α] {l : list (equiv.perm α)}
-  (hl : list.pairwise disjoint l) : l.prod.support = (l.map support).foldr (∪) ∅ :=
-begin
-  induction l with σ l ih,
-  { exact support_one },
-  { rw [list.prod_cons, list.map_cons, list.foldr_cons, ←ih (list.pairwise_cons.mp hl).2],
-    exact support_mul_of_disjoint (disjoint_prod_right l (list.pairwise_cons.mp hl).1) },
-end
-
-lemma card_support_prod_of_disjoint [fintype α] {l : list (equiv.perm α)}
-  (hl : list.pairwise disjoint l) : l.prod.support.card = (l.map (finset.card ∘ support)).sum :=
-begin
-  induction l with σ l ih,
-  { exact congr_arg finset.card support_one },
-  { rw [list.prod_cons, list.map_cons, list.sum_cons, ←ih (list.pairwise_cons.mp hl).2],
-    exact card_support_mul_of_disjoint (disjoint_prod_right l (list.pairwise_cons.mp hl).1) },
 end
 
 lemma support_pow_le [fintype α] (σ : perm α) (n : ℤ) :
