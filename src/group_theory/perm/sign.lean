@@ -220,28 +220,34 @@ by simp_rw [finset.ext_iff, mem_support, finset.not_mem_empty, iff_false, not_no
 @[simp] lemma support_one [fintype α] : (1 : perm α).support = ∅ :=
 by rw support_eq_empty_iff
 
-lemma disjoint_iff_support_disjoint [fintype α] {σ τ : equiv.perm α} :
-  disjoint σ τ ↔ _root_.disjoint σ.support τ.support :=
+lemma disjoint.mul_apply_eq_iff {σ τ : perm α} (hστ : disjoint σ τ) {a : α} :
+  (σ * τ) a = a ↔ σ a = a ∧ τ a = a :=
 begin
-  rw [disjoint, _root_.disjoint, finset.inf_eq_inter, finset.le_iff_subset, finset.subset_iff],
-  apply forall_congr,
-  intro a,
-  rw [finset.mem_inter, mem_support, mem_support, ←not_or_distrib, not_imp_comm, imp_iff_right],
-  exact finset.not_mem_empty a,
+  refine ⟨λ h, _, λ h, by rw [mul_apply, h.2, h.1]⟩,
+  cases hστ a with hσ hτ,
+  { exact ⟨hσ, σ.injective (h.trans hσ.symm)⟩ },
+  { exact ⟨(congr_arg σ hτ).symm.trans h, hτ⟩ },
 end
 
-lemma support_mul_of_disjoint [fintype α] {σ τ : equiv.perm α} (h : disjoint σ τ) :
-  (σ * τ).support = σ.support ∪ τ.support :=
+lemma disjoint.mul_eq_one_iff {σ τ : perm α} (hστ : disjoint σ τ) :
+  σ * τ = 1 ↔ σ = 1 ∧ τ = 1 :=
+by simp_rw [ext_iff, one_apply, hστ.mul_apply_eq_iff, forall_and_distrib]
+
+lemma disjoint.order_of {σ τ : perm α} (hστ : disjoint σ τ) :
+  order_of (σ * τ) = nat.lcm (order_of σ) (order_of τ) :=
 begin
-  ext a,
-  simp_rw [finset.mem_union, mem_support, mul_apply, ←not_and_distrib, not_iff_not],
-  cases h a with hσ hτ,
-  { rw [and_iff_right hσ],
-    cases h (τ a) with hτ hτ,
-    { rw hτ },
-    { rw τ.apply_eq_iff_eq at hτ,
-      rw [hτ, hσ] } },
-  { rw [hτ, and_iff_left rfl] },
+  have h : ∀ n : ℕ, (σ * τ) ^ n = 1 ↔ σ ^ n = 1 ∧ τ ^ n = 1,
+  { intro n,
+    rw commute.mul_pow hστ.mul_comm,
+    exact disjoint.mul_eq_one_iff (λ x, or.imp (λ h, pow_apply_eq_self_of_apply_eq_self h n)
+      (λ h, pow_apply_eq_self_of_apply_eq_self h n) (hστ x)) },
+  exact nat.dvd_antisymm
+    (order_of_dvd_of_pow_eq_one ((h (nat.lcm (order_of σ) (order_of τ))).mpr
+      ⟨order_of_dvd_iff_pow_eq_one.mp (nat.dvd_lcm_left (order_of σ) (order_of τ)),
+      order_of_dvd_iff_pow_eq_one.mp (nat.dvd_lcm_right (order_of σ) (order_of τ))⟩))
+    (nat.lcm_dvd
+      (order_of_dvd_of_pow_eq_one ((h (order_of (σ * τ))).mp (pow_order_of_eq_one (σ * τ))).1)
+      (order_of_dvd_of_pow_eq_one ((h (order_of (σ * τ))).mp (pow_order_of_eq_one (σ * τ))).2)),
 end
 
 lemma card_support_mul_of_disjoint [fintype α] {σ τ : equiv.perm α} (h : equiv.perm.disjoint σ τ) :
