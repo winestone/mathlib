@@ -13,15 +13,26 @@ is also an inner product space, with inner product defined as `inner f g = ∫ a
 
 ### Main results
 
+<<<<<<< HEAD
 * `mem_L1_inner` : the inner product of `f` and `g` in `Lp E 2 μ` belongs to `Lp 𝕜 1 μ`.
 * `integrable_inner` : the inner product of `f` and `g` in `Lp E 2 μ` is integrable.
+=======
+* `mem_L1_inner` : for `f` and `g` in `Lp E 2 μ`, the pointwise inner product `λ x, ⟪f x, g x⟫`
+  belongs to `Lp 𝕜 1 μ`.
+* `integrable_inner` : for `f` and `g` in `Lp E 2 μ`, the pointwise inner product `λ x, ⟪f x, g x⟫`
+  is integrable.
+>>>>>>> origin/master
 * `L2.inner_product_space` : `Lp E 2 μ` is an inner product space.
 
 -/
 
 noncomputable theory
 open topological_space measure_theory measure_theory.Lp
+<<<<<<< HEAD
 open_locale nnreal ennreal
+=======
+open_locale nnreal ennreal measure_theory
+>>>>>>> origin/master
 
 namespace measure_theory
 namespace L2
@@ -39,7 +50,11 @@ begin
   exact ennreal.rpow_lt_top_of_nonneg zero_le_two (Lp.snorm_ne_top f),
 end
 
+<<<<<<< HEAD
 lemma snorm_inner_lt_top (f g : Lp E 2 μ) : snorm (λ (x : α), ⟪f x, g x⟫) 1 μ < ∞ :=
+=======
+lemma snorm_inner_lt_top (f g : α →₂[μ] E) : snorm (λ (x : α), ⟪f x, g x⟫) 1 μ < ∞ :=
+>>>>>>> origin/master
 begin
   have h : ∀ x, is_R_or_C.abs ⟪f x, g x⟫ ≤ ∥f x∥ * ∥g x∥, from λ x, abs_inner_le_norm _ _,
   have h' : ∀ x, is_R_or_C.abs ⟪f x, g x⟫ ≤ is_R_or_C.abs (∥f x∥^2 + ∥g x∥^2),
@@ -51,8 +66,13 @@ begin
     ring, },
   simp_rw [← is_R_or_C.norm_eq_abs, ← real.rpow_nat_cast] at h',
   refine (snorm_mono_ae (ae_of_all _ h')).trans_lt ((snorm_add_le _ _ le_rfl).trans_lt _),
+<<<<<<< HEAD
   { exact (Lp.ae_measurable f).norm.rpow_const, },
   { exact (Lp.ae_measurable g).norm.rpow_const, },
+=======
+  { exact (Lp.ae_measurable f).norm.pow_const _ },
+  { exact (Lp.ae_measurable g).norm.pow_const _ },
+>>>>>>> origin/master
   simp only [nat.cast_bit0, ennreal.add_lt_top, nat.cast_one],
   exact ⟨snorm_rpow_two_norm_lt_top f, snorm_rpow_two_norm_lt_top g⟩,
 end
@@ -63,18 +83,30 @@ variables [measurable_space 𝕜] [borel_space 𝕜]
 
 include 𝕜
 
+<<<<<<< HEAD
 instance : has_inner 𝕜 (Lp E 2 μ) := ⟨λ f g, ∫ a, ⟪f a, g a⟫ ∂μ⟩
 
 lemma inner_def (f g : Lp E 2 μ) : inner f g = ∫ a : α, ⟪f a, g a⟫ ∂μ := rfl
 
 lemma integral_inner_eq_sq_snorm (f : Lp E 2 μ) :
+=======
+instance : has_inner 𝕜 (α →₂[μ] E) := ⟨λ f g, ∫ a, ⟪f a, g a⟫ ∂μ⟩
+
+lemma inner_def (f g : α →₂[μ] E) : inner f g = ∫ a : α, ⟪f a, g a⟫ ∂μ := rfl
+
+lemma integral_inner_eq_sq_snorm (f : α →₂[μ] E) :
+>>>>>>> origin/master
   ∫ a, ⟪f a, f a⟫ ∂μ = ennreal.to_real ∫⁻ a, (nnnorm (f a) : ℝ≥0∞) ^ (2:ℝ) ∂μ :=
 begin
   simp_rw inner_self_eq_norm_sq_to_K,
   norm_cast,
   rw integral_eq_lintegral_of_nonneg_ae,
   swap, { exact filter.eventually_of_forall (λ x, pow_two_nonneg _), },
+<<<<<<< HEAD
   swap, { exact (Lp.ae_measurable f).norm.pow, },
+=======
+  swap, { exact (Lp.ae_measurable f).norm.pow_const _ },
+>>>>>>> origin/master
   congr,
   ext1 x,
   have h_two : (2 : ℝ) = ((2 : ℕ) : ℝ), by simp,
@@ -83,7 +115,11 @@ begin
   norm_cast,
 end
 
+<<<<<<< HEAD
 private lemma norm_sq_eq_inner' (f : Lp E 2 μ) : ∥f∥ ^ 2 = is_R_or_C.re (inner f f : 𝕜) :=
+=======
+private lemma norm_sq_eq_inner' (f : α →₂[μ] E) : ∥f∥ ^ 2 = is_R_or_C.re (inner f f : 𝕜) :=
+>>>>>>> origin/master
 begin
   have h_two : (2 : ℝ≥0∞).to_real = 2 := by simp,
   rw [inner_def, integral_inner_eq_sq_snorm, norm_def, ← ennreal.to_real_pow, is_R_or_C.of_real_re,
@@ -96,16 +132,28 @@ begin
     exact Lp.snorm_lt_top f, },
 end
 
+<<<<<<< HEAD
 lemma mem_L1_inner (f g : Lp E 2 μ) :
   ae_eq_fun.mk (λ x, ⟪f x, g x⟫) ((Lp.ae_measurable f).inner (Lp.ae_measurable g)) ∈ Lp 𝕜 1 μ :=
 by { simp_rw [mem_Lp_iff_snorm_lt_top, snorm_ae_eq_fun], exact snorm_inner_lt_top f g, }
 
 lemma integrable_inner (f g : Lp E 2 μ) : integrable (λ x : α, ⟪f x, g x⟫) μ :=
+=======
+lemma mem_L1_inner (f g : α →₂[μ] E) :
+  ae_eq_fun.mk (λ x, ⟪f x, g x⟫) ((Lp.ae_measurable f).inner (Lp.ae_measurable g)) ∈ Lp 𝕜 1 μ :=
+by { simp_rw [mem_Lp_iff_snorm_lt_top, snorm_ae_eq_fun], exact snorm_inner_lt_top f g, }
+
+lemma integrable_inner (f g : α →₂[μ] E) : integrable (λ x : α, ⟪f x, g x⟫) μ :=
+>>>>>>> origin/master
 (integrable_congr (ae_eq_fun.coe_fn_mk (λ x, ⟪f x, g x⟫)
     ((Lp.ae_measurable f).inner (Lp.ae_measurable g)))).mp
   (ae_eq_fun.integrable_iff_mem_L1.mpr (mem_L1_inner f g))
 
+<<<<<<< HEAD
 private lemma add_left' (f f' g : Lp E 2 μ) : (inner (f + f') g : 𝕜) = inner f g + inner f' g :=
+=======
+private lemma add_left' (f f' g : α →₂[μ] E) : (inner (f + f') g : 𝕜) = inner f g + inner f' g :=
+>>>>>>> origin/master
 begin
   simp_rw [inner_def, ← integral_add (integrable_inner f g) (integrable_inner f' g),
     ←inner_add_left],
@@ -114,7 +162,11 @@ begin
   rwa pi.add_apply at hx,
 end
 
+<<<<<<< HEAD
 private lemma smul_left' (f g : Lp E 2 μ) (r : 𝕜) :
+=======
+private lemma smul_left' (f g : α →₂[μ] E) (r : 𝕜) :
+>>>>>>> origin/master
   inner (r • f) g = is_R_or_C.conj r * inner f g :=
 begin
   rw [inner_def, inner_def, ← smul_eq_mul, ← integral_smul],
@@ -124,7 +176,11 @@ begin
   rwa pi.smul_apply at hx,
 end
 
+<<<<<<< HEAD
 instance : inner_product_space 𝕜 (Lp E 2 μ) :=
+=======
+instance inner_product_space : inner_product_space 𝕜 (α →₂[μ] E) :=
+>>>>>>> origin/master
 { norm_sq_eq_inner := norm_sq_eq_inner',
   conj_sym := λ _ _, by simp_rw [inner_def, ← integral_conj, inner_conj_sym],
   add_left := add_left',
