@@ -428,7 +428,6 @@ begin
   { intros c s hs,
     rw @lintegral_indicator α m _ _ _ hs,
     rw @lintegral_indicator α _ _ _ _ (hm s hs),
-    dsimp only,
     rw @set_lintegral_const α m,
     rw set_lintegral_const,
     suffices h_trim_s : μ.trim hm s = μ s,
@@ -455,7 +454,7 @@ begin
   simp_rw snorm',
   congr' 1,
   refine lintegral_trim hm _,
-  refine @measurable.ennreal_rpow_const α m _ _ _,
+  refine @measurable.pow_const α m _ _ _ _ _ _ _ _ _,
   refine @measurable.ennreal_coe α m _ _,
   exact @measurable.nnnorm E α _ _ _ m _ hf,
 end
@@ -1346,7 +1345,7 @@ end lipschitz_with
 
 namespace continuous_linear_map
 variables [normed_space ℝ E] [normed_space ℝ F] {𝕜 : Type*} [is_R_or_C 𝕜] [normed_space 𝕜 E]
-  [normed_space 𝕜 F]
+  [normed_space 𝕜 F] [measurable_space 𝕜] [opens_measurable_space 𝕜]
 
 /-- Composing `f : Lp ` with `L : E →L[ℝ] F`. -/
 def comp_Lp (L : E →L[𝕜] F) (f : Lp E p μ) : Lp F p μ :=
@@ -1596,7 +1595,6 @@ begin
   simp_rw dist_def,
   sorry
 end
-
 
 lemma complete_space_Lp_of_cauchy_complete_ℒp [hp : fact (1 ≤ p)]
   (H : ∀ (f : ℕ → α → E) (hf : ∀ n, mem_ℒp (f n) p μ) (B : ℕ → ℝ≥0∞) (hB : ∑' i, B i < ∞)
