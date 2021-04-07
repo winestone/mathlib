@@ -1541,7 +1541,7 @@ begin
     have hF_eq_G : ∀ n, F n =ᵐ[μ] G n, from λ n, (F_mem n).some_spec.2,
     haveI : fact (1 ≤ (1 : ℝ≥0∞)) := ⟨le_rfl⟩,
     obtain ⟨f_lim, h_meas, h⟩ := ae_eq_measurable_of_tendsto hm F G f hF_eq_G hG_meas F_tendsto_f,
-    exact ⟨f_lim, h_meas, h⟩, }, -- this is approximately done when defining Lp_sub
+    exact ⟨f_lim, h_meas, h⟩, },
   { intro fs,
     rw condexp_L1_eq_condexp_L1s,
     obtain ⟨f', hf'_meas, hf'⟩ := (is_condexp_condexp_L1s 𝕜 hm fs).2.1,
