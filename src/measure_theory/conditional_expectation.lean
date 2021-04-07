@@ -1333,12 +1333,12 @@ begin
   sorry
 end
 
-lemma condexp_L1s_R_jensen {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
-  [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (F : ℝ → ℝ) (hF : convex_on (set.univ : set ℝ) F) :
-  ∀ᵐ x ∂μ, F (condexp_L1s_lm ℝ hm f x) ≤ condexp_L1s_lm ℝ hm (L1.simple_func.map F f) x :=
-begin
-  sorry
-end
+--lemma condexp_L1s_R_jensen {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
+--  [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (F : ℝ → ℝ) (hF : convex_on (set.univ : set ℝ) F) :
+--  ∀ᵐ x ∂μ, F (condexp_L1s_lm ℝ hm f x) ≤ condexp_L1s_lm ℝ hm (L1.simple_func.map F f) x :=
+--begin
+--  sorry
+--end
 
 lemma norm_condexp_L1s_le_R {m m0 : measurable_space α} (hm : m ≤ m0)
   {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) :
@@ -1509,24 +1509,48 @@ def condexp_L1s_clm : (α →₁ₛ[μ] E) →L[𝕜] (α →₁[μ] E) :=
 
 /-- Conditional expectation as a continuous linear map from L1 to L1. -/
 def condexp_L1 : (α →₁[μ] E) →L[𝕜] (α →₁[μ] E) :=
-@continuous_linear_map.extend 𝕜 (α →₁ₛ[μ] E) (α →₁[μ] E) (α →₁[μ] E) _ _ _
-  _ _ _ _ (condexp_L1s_clm 𝕜 hm) _ (L1.simple_func.coe_to_L1 α E 𝕜)
-  L1.simple_func.dense_range L1.simple_func.uniform_inducing
+@continuous_linear_map.extend 𝕜 (α →₁ₛ[μ] E) (α →₁[μ] E) (α →₁[μ] E) _ _ _ _ _ _ _
+  (condexp_L1s_clm 𝕜 hm) _ (L1.simple_func.coe_to_L1 α E 𝕜) L1.simple_func.dense_range
+  L1.simple_func.uniform_inducing
 
 lemma condexp_L1_eq_condexp_L1s (f : α →₁ₛ[μ] E) :
   condexp_L1 𝕜 hm (f : α →₁[μ] E) = condexp_L1s_clm 𝕜 hm f :=
 uniformly_extend_of_ind L1.simple_func.uniform_inducing L1.simple_func.dense_range
   (continuous_linear_map.uniform_continuous _) _
 
-lemma is_condexp_condexp_L1 (f : α →₁[μ] E) : is_condexp m (condexp_L1 𝕜 hm f) f μ :=
+lemma integrable_condexp_L1 (f : α →₁[μ] E) : integrable (condexp_L1 𝕜 hm f) μ :=
+L1.integrable_coe_fn _
+
+lemma ae_measurable_condexp_L1 (f : α →₁[μ] E) :
+  ∃ (f' : α → E), @measurable _ _ m _ f' ∧ (condexp_L1 𝕜 hm f) =ᵐ[μ] f' :=
 begin
   refine @is_closed_property _ (α →₁[μ] E) _ _ _ L1.simple_func.dense_range _ _ f,
-  { sorry, }, -- ?
+  { change is_closed ((condexp_L1 𝕜 hm) ⁻¹'
+      {x : ↥(Lp E 1 μ) | ∃ f', @measurable _ _ m _ f' ∧ x =ᵐ[μ] f'}),
+    refine is_closed.preimage (continuous_linear_map.continuous _) _,
+    sorry }, -- this is approximately done when defining Lp_sub
   { intro fs,
     rw condexp_L1_eq_condexp_L1s,
-    refine is_condexp_congr_ae_right' hm _ (is_condexp_condexp_L1s 𝕜 hm fs),
-    simp only [L1.simple_func.coe_coe], },
+    obtain ⟨f', hf'_meas, hf'⟩ := (is_condexp_condexp_L1s 𝕜 hm fs).2.1,
+    refine ⟨f', hf'_meas, _⟩,
+    refine eventually_eq.trans (eventually_of_forall (λ x, _)) hf',
+    refl, },
 end
+
+lemma integral_eq_condexp_L1 (f : α →₁[μ] E) (s : set α) (hs : @measurable_set α m s) :
+  ∫ a in s, (condexp_L1 𝕜 hm f) a ∂μ = ∫ a in s, f a ∂μ :=
+begin
+  refine @is_closed_property _ (α →₁[μ] E) _ _ _ L1.simple_func.dense_range _ _ f,
+  { refine is_closed_eq _ _,
+    sorry,
+    sorry, },
+  { intro fs,
+    rw condexp_L1_eq_condexp_L1s,
+    exact (is_condexp_condexp_L1s 𝕜 hm fs).2.2 s hs, },
+end
+
+lemma is_condexp_condexp_L1 (f : α →₁[μ] E) : is_condexp m (condexp_L1 𝕜 hm f) f μ :=
+⟨integrable_condexp_L1 𝕜 hm f, ae_measurable_condexp_L1 𝕜 hm f, integral_eq_condexp_L1 𝕜 hm f⟩
 
 include 𝕜 hm
 /-- Conditional expectation of an integrable function. -/
