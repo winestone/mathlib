@@ -12,7 +12,7 @@ import measure_theory.l2_space
 
 noncomputable theory
 open topological_space measure_theory measure_theory.Lp filter
-open_locale nnreal ennreal topological_space big_operators
+open_locale nnreal ennreal topological_space big_operators measure_theory
 
 namespace measure_theory
 
@@ -31,7 +31,7 @@ private lemma add_mem' {m m0 : measurable_space α} (hm : m ≤ m0) {p : ℝ≥0
 begin
   rcases hf with ⟨f', h_f'_meas, hff'⟩,
   rcases hg with ⟨g', h_g'_meas, hgg'⟩,
-  refine ⟨f'+g', @measurable.add _ α _ _ _ m _ _ _ f' g' h_f'_meas h_g'_meas, _⟩,
+  refine ⟨f'+g', @measurable.add α m _ _ _ _ f' g' h_f'_meas h_g'_meas, _⟩,
   exact eventually_eq.trans (Lp.coe_fn_add f g) (eventually_eq.comp₂ hff' (+) hgg'),
 end
 omit 𝕜
@@ -42,7 +42,7 @@ private lemma smul_mem' {m m0 : measurable_space α} (hm : m ≤ m0)
   ∃ f_add : α → E, @measurable α _ m _ f_add ∧ ⇑(c • f) =ᵐ[μ] f_add :=
 begin
   rcases hf with ⟨f', h_f'_meas, hff'⟩,
-  refine ⟨c • f', @measurable.const_smul α m _ _ _ _ _ _ _ _ _ _ f' h_f'_meas c, _⟩,
+  refine ⟨c • f', @measurable.const_smul α m _ _ _ _ _ _ f' h_f'_meas c, _⟩,
   exact eventually_eq.trans (Lp.coe_fn_smul c f) (eventually_eq.fun_comp hff' (λ x, c • x)),
 end
 
@@ -59,7 +59,7 @@ def Lp_sub {α} {m m0 : measurable_space α} (hm : m ≤ m0) (𝕜 E) [is_R_or_C
 lemma mem_Lp_sub_iff_ae_eq_measurable {m m0 : measurable_space α} {hm : m ≤ m0} {p : ℝ≥0∞}
   {μ : measure α} {f : Lp E p μ} :
   f ∈ Lp_sub hm 𝕜 E p μ ↔ ∃ g : α → E, @measurable α _ m _ g ∧ f =ᵐ[μ] g :=
-by simp_rw [← submodule.mem_coe, ← submodule.mem_carrier, Lp_sub, set.mem_set_of_eq]
+by simp_rw [← set_like.mem_coe, ← submodule.mem_carrier, Lp_sub, set.mem_set_of_eq]
 
 lemma Lp_sub.ae_eq_measurable {m m0 : measurable_space α} {hm : m ≤ m0}
   {p : ℝ≥0∞} {μ : measure α} (f : Lp_sub hm 𝕜 E p μ) :
@@ -114,7 +114,7 @@ begin
         = snorm (g n.fst - g n.snd) p μ,
       { simp_rw h_snorm_trim, exact h_cau_g, },
       refine λ n, snorm_trim _ _,
-      exact @measurable.sub _ α _ _ _ m _ _ _ (g n.fst) (g n.snd) (hg n.fst) (hg n.snd), },
+      exact @measurable.sub α m _ _ _ _ (g n.fst) (g n.snd) (hg n.fst) (hg n.snd), },
     rw ← ennreal.zero_to_real,
     exact tendsto.comp (ennreal.tendsto_to_real ennreal.zero_ne_top) h_cau_g_m, },
   have mem_Lp_g : ∀ n, @mem_ℒp α E m _ _ (g n) p (μ.trim hm),
@@ -165,7 +165,7 @@ begin
       exact (h_g_ae_m n).symm, },
     rw h_eq_g,
     refine (snorm_trim hm _).symm,
-    refine @measurable.sub _ α _ _ _ m _ _ _ (g_Lp n) g_Lp_lim _ h_g_lim_meas_m,
+    refine @measurable.sub α m _ _ _ _ (g_Lp n) g_Lp_lim _ h_g_lim_meas_m,
     exact @Lp.measurable α E m p (μ.trim hm) _ _ _ _ (g_Lp n), },
   have sub_tendsto : tendsto (λ (n : ι), snorm (⇑f_lim - ⇑g_Lp_lim) p μ) at_top (𝓝 0),
   { let snorm_add := λ (n : ι), snorm (g n - ⇑f_lim) p μ + snorm (g n - ⇑g_Lp_lim) p μ,
@@ -1447,8 +1447,7 @@ begin
         refine (indicator_L1s_coe_ae_le hs hμs (1 : ℝ)).mono (λ x hx, _),
         exact le_of_abs_le (hx.trans (le_of_eq abs_one)), }, }, },
   { refine ⟨λ x, (f₁' x) • c, _, _⟩,
-    { exact @measurable.smul _ _ _ _ _ _ _ _ _ m _ _ _ _ _ _ f₁' _ h_meas₁
-        (@measurable_const _ _ _ m c), },
+    { exact @measurable.smul _ m _ _ _ _ _ _ f₁' _ h_meas₁ (@measurable_const _ _ _ m c), },
     { exact eventually_eq.fun_comp hff'₁ (λ x, x • c), }, },
   { intros t ht,
     have h_smul : ∫ a in t, (indicator_L1s hs hμs c) a ∂μ
@@ -1487,7 +1486,8 @@ lemma norm_condexp_L1s_le {m m0 : measurable_space α} (hm : m ≤ m0) [complete
   ∥condexp_L1s_lm 𝕜 hm f∥ ≤ ∥f∥ :=
 begin
   rw L1.simple_func.norm_eq_integral,
-  rw simple_func.map_integral _ _ (L1.simple_func.integrable _) norm_zero,
+  rw simple_func.map_integral _ _ (L1.simple_func.integrable _),
+  swap, { exact norm_zero, },
   nth_rewrite 0 L1.simple_func_eq_sum_indicator_L1s f,
   rw linear_map.map_sum,
   refine (norm_sum_le _ _).trans _,
@@ -1516,8 +1516,11 @@ def condexp_L1 : (α →₁[μ] E) →L[𝕜] (α →₁[μ] E) :=
 
 lemma condexp_L1_eq_condexp_L1s (f : α →₁ₛ[μ] E) :
   condexp_L1 𝕜 hm (f : α →₁[μ] E) = condexp_L1s_clm 𝕜 hm f :=
-uniformly_extend_of_ind L1.simple_func.uniform_inducing L1.simple_func.dense_range
-  (continuous_linear_map.uniform_continuous _) _
+begin
+  refine uniformly_extend_of_ind L1.simple_func.uniform_inducing L1.simple_func.dense_range _ _,
+  exact @continuous_linear_map.uniform_continuous 𝕜 (α →₁ₛ[μ] E) (α →₁[μ] E) _ _ _ _ _
+    (@condexp_L1s_clm α E 𝕜 _ _ _ _ _ _ _ _ _ _ _ hm _ μ _),
+end
 
 lemma integrable_condexp_L1 (f : α →₁[μ] E) : integrable (condexp_L1 𝕜 hm f) μ :=
 L1.integrable_coe_fn _
@@ -1536,7 +1539,7 @@ begin
     let G := λ n, (F_mem n).some,
     have hG_meas : ∀ n, @measurable _ _ m _ (G n), from λ n, (F_mem n).some_spec.1,
     have hF_eq_G : ∀ n, F n =ᵐ[μ] G n, from λ n, (F_mem n).some_spec.2,
-    haveI : fact (1 ≤ (1 : ℝ≥0∞)) := le_rfl,
+    haveI : fact (1 ≤ (1 : ℝ≥0∞)) := ⟨le_rfl⟩,
     obtain ⟨f_lim, h_meas, h⟩ := ae_eq_measurable_of_tendsto hm F G f hF_eq_G hG_meas F_tendsto_f,
     exact ⟨f_lim, h_meas, h⟩, }, -- this is approximately done when defining Lp_sub
   { intro fs,
