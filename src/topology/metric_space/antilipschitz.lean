@@ -122,10 +122,6 @@ begin
       rwa mul_comm } }
 end
 
-<<<<<<< HEAD
-lemma closed_embedding [complete_space α]
-  (hf : antilipschitz_with K f) (hfc : uniform_continuous f) : closed_embedding f :=
-=======
 lemma uniform_embedding {α : Type*} {β : Type*} [emetric_space α] [pseudo_emetric_space β] {K : ℝ≥0}
   {f : α → β} (hf : antilipschitz_with K f) (hfc : uniform_continuous f) : uniform_embedding f :=
 uniform_embedding_of_injective hf.injective hf hfc
@@ -133,7 +129,6 @@ uniform_embedding_of_injective hf.injective hf hfc
 lemma closed_embedding {α : Type*} {β : Type*} [emetric_space α] [emetric_space β] {K : ℝ≥0}
   {f : α → β} [complete_space α] (hf : antilipschitz_with K f) (hfc : uniform_continuous f) :
   closed_embedding f :=
->>>>>>> origin/master
 { closed_range :=
   begin
     apply is_complete.is_closed,

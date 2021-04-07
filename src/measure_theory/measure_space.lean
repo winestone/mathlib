@@ -2491,7 +2491,6 @@ end
 
 end is_complete
 
-<<<<<<< HEAD
 namespace measure_theory
 
 /-- A measure space is a measurable space equipped with a
@@ -2558,8 +2557,6 @@ end trim
 
 end measure_theory
 
-=======
->>>>>>> origin/master
 /-!
 # Almost everywhere measurable functions
 

@@ -765,11 +765,7 @@ begin
   all_goals { assumption }
 end
 
-<<<<<<< HEAD
 lemma integral_comp_comm' (L : E →L[𝕜] F) {K} (hL : antilipschitz_with K L) (φ : α → E) :
-=======
-lemma integral_comp_comm' (L : E →L[ℝ] F) {K} (hL : antilipschitz_with K L) (φ : α → E) :
->>>>>>> origin/master
   ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
 begin
   by_cases h : integrable φ μ,
@@ -779,11 +775,7 @@ begin
   simp [integral_undef, h, this]
 end
 
-<<<<<<< HEAD
 lemma integral_comp_L1_comm (L : E →L[𝕜] F) (φ : α →₁[μ] E) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
-=======
-lemma integral_comp_L1_comm (L : E →L[ℝ] F) (φ : α →₁[μ] E) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
->>>>>>> origin/master
 L.integral_comp_comm (L1.integrable_coe_fn φ)
 
 end continuous_linear_map
@@ -794,11 +786,7 @@ variables [measurable_space F] [borel_space F] [complete_space E]
 [second_countable_topology F] [complete_space F]
 [borel_space E] [second_countable_topology E]
 
-<<<<<<< HEAD
 lemma integral_comp_comm (L : E →ₗᵢ[𝕜] F) (φ : α → E) :
-=======
-lemma integral_comp_comm (L : E →ₗᵢ[ℝ] F) (φ : α → E) :
->>>>>>> origin/master
   ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
 L.to_continuous_linear_map.integral_comp_comm' L.antilipschitz _
 
@@ -812,7 +800,6 @@ variables [borel_space E] [second_countable_topology E] [complete_space E]
   ∫ a, (f a : 𝕜) ∂μ = ↑∫ a, f a ∂μ :=
 linear_isometry.integral_comp_comm is_R_or_C.of_real_li f
 
-<<<<<<< HEAD
 lemma integral_re {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜] {f : α → 𝕜}
   (hf : integrable f μ) :
   ∫ a, is_R_or_C.re (f a) ∂μ = is_R_or_C.re ∫ a, f a ∂μ :=
@@ -825,8 +812,6 @@ lemma integral_im {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel
 @continuous_linear_map.integral_comp_comm α 𝕜 ℝ _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
   is_R_or_C.im_clm _ hf
 
-=======
->>>>>>> origin/master
 lemma integral_conj {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜] {f : α → 𝕜} :
   ∫ a, is_R_or_C.conj (f a) ∂μ = is_R_or_C.conj ∫ a, f a ∂μ :=
 linear_isometry.integral_comp_comm is_R_or_C.conj_li f
