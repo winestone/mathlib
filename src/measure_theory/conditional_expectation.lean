@@ -1349,8 +1349,6 @@ begin
   simp_rw [snorm_eq_snorm' ennreal.zero_lt_one.ne.symm ennreal.coe_ne_top, ennreal.one_to_real,
     snorm', div_one, ennreal.rpow_one],
   let F := λ x : ℝ, ∥x∥,
-  have hF : convex_on (set.univ : set ℝ) F,
-  { sorry},
   have h_left : ∫⁻ a, (nnnorm (((condexp_L1s_lm ℝ hm) f) a) : ℝ≥0∞) ∂μ
       = ∫⁻ a, ennreal.of_real (∥((condexp_L1s_lm ℝ hm) f) a∥) ∂μ,
     by { congr, ext1 x, rw ← of_real_norm_eq_coe_nnnorm, },
@@ -1360,7 +1358,7 @@ begin
   rw [h_left, h_right],
   have h_le : ∫⁻ a, ennreal.of_real (∥((condexp_L1s_lm ℝ hm) f) a∥) ∂μ
     ≤ ∫⁻ a, ennreal.of_real (condexp_L1s_lm ℝ hm (L1.simple_func.map F f) a) ∂μ,
-  { refine lintegral_mono_ae ((condexp_L1s_R_jensen hm f F hF).mono (λ x hx, _)),
+  { refine lintegral_mono_ae ((condexp_L1s_R_jensen_norm hm f).mono (λ x hx, _)),
     rwa ennreal.of_real_le_of_real_iff ((norm_nonneg _).trans hx), },
   refine h_le.trans _,
   have h_integral_eq := integral_condexp_L1s ℝ hm (L1.simple_func.map F f)
@@ -1439,17 +1437,14 @@ begin
       { refine h_le_1.mono (λ x hx, _),
         nth_rewrite 1 ← one_mul (∥c∥),
         exact mul_le_mul hx le_rfl (norm_nonneg _) zero_le_one, },
-      simp_rw real.norm_eq_abs,
-      simp_rw abs_le,
+      simp_rw [real.norm_eq_abs, abs_le],
       refine eventually.and _ _,
       { refine condexp_L1s_const_le hm _ (-1 : ℝ) _,
         refine (indicator_L1s_coe_ae_le hs hμs (1 : ℝ)).mono (λ x hx, _),
-        refine neg_le_of_abs_le _,
-        exact hx.trans (le_of_eq abs_one), },
+        exact neg_le_of_abs_le (hx.trans (le_of_eq abs_one)), },
       { refine condexp_L1s_le_const hm _ (1 : ℝ) _,
         refine (indicator_L1s_coe_ae_le hs hμs (1 : ℝ)).mono (λ x hx, _),
-        refine le_of_abs_le _,
-        exact hx.trans (le_of_eq abs_one), }, }, },
+        exact le_of_abs_le (hx.trans (le_of_eq abs_one)), }, }, },
   { refine ⟨λ x, (f₁' x) • c, _, _⟩,
     { exact @measurable.smul _ _ _ _ _ _ _ _ _ m _ _ _ _ _ _ f₁' _ h_meas₁
         (@measurable_const _ _ _ m c), },
@@ -1518,11 +1513,43 @@ def condexp_L1 : (α →₁[μ] E) →L[𝕜] (α →₁[μ] E) :=
   _ _ _ _ (condexp_L1s_clm 𝕜 hm) _ (L1.simple_func.coe_to_L1 α E 𝕜)
   L1.simple_func.dense_range L1.simple_func.uniform_inducing
 
-include 𝕜
+lemma condexp_L1_eq_condexp_L1s (f : α →₁ₛ[μ] E) :
+  condexp_L1 𝕜 hm (f : α →₁[μ] E) = condexp_L1s_clm 𝕜 hm f :=
+uniformly_extend_of_ind L1.simple_func.uniform_inducing L1.simple_func.dense_range
+  (continuous_linear_map.uniform_continuous _) _
+
+lemma is_condexp_condexp_L1 (f : α →₁[μ] E) : is_condexp m (condexp_L1 𝕜 hm f) f μ :=
+begin
+  refine @is_closed_property _ (α →₁[μ] E) _ _ _ L1.simple_func.dense_range _ _ f,
+  { sorry, }, -- ?
+  { intro fs,
+    rw condexp_L1_eq_condexp_L1s,
+    refine is_condexp_congr_ae_right' hm _ (is_condexp_condexp_L1s 𝕜 hm fs),
+    simp only [L1.simple_func.coe_coe], },
+end
+
+include 𝕜 hm
 /-- Conditional expectation of an integrable function. -/
-def condexp (f : α → E) (hf : integrable f μ) : α → E := condexp_L1 𝕜 hm (hf.to_L1 f)
-omit 𝕜
+def condexp (f : α → E) (hf : integrable f μ) : α → E :=
+(is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).2.1.some
+omit 𝕜 hm
+
+lemma measurable_condexp (f : α → E) (hf : integrable f μ) :
+  @measurable _ _ m _ (condexp 𝕜 hm f hf) :=
+(is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).2.1.some_spec.1
+
+lemma condexp_ae_eq_condexp_L1 (f : α → E) (hf : integrable f μ) :
+  condexp 𝕜 hm f hf =ᵐ[μ] condexp_L1 𝕜 hm (hf.to_L1 f) :=
+(is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).2.1.some_spec.2.symm
 variables {𝕜}
+
+lemma is_condexp_condexp {f : α → E} {hf : integrable f μ} :
+  is_condexp m (condexp 𝕜 hm f hf) f μ :=
+begin
+  refine is_condexp_congr_ae_right' hm (integrable.coe_fn_to_L1 hf) _,
+  refine is_condexp_congr_ae' hm (condexp_ae_eq_condexp_L1 𝕜 hm f hf).symm _,
+  exact is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f),
+end
 
 end condexp_def
 
