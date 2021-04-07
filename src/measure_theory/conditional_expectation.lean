@@ -1551,6 +1551,9 @@ begin
 end
 variables {𝕜}
 
+lemma integrable_condexp (f : α → E) (hf : integrable f μ) : integrable (condexp 𝕜 hm f hf) μ :=
+(is_condexp_condexp 𝕜 hm hf).1
+
 lemma condexp_integral_eq {f : α → E} (hf : integrable f μ) {s : set α}
   (hs : @measurable_set α m s) :
   ∫ x in s, condexp 𝕜 hm f hf x ∂μ = ∫ x in s, f x ∂μ :=
