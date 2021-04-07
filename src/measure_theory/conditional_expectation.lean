@@ -235,6 +235,7 @@ def is_condexp_L1_sub {m m0 : measurable_space α} {hm : m ≤ m0} {μ : measure
   Prop :=
 ∀ s (hs : @measurable_set α m s), ∫ a in s, f a ∂μ = ∫ a in s, g a ∂μ
 
+/-- `f` is a conditional expectation of `g` with respect to the measurable space structure `m`. -/
 def is_condexp (m : measurable_space α) [m0 : measurable_space α] (f g : α → G) (μ : measure α) :
   Prop :=
 integrable f μ ∧ (∃ f' : α → G, @measurable α _ m _ f' ∧ f =ᵐ[μ] f')
@@ -311,7 +312,7 @@ begin
 end
 
 lemma ae_nonneg_of_forall_set_ℝ_measurable [finite_measure μ] (f : α → ℝ) (hf : integrable f μ)
-  (hfm : measurable f) (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
+  (hfm : measurable f) (hf_zero : ∀ s : set α, measurable_set s → 0 ≤ ∫ x in s, f x ∂μ) :
   0 ≤ᵐ[μ] f :=
 begin
   simp_rw [eventually_le, pi.zero_apply],
@@ -331,7 +332,7 @@ begin
   by_contra,
   specialize h_int_gt h,
   refine (lt_self_iff_false (∫ x in s, f x ∂μ)).mp (h_int_gt.trans_lt _),
-  rw hf_zero s hs,
+  refine lt_of_lt_of_le _ (hf_zero s hs),
   refine mul_neg_iff.mpr (or.inr _),
   refine ⟨hb_neg, (ennreal.to_real_nonneg).lt_of_ne (λ h_eq, h _)⟩,
   have hμs_to_real := (ennreal.to_real_eq_zero_iff _).mp h_eq.symm,
@@ -341,13 +342,13 @@ begin
 end
 
 lemma ae_nonneg_of_forall_set_ℝ [finite_measure μ] (f : α → ℝ) (hf : integrable f μ)
-  (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
+  (hf_zero : ∀ s : set α, measurable_set s → 0 ≤ ∫ x in s, f x ∂μ) :
   0 ≤ᵐ[μ] f :=
 begin
   rcases hf with ⟨⟨f', hf'_meas, hf_ae⟩, hf_finite_int⟩,
   have hf'_integrable : integrable f' μ,
   { exact integrable.congr ⟨⟨f', hf'_meas, hf_ae⟩, hf_finite_int⟩ hf_ae, },
-  have hf'_zero : ∀ (s : set α), measurable_set s → ∫ (x : α) in s, f' x ∂μ = 0,
+  have hf'_zero : ∀ (s : set α), measurable_set s → 0 ≤ ∫ (x : α) in s, f' x ∂μ,
   { intros s hs,
     rw set_integral_congr_ae hs (hf_ae.mono (λ x hx hxs, hx.symm)),
     exact hf_zero s hs, },
@@ -359,22 +360,24 @@ lemma ae_eq_zero_of_forall_set_ℝ [finite_measure μ] (f : α → ℝ) (hf : in
   (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
   f =ᵐ[μ] 0 :=
 begin
+  have hf_nonneg :  ∀ s : set α, measurable_set s → 0 ≤ ∫ x in s, f x ∂μ,
+    from λ s hs, (hf_zero s hs).symm.le,
   suffices h_and : f ≤ᵐ[μ] 0 ∧ 0 ≤ᵐ[μ] f,
   { refine h_and.1.mp (h_and.2.mono (λ x hx1 hx2, _)),
     exact le_antisymm hx2 hx1, },
-  refine ⟨_, ae_nonneg_of_forall_set_ℝ f hf hf_zero⟩,
+  refine ⟨_, ae_nonneg_of_forall_set_ℝ f hf hf_nonneg⟩,
   suffices h_neg : 0 ≤ᵐ[μ] -f,
   { refine h_neg.mono (λ x hx, _),
     rw pi.neg_apply at hx,
     refine le_of_neg_le_neg _,
     simpa using hx, },
   have hf_neg : integrable (-f) μ, from hf.neg,
-  have hf_zero_neg :  ∀ (s : set α), measurable_set s → ∫ (x : α) in s, (-f) x ∂μ = 0,
+  have hf_nonneg_neg :  ∀ (s : set α), measurable_set s → 0 ≤ ∫ (x : α) in s, (-f) x ∂μ,
   { intros s hs,
     simp_rw pi.neg_apply,
-    rw [integral_neg, neg_eq_zero],
-    exact hf_zero s hs, },
-  exact ae_nonneg_of_forall_set_ℝ (-f) hf_neg hf_zero_neg,
+    rw [integral_neg, neg_nonneg],
+    exact (hf_zero s hs).le, },
+  exact ae_nonneg_of_forall_set_ℝ (-f) hf_neg hf_nonneg_neg,
 end
 
 lemma forall_inner_eq_zero_iff (x : E) : (∀ c : E, inner c x = (0 : 𝕜)) ↔ x = 0 :=
@@ -545,7 +548,7 @@ def simple_func_larger_space (hm : m ≤ m0) (f : @simple_func α m E) : simple_
   @simple_func.finite_range α E m f⟩
 
 lemma simple_func_larger_space_eq (hm : m ≤ m0) (f : @simple_func α m E) :
-  ⇑f = simple_func_larger_space hm f :=
+  ⇑(simple_func_larger_space hm f) = f :=
 rfl
 
 lemma integral_simple_func' {α} [measurable_space α] {μ : measure α}
@@ -562,8 +565,8 @@ lemma integral_simple_func (hm : m ≤ m0) (f : @simple_func α m E) (hf_int : i
   ∫ x, f x ∂μ = ∑ x in (@simple_func.range α E m f), (ennreal.to_real (μ (f ⁻¹' {x}))) • x :=
 begin
   let f0 := simple_func_larger_space hm f,
-  simp_rw simple_func_larger_space_eq hm f,
-  have hf0_int : integrable f0 μ, by rwa ← simple_func_larger_space_eq,
+  simp_rw ← simple_func_larger_space_eq hm f,
+  have hf0_int : integrable f0 μ, by rwa simple_func_larger_space_eq,
   rw integral_simple_func' _ hf0_int,
   congr,
 end
@@ -620,7 +623,7 @@ lemma ae_eq_of_ae_eq_trim {E} (hm : m ≤ m0) {f₁ f₂ : α → E}
   f₁ =ᵐ[μ] f₂ :=
 ae_eq_null_of_trim hm h12
 
-lemma ae_eq_trim_iff [normed_group E] [measurable_space E] [borel_space E]
+lemma ae_eq_trim_iff {E} [normed_group E] [measurable_space E] [borel_space E]
   [second_countable_topology E] (hm : m ≤ m0)
   {f g : α → E} (hf : @measurable α E m _ f) (hg : @measurable α E m _ g) :
   (eventually_eq (@measure.ae α m (μ.trim hm)) f g) ↔ f =ᵐ[μ] g :=
@@ -777,11 +780,8 @@ lemma indicator_Lp_coe_fn_nmem : ∀ᵐ (x : α) ∂μ, x ∉ s → (indicator_L
 lemma norm_indicator_Lp (hp_pos : 0 < p) (hp_ne_top : p ≠ ∞) :
   ∥indicator_Lp p hs hμs c∥ = ∥c∥ * (μ s).to_real ^ (1 / p.to_real) :=
 begin
-  rw norm_def,
-  rw snorm_congr_ae (indicator_Lp_coe_fn hs hμs c),
-  rw snorm_indicator_const hp_pos hp_ne_top,
-  rw ennreal.to_real_mul,
-  rw ennreal.to_real_rpow,
+  rw [norm_def, snorm_congr_ae (indicator_Lp_coe_fn hs hμs c),
+    snorm_indicator_const hp_pos hp_ne_top, ennreal.to_real_mul, ennreal.to_real_rpow],
   congr,
   assumption,
 end
@@ -1064,7 +1064,8 @@ begin
   rw L1.simple_func.coe_coe,
   rw L1.simple_func.coe_coe,
   have h : ⇑(f j) + ⇑∑ (x : ι) in s, f x =ᵐ[μ] ⇑(f j) + ∑ (x : ι) in s, ⇑(f x),
-  { sorry, },
+  { refine h_sum.mono (λ x hx, _),
+    rw [pi.add_apply, pi.add_apply, hx], },
   refine h.trans _,
   rw ← finset.sum_insert hjs,
 end
@@ -1278,7 +1279,10 @@ begin
     exact (lt_self_iff_false (c * (μ s).to_real)).mp (h_int_le.trans_lt (h_int_lt h)), },
   rw ← hμs_eq_zero,
   refine measure_congr _,
-  sorry,
+  refine hff'.mono (λ x hx, _),
+  rw [← @set.mem_def _ x {x : α | ((condexp_L1s_lm ℝ hm) f) x ≤ b}, ← @set.mem_def _ x s],
+  simp only [eq_iff_iff, set.mem_set_of_eq],
+  rw hx,
 end
 
 lemma condexp_L1s_le_const {m m0 : measurable_space α} (hm : m ≤ m0)
