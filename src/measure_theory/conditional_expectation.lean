@@ -1541,15 +1541,20 @@ lemma measurable_condexp (f : α → E) (hf : integrable f μ) :
 lemma condexp_ae_eq_condexp_L1 (f : α → E) (hf : integrable f μ) :
   condexp 𝕜 hm f hf =ᵐ[μ] condexp_L1 𝕜 hm (hf.to_L1 f) :=
 (is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).2.1.some_spec.2.symm
-variables {𝕜}
 
-lemma is_condexp_condexp {f : α → E} {hf : integrable f μ} :
+lemma is_condexp_condexp {f : α → E} (hf : integrable f μ) :
   is_condexp m (condexp 𝕜 hm f hf) f μ :=
 begin
   refine is_condexp_congr_ae_right' hm (integrable.coe_fn_to_L1 hf) _,
   refine is_condexp_congr_ae' hm (condexp_ae_eq_condexp_L1 𝕜 hm f hf).symm _,
   exact is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f),
 end
+variables {𝕜}
+
+lemma condexp_integral_eq {f : α → E} (hf : integrable f μ) {s : set α}
+  (hs : @measurable_set α m s) :
+  ∫ x in s, condexp 𝕜 hm f hf x ∂μ = ∫ x in s, f x ∂μ :=
+(is_condexp_condexp 𝕜 hm hf).2.2 s hs
 
 end condexp_def
 
