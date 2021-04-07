@@ -1577,8 +1577,7 @@ begin
     exact Lp.snorm_lt_top _, },
   have h_eq : snorm (⇑(f n) - ⇑(mem_ℒp.to_Lp f_lim f_lim_ℒp)) p μ = snorm (⇑(f n) - f_lim) p μ,
   { have h_coe_fn : ⇑(mem_ℒp.to_Lp f_lim f_lim_ℒp) =ᵐ[μ] f_lim, from f_lim_ℒp.coe_fn_to_Lp,
-    refine snorm_congr_ae _,
-    sorry, },
+    exact snorm_congr_ae (eventually_eq.sub eventually_eq.rfl h_coe_fn), },
   rw h_eq at h_tendsto,
   exact h_tendsto.le,
 end
