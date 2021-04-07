@@ -980,6 +980,7 @@ begin
   exact (mem_ℒp.coe_fn_to_Lp _).symm,
 end
 
+-- TODO: probability_measure is not needed, finite_measure is enough
 lemma continuous_L2_to_L1 [measurable_space α] [normed_group E] [borel_space E]
   [second_countable_topology E] {μ : measure α} [probability_measure μ] :
   continuous (λ (f : α →₂[μ] E),
@@ -1528,7 +1529,16 @@ begin
   { change is_closed ((condexp_L1 𝕜 hm) ⁻¹'
       {x : ↥(Lp E 1 μ) | ∃ f', @measurable _ _ m _ f' ∧ x =ᵐ[μ] f'}),
     refine is_closed.preimage (continuous_linear_map.continuous _) _,
-    sorry }, -- this is approximately done when defining Lp_sub
+    rw ← is_seq_closed_iff_is_closed,
+    refine is_seq_closed_of_def (λ F f F_mem F_tendsto_f, _),
+    rw set.mem_set_of_eq,
+    change ∀ n, ∃ f', @measurable _ _ m _ f' ∧ ⇑(F n) =ᵐ[μ] f' at F_mem,
+    let G := λ n, (F_mem n).some,
+    have hG_meas : ∀ n, @measurable _ _ m _ (G n), from λ n, (F_mem n).some_spec.1,
+    have hF_eq_G : ∀ n, F n =ᵐ[μ] G n, from λ n, (F_mem n).some_spec.2,
+    haveI : fact (1 ≤ (1 : ℝ≥0∞)) := le_rfl,
+    obtain ⟨f_lim, h_meas, h⟩ := ae_eq_measurable_of_tendsto hm F G f hF_eq_G hG_meas F_tendsto_f,
+    exact ⟨f_lim, h_meas, h⟩, }, -- this is approximately done when defining Lp_sub
   { intro fs,
     rw condexp_L1_eq_condexp_L1s,
     obtain ⟨f', hf'_meas, hf'⟩ := (is_condexp_condexp_L1s 𝕜 hm fs).2.1,
@@ -1537,13 +1547,24 @@ begin
     refl, },
 end
 
+@[continuity]
+lemma continuous_set_integral {E} [measurable_space E] [normed_group E] [borel_space E]
+  [second_countable_topology E] [normed_space ℝ E] [complete_space E] {s : set α}
+  (hs : measurable_set s) :
+  continuous (λ f : α →₁[μ] E, ∫ x in s, f x ∂μ) :=
+begin
+  sorry,
+end
+
 lemma integral_eq_condexp_L1 (f : α →₁[μ] E) (s : set α) (hs : @measurable_set α m s) :
   ∫ a in s, (condexp_L1 𝕜 hm f) a ∂μ = ∫ a in s, f a ∂μ :=
 begin
   refine @is_closed_property _ (α →₁[μ] E) _ _ _ L1.simple_func.dense_range _ _ f,
-  { refine is_closed_eq _ _,
-    sorry,
-    sorry, },
+  { have hs' : measurable_set s, from hm s hs,
+    refine is_closed_eq _ _,
+    { change continuous ((λ (x : ↥(Lp E 1 μ)), ∫ (a : α) in s, x a ∂μ) ∘ (condexp_L1 𝕜 hm)),
+      continuity, },
+    { continuity, }, },
   { intro fs,
     rw condexp_L1_eq_condexp_L1s,
     exact (is_condexp_condexp_L1s 𝕜 hm fs).2.2 s hs, },
