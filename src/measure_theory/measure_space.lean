@@ -2493,26 +2493,6 @@ end is_complete
 
 namespace measure_theory
 
-/-- A measure space is a measurable space equipped with a
-  measure, referred to as `volume`. -/
-class measure_space (α : Type*) extends measurable_space α :=
-(volume : measure α)
-
-export measure_space (volume)
-
-/-- `volume` is the canonical  measure on `α`. -/
-add_decl_doc volume
-
-section measure_space
-variables [measure_space α] {s₁ s₂ : set α}
-
-notation `∀ᵐ` binders `, ` r:(scoped P, filter.eventually P (measure.ae volume)) := r
-
-/-- The tactic `exact volume`, to be used in optional (`auto_param`) arguments. -/
-meta def volume_tac : tactic unit := `[exact measure_theory.measure_space.volume]
-
-end measure_space
-
 section trim
 
 def measure.trim {α} {m m0 : measurable_space α} (μ : @measure_theory.measure α m0) (hm : m ≤ m0) :
