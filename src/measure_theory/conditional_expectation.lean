@@ -445,7 +445,7 @@ end
 
 lemma integral_const_inner [complete_space E] {f : α → E} (hf : integrable f μ) (c : E) :
   ∫ x, (inner c (f x) : 𝕜) ∂μ = inner c (∫ x, f x ∂μ) :=
-@continuous_linear_map.integral_comp_comm α E 𝕜 _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+@continuous_linear_map.integral_comp_comm α E 𝕜 _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
   (inner_right c) _ hf
 
 lemma ae_eq_zero_of_forall_set [finite_measure μ] [complete_space E] (f : α → E)
