@@ -2505,10 +2505,8 @@ by simp [measure.trim]
 
 lemma outer_measure.to_measure_zero {α} [measurable_space α] :
   (0 : outer_measure α).to_measure (by simp) = 0 :=
-begin
-  simp [outer_measure.to_measure],
-  sorry,
-end
+by rw [← measure.measure_univ_eq_zero, to_measure_apply _ _ measurable_set.univ,
+  outer_measure.coe_zero, pi.zero_apply]
 
 @[simp] lemma trim_zero {α} {m m0 : measurable_space α} (hm : m ≤ m0) :
   (0 : measure α).trim hm = (0 : @measure α m) :=
