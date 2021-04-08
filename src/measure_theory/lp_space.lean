@@ -604,6 +604,20 @@ begin
     by simp [hpqr],
 end
 
+lemma snorm_le_snorm_mul_rpow_measure_univ {p q : ℝ≥0∞} (hp0_lt : 0 < p) (hpq : p ≤ q)
+  (hq_lt_top : q < ∞) {f : α → E} (hf : ae_measurable f μ) :
+  snorm f p μ ≤ snorm f q μ * (μ set.univ) ^ (1/p.to_real - 1/q.to_real) :=
+begin
+  have hp_lt_top : p < ∞, from hpq.trans_lt hq_lt_top,
+  have hp_pos : 0 < p.to_real, from ennreal.to_real_pos_iff.mpr ⟨hp0_lt, hp_lt_top.ne⟩,
+  have hq0_lt : 0 < q, from lt_of_lt_of_le hp0_lt hpq,
+  rw snorm_eq_snorm' hp0_lt.ne.symm hp_lt_top.ne,
+  rw snorm_eq_snorm' hq0_lt.ne.symm hq_lt_top.ne,
+  have hpq_real : p.to_real ≤ q.to_real,
+    by rwa ennreal.to_real_le_to_real hp_lt_top.ne hq_lt_top.ne,
+  exact snorm'_le_snorm'_mul_rpow_measure_univ hp_pos hpq_real hf,
+end
+
 lemma snorm'_le_snorm_ess_sup_mul_rpow_measure_univ (hq_pos : 0 < q) {f : α → F} :
   snorm' f q μ ≤ snorm_ess_sup f μ * (μ set.univ) ^ (1/q) :=
 begin

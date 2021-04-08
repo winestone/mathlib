@@ -667,7 +667,6 @@ end
 omit 𝕜
 
 /-- Conditional expectation of a function in L2 with respect to a sigma-algebra -/
-
 def condexp_L2_clm [complete_space E] {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α} :
   (α →₂[μ] E) →L[𝕜] (Lp_sub hm 𝕜 E 2 μ) :=
 orthogonal_projection (Lp_sub hm 𝕜 E 2 μ)
@@ -988,30 +987,51 @@ begin
   exact (mem_ℒp.coe_fn_to_Lp _).symm,
 end
 
--- TODO: probability_measure is not needed, finite_measure is enough
 lemma continuous_L2_to_L1 [measurable_space α] [normed_group E] [borel_space E]
-  [second_countable_topology E] {μ : measure α} [probability_measure μ] :
+  [second_countable_topology E] {μ : measure α} [finite_measure μ] :
   continuous (λ (f : α →₂[μ] E),
     (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp f) ennreal.one_le_two).to_Lp f) :=
 begin
   rw metric.continuous_iff,
   intros f ε hε_pos,
   simp_rw dist_def,
-  refine ⟨ε, hε_pos, λ g hfg, _⟩,
+  by_cases hμ0 : μ = 0,
+  { simp only [hμ0, exists_prop, forall_const, gt_iff_lt, ennreal.zero_to_real, snorm_measure_zero],
+    exact ⟨ε, hε_pos, λ h, h⟩, },
+  have h_univ_pow_pos : 0 < (μ set.univ ^ (1/(2 : ℝ))).to_real,
+  { refine ennreal.to_real_pos_iff.mpr ⟨_, _⟩,
+    { have hμ_univ_pos : 0 < μ set.univ,
+      { refine lt_of_le_of_ne (zero_le _) (ne.symm _),
+        rwa [ne.def, measure_theory.measure.measure_univ_eq_zero], },
+      exact ennreal.rpow_pos hμ_univ_pos (measure_ne_top μ set.univ), },
+    { refine ennreal.rpow_ne_top_of_nonneg _ (measure_ne_top μ set.univ),
+      simp [zero_le_one], }, },
+  refine ⟨ε / (μ set.univ ^ (1/(2 : ℝ))).to_real, div_pos hε_pos h_univ_pow_pos, λ g hfg, _⟩,
+  rw lt_div_iff h_univ_pow_pos at hfg,
   refine lt_of_le_of_lt _ hfg,
+  rw ← ennreal.to_real_mul,
   rw ennreal.to_real_le_to_real _ _,
   swap, { rw snorm_congr_ae (Lp.coe_fn_sub _ _).symm, exact Lp.snorm_ne_top _, },
-  swap, { rw snorm_congr_ae (Lp.coe_fn_sub _ _).symm, exact Lp.snorm_ne_top _, },
-  refine (le_of_eq _).trans (snorm_le_snorm_of_exponent_le (ennreal.one_le_two)
-    ((Lp.ae_measurable g).sub (Lp.ae_measurable f))),
-  refine snorm_congr_ae _,
-  exact eventually_eq.comp₂
-    (mem_ℒp.coe_fn_to_Lp (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp g) ennreal.one_le_two))
-    (λ x y, x - y)
-    (mem_ℒp.coe_fn_to_Lp (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp f) ennreal.one_le_two)),
+  swap, { rw snorm_congr_ae (Lp.coe_fn_sub _ _).symm,
+    refine ennreal.mul_ne_top _ _,
+    exact Lp.snorm_ne_top _,
+    refine ennreal.rpow_ne_top_of_nonneg _ _,
+    simp [zero_le_one],
+    exact measure_ne_top μ set.univ, },
+  refine (le_of_eq _).trans ((snorm_le_snorm_mul_rpow_measure_univ
+    ennreal.zero_lt_one (ennreal.one_le_two) ennreal.coe_lt_top
+    ((Lp.ae_measurable g).sub (Lp.ae_measurable f))).trans (le_of_eq _)),
+  { refine snorm_congr_ae _,
+    exact eventually_eq.comp₂
+      (mem_ℒp.coe_fn_to_Lp (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp g) ennreal.one_le_two))
+      (λ x y, x - y)
+      (mem_ℒp.coe_fn_to_Lp (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp f) ennreal.one_le_two)), },
+  { congr,
+    simp only [ennreal.one_to_real, ennreal.to_real_bit0, div_one],
+    norm_num, },
 end
 
-def L2_to_L1_clm [measurable_space α] {μ : measure α} [probability_measure μ] :
+def L2_to_L1_clm [measurable_space α] {μ : measure α} [finite_measure μ] :
   (α →₂[μ] E) →L[𝕜] (α →₁[μ] E) :=
 { to_fun := λ f, (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp f) ennreal.one_le_two).to_Lp f,
   map_add' := L2_to_L1_add,
@@ -1019,7 +1039,7 @@ def L2_to_L1_clm [measurable_space α] {μ : measure α} [probability_measure μ
   cont := continuous_L2_to_L1, }
 
 include 𝕜
-lemma L2_to_L1_coe_fn [measurable_space α] {μ : measure α} [probability_measure μ] (f : α →₂[μ] E) :
+lemma L2_to_L1_coe_fn [measurable_space α] {μ : measure α} [finite_measure μ] (f : α →₂[μ] E) :
   L2_to_L1_clm f =ᵐ[μ] f :=
 mem_ℒp.coe_fn_to_Lp _
 omit 𝕜
@@ -1101,7 +1121,7 @@ end
 
 section indicator_L1s
 variables [measurable_space α] [normed_group E] [borel_space E] [second_countable_topology E]
-  [complete_space E] {μ : measure α} [probability_measure μ] {s : set α} {hs : measurable_set s}
+  [complete_space E] {μ : measure α} [finite_measure μ] {s : set α} {hs : measurable_set s}
 
 lemma is_simple_func_indicator_ae (hs : measurable_set s) (hμs : μ s < ∞) (c : E) :
   ∃ (s : simple_func α E), (ae_eq_fun.mk s s.ae_measurable : α →ₘ[μ] E) = indicator_Lp 1 hs hμs c :=
@@ -1155,7 +1175,7 @@ lemma L1.simple_func.to_L1_coe_fn [measurable_space α] [normed_group E] [borel_
 by { rw [←L1.simple_func.coe_coe, L1.simple_func.to_L1_eq_to_L1], exact integrable.coe_fn_to_L1 _, }
 
 lemma L1.simple_func_eq_sum_indicator_L1s [measurable_space α] [normed_group E] [borel_space E]
-  [second_countable_topology E] [complete_space E] {μ : measure α} [probability_measure μ]
+  [second_countable_topology E] [complete_space E] {μ : measure α} [finite_measure μ]
   (f : α →₁ₛ[μ] E) :
   f = ∑ y in (L1.simple_func.to_simple_func f).range,
     indicator_L1s (L1.simple_func.measurable f (measurable_set_singleton y))
@@ -1217,7 +1237,7 @@ rfl
 section is_condexp
 
 variables {m m0 : measurable_space α} (hm : m ≤ m0) [complete_space E] {μ : measure α}
-  [probability_measure μ]
+  [finite_measure μ]
 
 variables (𝕜)
 def condexp_L1s_lm : (α →₁ₛ[μ] E) →ₗ[𝕜] (α →₁[μ] E) :=
@@ -1247,7 +1267,7 @@ variables {𝕜}
 end is_condexp
 
 lemma condexp_L1s_const_le {m m0 : measurable_space α} (hm : m ≤ m0)
-  {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (c : ℝ) (hf : ∀ᵐ x ∂μ, c ≤ f x) :
+  {μ : measure α} [finite_measure μ] (f : α →₁ₛ[μ] ℝ) (c : ℝ) (hf : ∀ᵐ x ∂μ, c ≤ f x) :
   ∀ᵐ x ∂μ, c ≤ condexp_L1s_lm ℝ hm f x :=
 begin
   refine (ae_const_le_iff_forall_lt_measure_zero _ c).mpr (λ b hb, _),
@@ -1295,7 +1315,7 @@ begin
 end
 
 lemma condexp_L1s_le_const {m m0 : measurable_space α} (hm : m ≤ m0)
-  {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (c : ℝ) (hf : ∀ᵐ x ∂μ, f x ≤ c) :
+  {μ : measure α} [finite_measure μ] (f : α →₁ₛ[μ] ℝ) (c : ℝ) (hf : ∀ᵐ x ∂μ, f x ≤ c) :
   ∀ᵐ x ∂μ, condexp_L1s_lm ℝ hm f x ≤ c :=
 begin
   have h_neg := condexp_L1s_const_le hm (-f) (-c) _,
@@ -1311,12 +1331,12 @@ begin
 end
 
 lemma condexp_L1s_nonneg {m m0 : measurable_space α} (hm : m ≤ m0)
-  {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (hf : 0 ≤ᵐ[μ] f) :
+  {μ : measure α} [finite_measure μ] (f : α →₁ₛ[μ] ℝ) (hf : 0 ≤ᵐ[μ] f) :
   0 ≤ᵐ[μ] condexp_L1s_lm ℝ hm f :=
 condexp_L1s_const_le hm f 0 hf
 
 lemma condexp_L1s_mono {m m0 : measurable_space α} (hm : m ≤ m0)
-  {μ : measure α} [probability_measure μ] (f g : α →₁ₛ[μ] ℝ) (hfg : f ≤ᵐ[μ] g) :
+  {μ : measure α} [finite_measure μ] (f g : α →₁ₛ[μ] ℝ) (hfg : f ≤ᵐ[μ] g) :
   condexp_L1s_lm ℝ hm f ≤ᵐ[μ] condexp_L1s_lm ℝ hm g :=
 begin
   suffices h_sub : condexp_L1s_lm ℝ hm (f-g) ≤ᵐ[μ] 0,
@@ -1335,7 +1355,7 @@ begin
 end
 
 lemma condexp_L1s_R_jensen_norm {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
-  [probability_measure μ] (f : α →₁ₛ[μ] ℝ) :
+  [finite_measure μ] (f : α →₁ₛ[μ] ℝ) :
   ∀ᵐ x ∂μ, ∥condexp_L1s_lm ℝ hm f x∥ ≤ condexp_L1s_lm ℝ hm (L1.simple_func.map (λ x, ∥x∥) f) x :=
 begin
   simp_rw real.norm_eq_abs,
@@ -1343,14 +1363,14 @@ begin
 end
 
 --lemma condexp_L1s_R_jensen {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
---  [probability_measure μ] (f : α →₁ₛ[μ] ℝ) (F : ℝ → ℝ) (hF : convex_on (set.univ : set ℝ) F) :
+--  [finite_measure μ] (f : α →₁ₛ[μ] ℝ) (F : ℝ → ℝ) (hF : convex_on (set.univ : set ℝ) F) :
 --  ∀ᵐ x ∂μ, F (condexp_L1s_lm ℝ hm f x) ≤ condexp_L1s_lm ℝ hm (L1.simple_func.map F f) x :=
 --begin
 --  sorry
 --end
 
 lemma norm_condexp_L1s_le_R {m m0 : measurable_space α} (hm : m ≤ m0)
-  {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] ℝ) :
+  {μ : measure α} [finite_measure μ] (f : α →₁ₛ[μ] ℝ) :
   ∥condexp_L1s_lm ℝ hm f∥ ≤ ∥f∥ :=
 begin
   simp_rw [L1.simple_func.norm_eq, norm_def],
@@ -1390,20 +1410,20 @@ end
 
 lemma norm_indicator_L1s [normed_group E] [borel_space E] [second_countable_topology E]
   [complete_space E] {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
-  [probability_measure μ] {s : set α} {hs : measurable_set s} {hμs : μ s < ∞} {c : E} :
+  [finite_measure μ] {s : set α} {hs : measurable_set s} {hμs : μ s < ∞} {c : E} :
   ∥indicator_L1s hs hμs c∥ = ∥c∥ * (μ s).to_real :=
 by rw [L1.simple_func.norm_eq, indicator_L1s_coe,
   norm_indicator_Lp ennreal.zero_lt_one ennreal.coe_ne_top, ennreal.one_to_real, div_one,
   real.rpow_one]
 
 lemma norm_condexp_L1s_indicator_L1s_R_le {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
-  [probability_measure μ] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : ℝ) :
+  [finite_measure μ] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : ℝ) :
   ∥condexp_L1s_lm ℝ hm (indicator_L1s hs hμs c)∥ ≤ ∥c∥ * (μ s).to_real :=
 (norm_condexp_L1s_le_R hm _).trans (norm_indicator_L1s hm).le
 
 variables (𝕜)
 include 𝕜
-lemma indicator_L1s_eq_smul [measurable_space α] {μ : measure α} [probability_measure μ]
+lemma indicator_L1s_eq_smul [measurable_space α] {μ : measure α} [finite_measure μ]
   [complete_space E] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : E) :
   indicator_L1s hs hμs c =ᵐ[μ] λ x, ((@indicator_L1s α ℝ _ _ _ _ _ _ μ _ s hs hμs 1) x) • c :=
 begin
@@ -1419,7 +1439,7 @@ end
 omit 𝕜
 variables {𝕜}
 
-lemma indicator_L1s_coe_ae_le [measurable_space α] {μ : measure α} [probability_measure μ]
+lemma indicator_L1s_coe_ae_le [measurable_space α] {μ : measure α} [finite_measure μ]
   {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : ℝ) :
   ∀ᵐ x ∂μ, abs (indicator_L1s hs hμs c x) ≤ abs c :=
 begin
@@ -1429,7 +1449,7 @@ begin
 end
 
 lemma condexp_L1s_indicator_L1s_eq {m m0 : measurable_space α} (hm : m ≤ m0) [complete_space E]
-  {μ : measure α} [probability_measure μ] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞)
+  {μ : measure α} [finite_measure μ] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞)
   (c : E) :
   condexp_L1s_lm 𝕜 hm (indicator_L1s hs hμs c) =ᵐ[μ]
     λ x, (condexp_L1s_lm ℝ hm (@indicator_L1s α ℝ _ _ _ _ _ _ μ _ s hs hμs 1) x) • c :=
@@ -1466,7 +1486,7 @@ begin
 end
 
 lemma norm_condexp_L1s_indicator_L1s {m m0 : measurable_space α} (hm : m ≤ m0) [complete_space E]
-  {μ : measure α} [probability_measure μ] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞)
+  {μ : measure α} [finite_measure μ] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞)
   (c : E) :
   ∥condexp_L1s_lm 𝕜 hm (indicator_L1s hs hμs c)∥ ≤ ∥indicator_L1s hs hμs c∥ :=
 begin
@@ -1490,7 +1510,7 @@ begin
 end
 
 lemma norm_condexp_L1s_le {m m0 : measurable_space α} (hm : m ≤ m0) [complete_space E]
-  {μ : measure α} [probability_measure μ] (f : α →₁ₛ[μ] E) :
+  {μ : measure α} [finite_measure μ] (f : α →₁ₛ[μ] E) :
   ∥condexp_L1s_lm 𝕜 hm f∥ ≤ ∥f∥ :=
 begin
   rw L1.simple_func.norm_eq_integral,
@@ -1505,7 +1525,7 @@ end
 
 section condexp_def
 variables {m m0 : measurable_space α} (hm : m ≤ m0) [complete_space E]
-  {μ : measure α} [probability_measure μ]
+  {μ : measure α} [finite_measure μ]
 
 lemma continuous_condexp_L1s : continuous (@condexp_L1s_lm α E 𝕜 _ _ _ _ _ _ _ _ _ m m0 hm _ μ _) :=
 linear_map.continuous_of_bound _ 1 (λ f, (norm_condexp_L1s_le hm f).trans (one_mul _).symm.le)
