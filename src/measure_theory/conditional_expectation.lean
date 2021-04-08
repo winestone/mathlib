@@ -1168,8 +1168,8 @@ begin
   exact finset.sum_congr rfl hx,
 end
 
-lemma L1.simple_func.sum_to_simple_func_coe {ι} [measurable_space α] [normed_group E] [borel_space E]
-  [second_countable_topology E] {μ : measure α} (f : ι → α →₁ₛ[μ] E) (s : finset ι) :
+lemma L1.simple_func.sum_to_simple_func_coe {ι} [measurable_space α] [normed_group E]
+  [borel_space E] [second_countable_topology E] {μ : measure α} (f : ι → α →₁ₛ[μ] E) (s : finset ι) :
   L1.simple_func.to_simple_func (∑ i in s, f i)
     =ᵐ[μ] ∑ i in s, L1.simple_func.to_simple_func (f i) :=
 begin
@@ -1210,7 +1210,11 @@ begin
   nth_rewrite 0 ← L1.simple_func.to_L1_to_simple_func f,
   refine (L1.simple_func.to_L1_coe_fn _ _).trans _,
   have h_to_sum := simple_func_eq_sum_indicator (L1.simple_func.to_simple_func f),
-  sorry,
+  refine eventually_of_forall (λ x, _),
+  apply_fun (λ f : simple_func α E, f.to_fun x) at h_to_sum,
+  convert h_to_sum,
+  rw ← simple_func.coe_finset_sum,
+  refl,
 end
 
 lemma simple_func.integrable [measurable_space α] [normed_group E] [borel_space E]
