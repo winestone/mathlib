@@ -1584,8 +1584,7 @@ end
 
 lemma tendsto_Lp_iff_tendsto_ℒp' {ι} [linear_order ι] [hp : fact (1 ≤ p)]
   (f : ι → Lp E p μ) (f_lim : Lp E p μ) :
-  at_top.tendsto f (𝓝 f_lim)
-    ↔ at_top.tendsto (λ n, snorm (f n - f_lim) p μ) (𝓝 0) :=
+  at_top.tendsto f (𝓝 f_lim) ↔ at_top.tendsto (λ n, snorm (f n - f_lim) p μ) (𝓝 0) :=
 begin
   rw tendsto_iff_dist_tendsto_zero,
   simp_rw dist_def,

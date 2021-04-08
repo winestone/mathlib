@@ -688,72 +688,85 @@ lemma indicator_ae_coe [measurable_space α] [normed_group E]
   ⇑(indicator_ae α μ hs c) =ᵐ[μ] s.indicator (λ _, c) :=
 ae_eq_fun.coe_fn_mk (s.indicator (λ _, c)) (ae_measurable_indicator_ae μ hs)
 
-lemma snorm_indicator_const [measurable_space α] [normed_group E]
-  {μ : measure α} {s : set α} {c : E} (hp : 0 < p) (hp_top : p ≠ ∞) :
-  snorm (s.indicator (λ x, c)) p μ = (nnnorm c) * (μ s) ^ (1 / p.to_real) :=
-begin
-  rw snorm_eq_snorm' hp.ne.symm hp_top,
-  rw snorm',
-  sorry
-end
-
 lemma mem_ℒ0_iff_ae_measurable [measurable_space α] [normed_group E] {μ : measure α} {f : α → E} :
   mem_ℒp f 0 μ ↔ ae_measurable f μ :=
 by { simp_rw mem_ℒp, refine and_iff_left _, simp, }
 
-lemma mem_ℒp_of_norm_le (p : ℝ≥0∞) [measurable_space α] [normed_group E] {μ : measure α}
-  {f : α → E} (hf : ae_measurable f μ) (hμf : μ {x | f x ≠ 0} < ∞) (c : ℝ)
-  (hf_bounded : ∀ᵐ x ∂μ, ∥f x∥ ≤ c) :
-  mem_ℒp f p μ :=
+lemma indicator_comp {E F} [has_zero E] [has_zero F] (s : set α) (c : E) (f : E → F) (g : α → E)
+  (hf : f 0 = 0) :
+  (λ x, f (s.indicator g x)) = s.indicator (f ∘ g) :=
+by { ext1 x, by_cases hx : x ∈ s; simp [hx, hf] }
+
+lemma indicator_const_comp {E F} [has_zero E] [has_zero F] (s : set α) (c : E) (f : E → F)
+  (hf : f 0 = 0) :
+  (λ x, f (s.indicator (λ x, c) x)) = s.indicator (λ x, f c) :=
+indicator_comp s c f (λ x, c) hf
+
+lemma snorm_ess_sup_indicator_le [measurable_space α] [normed_group E] {μ : measure α}
+  (s : set α) (f : α → E) :
+  snorm_ess_sup (s.indicator f) μ ≤ snorm_ess_sup f μ :=
 begin
-  refine ⟨hf, _⟩,
-  have hf_bounded_indicator : ∀ᵐ x ∂μ, ∥f x∥ ≤ ∥{x | f x ≠ 0}.indicator (λ x : α, c) x∥,
-  { sorry},
-  refine (snorm_mono_ae hf_bounded_indicator).trans_lt _,
+  refine ess_sup_mono_ae (eventually_of_forall (λ x, _)),
+  rw [ennreal.coe_le_coe, nnnorm_indicator_eq_indicator_nnnorm],
+  exact set.indicator_le_self s _ x,
+end
+
+lemma snorm_ess_sup_indicator_const_le [measurable_space α] [normed_group E] {μ : measure α}
+  (s : set α) (c : E) :
+  snorm_ess_sup (s.indicator (λ x : α , c)) μ ≤ (nnnorm c : ℝ≥0∞) :=
+begin
+  refine (snorm_ess_sup_indicator_le s (λ x, c)).trans _,
+  by_cases hμ0 : μ = 0,
+  { simp [hμ0], },
+  rw snorm_ess_sup_const c hμ0,
+  exact le_rfl,
+end
+
+lemma snorm_indicator_const [measurable_space α] [normed_group E]
+  {μ : measure α} {s : set α} {c : E} (hs : measurable_set s) (hp : 0 < p) (hp_top : p ≠ ∞) :
+  snorm (s.indicator (λ x, c)) p μ = (nnnorm c) * (μ s) ^ (1 / p.to_real) :=
+begin
+  have hp_pos : 0 < p.to_real, from ennreal.to_real_pos_iff.mpr ⟨hp, hp_top⟩,
+  rw snorm_eq_snorm' hp.ne.symm hp_top,
+  rw snorm',
+  simp_rw [nnnorm_indicator_eq_indicator_nnnorm, ennreal.coe_indicator],
+  have h_indicator_pow : (λ a : α, s.indicator (λ (x : α), (nnnorm c : ℝ≥0∞)) a ^ p.to_real)
+    = s.indicator (λ (x : α), ↑(nnnorm c) ^ p.to_real),
+  { rw indicator_const_comp s (nnnorm c : ℝ≥0∞) (λ x, x ^ p.to_real) _, simp [hp_pos], },
+  rw [h_indicator_pow, lintegral_indicator _ hs, set_lintegral_const, ennreal.mul_rpow_of_nonneg],
+  swap, { simp [hp_pos.le], },
+  rw [← ennreal.rpow_mul, mul_one_div_cancel hp_pos.ne.symm, ennreal.rpow_one],
+end
+
+lemma mem_ℒp_indicator_const (p : ℝ≥0∞) [measurable_space α] [normed_group E] {μ : measure α}
+  {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : E) :
+  mem_ℒp (s.indicator (λ x : α , c)) p μ :=
+begin
+  refine ⟨(ae_measurable_indicator_iff hs).mp ae_measurable_const, _⟩,
   by_cases hp0 : p = 0,
   { simp [hp0], },
+  rw ← ne.def at hp0,
   by_cases hp_top : p = ∞,
-  { rw hp_top, sorry, },
+  { rw [hp_top, snorm_exponent_top],
+    exact (snorm_ess_sup_indicator_const_le s c).trans_lt ennreal.coe_lt_top, },
+  have hp_pos : 0 < p.to_real,
+    from ennreal.to_real_pos_iff.mpr ⟨lt_of_le_of_ne (zero_le _) hp0.symm, hp_top⟩,
   rw snorm_eq_snorm' hp0 hp_top,
   simp_rw snorm',
-  refine ennreal.rpow_lt_top_of_nonneg sorry _,
-  simp_rw nnnorm_indicator_eq_indicator_nnnorm,
-  simp_rw ennreal.coe_indicator,
-  have h_rpow_indicator : ∀ a, {x : α | f x ≠ 0}.indicator (λ x, (nnnorm c : ℝ≥0∞)) a ^ p.to_real
-    = {x : α | f x ≠ 0}.indicator (λ x, (nnnorm c : ℝ≥0∞)^ p.to_real) a,
-  { sorry, },
-  simp_rw h_rpow_indicator,
-  rw lintegral_indicator,
-  change ∫⁻ (a : α) in {x : α | f x ≠ 0}, (nnnorm c : ℝ≥0∞) ^ p.to_real ∂μ ≠ ⊤,
-  rw lintegral_const,
-  sorry,
-  sorry,
+  refine ennreal.rpow_lt_top_of_nonneg _ _,
+  { simp only [hp_pos.le, one_div, inv_nonneg], },
+  simp_rw [nnnorm_indicator_eq_indicator_nnnorm, ennreal.coe_indicator],
+  have h_indicator_pow : (λ a : α, s.indicator (λ (x : α), (nnnorm c : ℝ≥0∞)) a ^ p.to_real)
+    = s.indicator (λ (x : α), ↑(nnnorm c) ^ p.to_real),
+  { rw indicator_const_comp s (nnnorm c : ℝ≥0∞) (λ x, x ^ p.to_real) _, simp [hp_pos], },
+  rw [h_indicator_pow, lintegral_indicator _ hs],
+  simp [hp_pos, hμs.ne, not_le.mpr hp_pos, not_lt.mpr hp_pos.le],
 end
 
 lemma mem_ℒp_indicator_ae {α E} [measurable_space α] [measurable_space E] [normed_group E]
   {μ : measure α} {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : E) :
   mem_ℒp (indicator_ae α μ hs c) p μ :=
-begin
-  by_cases hp0 : p = 0,
-  { rw [hp0, mem_ℒ0_iff_ae_measurable],
-    rw ae_measurable_congr indicator_ae_coe,
-    exact ae_measurable_indicator_ae μ hs, },
-  by_cases hp_top : p = ∞,
-  { rw hp_top,
-    refine mem_ℒp_of_norm_le ∞ (indicator_ae α μ hs c).ae_measurable _ (∥c∥) _,
-    { sorry, },
-    refine (@indicator_ae_coe α E _ _ _ μ s hs c).mono (λ x hx, _),
-    rw hx,
-    exact norm_indicator_le_norm_self _ x, },
-  rw ← ne.def at hp0,
-  have hp : 0 < p, from lt_of_le_of_ne (zero_le _) hp0.symm,
-  refine ⟨(indicator_ae α μ hs c).ae_measurable, _⟩,
-  rw snorm_congr_ae (indicator_ae_coe),
-  rw snorm_indicator_const hp hp_top,
-  refine ennreal.mul_lt_top ennreal.coe_lt_top _,
-  exact ennreal.rpow_lt_top_of_nonneg (by simp) (lt_top_iff_ne_top.mp hμs),
-  assumption,
-end
+by { rw mem_ℒp_congr_ae indicator_ae_coe, exact mem_ℒp_indicator_const p hs hμs c }
 
 local notation `⟪`x`, `y`⟫` := @inner 𝕜 E _ x y
 
@@ -781,7 +794,7 @@ lemma norm_indicator_Lp (hp_pos : 0 < p) (hp_ne_top : p ≠ ∞) :
   ∥indicator_Lp p hs hμs c∥ = ∥c∥ * (μ s).to_real ^ (1 / p.to_real) :=
 begin
   rw [norm_def, snorm_congr_ae (indicator_Lp_coe_fn hs hμs c),
-    snorm_indicator_const hp_pos hp_ne_top, ennreal.to_real_mul, ennreal.to_real_rpow],
+    snorm_indicator_const hs hp_pos hp_ne_top, ennreal.to_real_mul, ennreal.to_real_rpow],
   congr,
   assumption,
 end
@@ -838,10 +851,7 @@ lemma integral_zero_of_forall_integral_inner_zero [measurable_space α] [complet
   {μ : measure α} (f : α → E) (hf : integrable f μ)
   (hf_int : ∀ (c : E), ∫ x, ⟪c, f x⟫ ∂μ = (0 : 𝕜)) :
   ∫ x, f x ∂μ = 0 :=
-begin
-  specialize hf_int (∫ x, f x ∂μ),
-  rwa [integral_inner hf, inner_self_eq_zero] at hf_int,
-end
+by { specialize hf_int (∫ x, f x ∂μ), rwa [integral_inner hf, inner_self_eq_zero] at hf_int }
 
 lemma Lp.integrable [measurable_space α] {μ : measure α} [finite_measure μ] [normed_group E]
   [borel_space E] [second_countable_topology E] (f : Lp E p μ) (hp : 1 ≤ p) :
@@ -895,8 +905,6 @@ lemma mem_ℒ2_simple_func [measurable_space α] [normed_group E] {μ : measure 
   (f : simple_func α E) :
   mem_ℒp f 2 μ :=
 begin
-  refine mem_ℒp_of_norm_le 2 f.ae_measurable (measure_lt_top μ _) _ _,
-  sorry,
   sorry,
 end
 

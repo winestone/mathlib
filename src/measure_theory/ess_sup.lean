@@ -71,8 +71,19 @@ begin
   exact filter.limsup_const c,
 end
 
+lemma ess_sup_le_of_ae_le {f : α → β} (c : β) (hf : f ≤ᵐ[μ] (λ _, c)) : ess_sup f μ ≤ c :=
+begin
+  refine (ess_sup_mono_ae hf).trans _,
+  by_cases hμ : μ = 0,
+  { simp [hμ], },
+  { rwa ess_sup_const, },
+end
+
 lemma ess_inf_const (c : β) (hμ : μ ≠ 0) : ess_inf (λ x : α, c) μ = c :=
 @ess_sup_const α (order_dual β) _ _ _ _ hμ
+
+lemma le_ess_inf_of_ae_le {f : α → β} (c : β) (hf : (λ _, c) ≤ᵐ[μ] f) : c ≤ ess_inf f μ :=
+@ess_sup_le_of_ae_le α (order_dual β) _ _ _ _ c hf
 
 lemma ess_sup_const_bot : ess_sup (λ x : α, (⊥ : β)) μ = (⊥ : β) :=
 filter.limsup_const_bot
