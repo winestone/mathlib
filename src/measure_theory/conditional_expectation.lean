@@ -900,17 +900,28 @@ omit 𝕜
 
 lemma ennreal.one_le_two : (1 : ℝ≥0∞) ≤ 2 := ennreal.coe_le_coe.2 (show (1 : ℝ≥0) ≤ 2, by norm_num)
 
-lemma mem_ℒ2_simple_func [measurable_space α] [normed_group E] {μ : measure α} [finite_measure μ]
-  (f : simple_func α E) :
-  mem_ℒp f 2 μ :=
+lemma simple_func.exists_forall_norm_le {α β} [measurable_space α] [has_norm β]
+  (f : simple_func α β) :
+  ∃ C, ∀ x, ∥f x∥ ≤ C :=
+simple_func.exists_forall_le (simple_func.map (λ x, ∥x∥) f)
+
+lemma mem_ℒp_top_simple_func [measurable_space α] [normed_group E] [borel_space E]
+  (f : simple_func α E) (μ : measure α) [finite_measure μ] :
+  mem_ℒp f ∞ μ :=
 begin
-  sorry,
+  obtain ⟨C, hfC⟩ := simple_func.exists_forall_norm_le f,
+  exact mem_ℒp.of_bound (simple_func.ae_measurable f) C (eventually_of_forall hfC),
 end
+
+lemma mem_ℒp_simple_func (p : ℝ≥0∞) [measurable_space α] [normed_group E] [borel_space E]
+  {μ : measure α} [finite_measure μ] (f : simple_func α E) :
+  mem_ℒp f p μ :=
+mem_ℒp.mem_ℒp_of_exponent_le (mem_ℒp_top_simple_func f μ) le_top
 
 lemma mem_ℒ2_simple_func_L1 [measurable_space α] [normed_group E] [borel_space E]
   [second_countable_topology E] {μ : measure α} [finite_measure μ] (f : α →₁ₛ[μ] E) :
   mem_ℒp f 2 μ :=
-(mem_ℒp_congr_ae (L1.simple_func.to_simple_func_eq_to_fun f).symm).mpr (mem_ℒ2_simple_func _)
+(mem_ℒp_congr_ae (L1.simple_func.to_simple_func_eq_to_fun f).symm).mpr (mem_ℒp_simple_func 2 _)
 
 lemma L1s_to_L2_add [measurable_space α] [normed_group E] [borel_space E]
   [second_countable_topology E] {μ : measure α} [finite_measure μ] (f g : α →₁ₛ[μ] E) :
@@ -1204,8 +1215,7 @@ begin
 end
 
 lemma simple_func.integrable [measurable_space α] [normed_group E] [borel_space E]
-  [second_countable_topology E]
-  {μ : measure α} [finite_measure μ] (f : simple_func α E) :
+  [second_countable_topology E] {μ : measure α} [finite_measure μ] (f : simple_func α E) :
   integrable f μ :=
 begin
   sorry,
@@ -1234,7 +1244,7 @@ lemma continuous_linear_map.to_linear_map_apply {R : Type*} [semiring R] {M₁ M
   f.to_linear_map x = f x :=
 rfl
 
-section is_condexp
+section condexp_L1s
 
 variables {m m0 : measurable_space α} (hm : m ≤ m0) [complete_space E] {μ : measure α}
   [finite_measure μ]
@@ -1264,7 +1274,7 @@ lemma integral_condexp_L1s (f : α →₁ₛ[μ] E) {s : set α} (hs : @measurab
 (is_condexp_condexp_L1s 𝕜 hm f).2.2 s hs
 variables {𝕜}
 
-end is_condexp
+end condexp_L1s
 
 lemma condexp_L1s_const_le {m m0 : measurable_space α} (hm : m ≤ m0)
   {μ : measure α} [finite_measure μ] (f : α →₁ₛ[μ] ℝ) (c : ℝ) (hf : ∀ᵐ x ∂μ, c ≤ f x) :
@@ -1421,6 +1431,10 @@ lemma norm_condexp_L1s_indicator_L1s_R_le {m m0 : measurable_space α} (hm : m �
   ∥condexp_L1s_lm ℝ hm (indicator_L1s hs hμs c)∥ ≤ ∥c∥ * (μ s).to_real :=
 (norm_condexp_L1s_le_R hm _).trans (norm_indicator_L1s hm).le
 
+lemma indicator_const_eq_smul {α E} [add_comm_monoid E] [semimodule ℝ E] (s : set α) (c : E) :
+  s.indicator (λ (_x : α), c) = λ (x : α), s.indicator (λ (_x : α), (1 : ℝ)) x • c :=
+by { ext1 x, by_cases h_mem : x ∈ s; simp [h_mem], }
+
 variables (𝕜)
 include 𝕜
 lemma indicator_L1s_eq_smul [measurable_space α] {μ : measure α} [finite_measure μ]
@@ -1433,8 +1447,7 @@ begin
       =ᵐ[μ] λ (x : α), s.indicator (λ x, (1:ℝ)) x • c,
     exact eventually_eq.fun_comp indicator_L1s_coe_fn (λ x, x • c), },
   refine (indicator_L1s_coe_fn).trans (eventually_eq.trans _ h.symm),
-  refine eventually_of_forall (λ x, _),
-  by_cases h_mem : x ∈ s; simp [h_mem],
+  exact eventually_of_forall (λ x, by rw indicator_const_eq_smul s c),
 end
 omit 𝕜
 variables {𝕜}
