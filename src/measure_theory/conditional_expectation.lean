@@ -1217,9 +1217,7 @@ end
 lemma simple_func.integrable [measurable_space α] [normed_group E] [borel_space E]
   [second_countable_topology E] {μ : measure α} [finite_measure μ] (f : simple_func α E) :
   integrable f μ :=
-begin
-  sorry,
-end
+mem_ℒp_one_iff_integrable.mp (mem_ℒp_simple_func 1 f)
 
 def L1.simple_func.map [measurable_space α] [normed_group E] [borel_space E]
   [second_countable_topology E]
