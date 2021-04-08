@@ -1580,6 +1580,152 @@ begin
   rw [smul_eq_mul, mul_comm, norm_indicator_L1s hm],
 end
 
+section continuous_set_integral
+
+lemma snorm'_mono_measure {q : ℝ} [normed_group E] [measurable_space α] {μ ν : measure α}
+  {f : α → E} (hμν : ν ≤ μ) (hq : 0 ≤ q) :
+  snorm' f q ν ≤ snorm' f q μ :=
+begin
+  simp_rw snorm',
+  suffices h_integral_mono : (∫⁻ a, (nnnorm (f a) : ℝ≥0∞) ^ q ∂ν) ≤ ∫⁻ a, (nnnorm (f a)) ^ q ∂μ,
+    from ennreal.rpow_le_rpow h_integral_mono (by simp [hq]),
+  exact lintegral_mono' hμν le_rfl,
+end
+
+lemma limsup_le_limsup_of_le {α β} [conditionally_complete_lattice β] {f g : filter α} (h : f ≤ g)
+  {u : α → β} (hf : f.is_cobounded_under (≤) u . is_bounded_default)
+  (hg : g.is_bounded_under (≤) u . is_bounded_default) :
+  f.limsup u ≤ g.limsup u :=
+Limsup_le_Limsup_of_le (map_mono h) hf hg
+
+lemma ess_sup_mono_measure [measurable_space α] {μ ν : measure α} {f : α → ℝ≥0∞} (hμν : ν ≪ μ) :
+  ess_sup f ν ≤ ess_sup f μ :=
+begin
+  refine limsup_le_limsup_of_le (measure.ae_le_iff_absolutely_continuous.mpr hμν) _ _,
+  all_goals {is_bounded_default, },
+end
+
+lemma snorm_ess_sup_mono_measure [normed_group E]
+  [measurable_space α] {μ ν : measure α} {f : α → E} (hμν : ν ≪ μ) :
+  snorm_ess_sup f ν ≤ snorm_ess_sup f μ :=
+by { simp_rw snorm_ess_sup, exact ess_sup_mono_measure hμν, }
+
+lemma snorm_mono_measure [normed_group E]
+  [measurable_space α] {μ ν : measure α} {f : α → E} (hμν : ν ≤ μ) :
+  snorm f p ν ≤ snorm f p μ :=
+begin
+  by_cases hp0 : p = 0,
+  { simp [hp0], },
+  by_cases hp_top : p = ∞,
+  { simp [hp_top, snorm_ess_sup_mono_measure (measure.absolutely_continuous_of_le hμν)], },
+  simp_rw snorm_eq_snorm' hp0 hp_top,
+  exact snorm'_mono_measure hμν ennreal.to_real_nonneg,
+end
+
+lemma mem_ℒp.mono_measure [normed_group E]
+  [measurable_space α] {μ ν : measure α} {f : α → E} (hμν : ν ≤ μ) (hf : mem_ℒp f p μ) :
+  mem_ℒp f p ν :=
+⟨hf.1.mono_measure hμν, (snorm_mono_measure hμν).trans_lt hf.2⟩
+
+lemma mem_ℒp.restrict [normed_group E]
+  [measurable_space α] {μ : measure α} (s : set α) {f : α → E} (hf : mem_ℒp f p μ) :
+  mem_ℒp f p (μ.restrict s) :=
+hf.mono_measure measure.restrict_le_self
+
+variables {α} [measurable_space α] {μ : measure α}
+
+lemma Lp_to_Lp_restrict_add (p : ℝ≥0∞) [normed_group E] [borel_space E]
+  [second_countable_topology E] (f g : Lp E p μ) (s : set α) :
+  mem_ℒp.to_Lp ⇑(f+g) ((Lp.mem_ℒp (f+g)).restrict s)
+    = mem_ℒp.to_Lp f ((Lp.mem_ℒp f).restrict s) + mem_ℒp.to_Lp g ((Lp.mem_ℒp g).restrict s) :=
+begin
+  ext1,
+  refine (ae_restrict_of_ae (Lp.coe_fn_add f g)).mp _,
+  refine (Lp.coe_fn_add (mem_ℒp.to_Lp f ((Lp.mem_ℒp f).restrict s))
+    (mem_ℒp.to_Lp g ((Lp.mem_ℒp g).restrict s))).mp _,
+  refine (mem_ℒp.coe_fn_to_Lp ((Lp.mem_ℒp f).restrict s)).mp _,
+  refine (mem_ℒp.coe_fn_to_Lp ((Lp.mem_ℒp g).restrict s)).mp _,
+  refine (mem_ℒp.coe_fn_to_Lp ((Lp.mem_ℒp (f+g)).restrict s)).mono (λ x hx1 hx2 hx3 hx4 hx5, _),
+  rw [hx4, hx1, pi.add_apply, hx2, hx3, hx5, pi.add_apply],
+end
+
+variables (𝕜)
+lemma Lp_to_Lp_restrict_smul {E} [measurable_space E] [normed_group E] [borel_space E]
+  [second_countable_topology E] [normed_space 𝕜 E] (p : ℝ≥0∞) (c : 𝕜) (f : Lp E p μ) (s : set α) :
+  mem_ℒp.to_Lp ⇑(c • f) ((Lp.mem_ℒp (c • f)).restrict s)
+    = c • (mem_ℒp.to_Lp f ((Lp.mem_ℒp f).restrict s)) :=
+begin
+  ext1,
+  refine (ae_restrict_of_ae (Lp.coe_fn_smul c f)).mp _,
+  refine (mem_ℒp.coe_fn_to_Lp ((Lp.mem_ℒp f).restrict s)).mp _,
+  refine (mem_ℒp.coe_fn_to_Lp ((Lp.mem_ℒp (c • f)).restrict s)).mp _,
+  refine (Lp.coe_fn_smul c (mem_ℒp.to_Lp f ((Lp.mem_ℒp f).restrict s))).mono
+    (λ x hx1 hx2 hx3 hx4, _),
+  rw [hx2, hx1, pi.smul_apply, hx3, hx4, pi.smul_apply],
+end
+variables {𝕜}
+
+def Lp_to_Lp_restrict_lm (α E 𝕜) [is_R_or_C 𝕜] [measurable_space α] (μ : measure α)
+  [measurable_space E] [normed_group E] [normed_space 𝕜 E] [borel_space E]
+  [second_countable_topology E]
+  [measurable_space 𝕜] [borel_space 𝕜] (p : ℝ≥0∞)  (s : set α) :
+  (Lp E p μ) →ₗ (Lp E p (μ.restrict s)) :=
+{ to_fun := λ f, mem_ℒp.to_Lp f ((Lp.mem_ℒp f).restrict s),
+  map_add' := λ f g, Lp_to_Lp_restrict_add p f g s,
+  map_smul' := λ c f, Lp_to_Lp_restrict_smul 𝕜 p c f s, }
+
+lemma norm_Lp_to_Lp_restrict_le (α E) [measurable_space α] {μ : measure α}
+  [measurable_space E] [normed_group E] [borel_space E]
+  [second_countable_topology E] (p : ℝ≥0∞)  (s : set α) (f : Lp E p μ) :
+  ∥mem_ℒp.to_Lp f ((Lp.mem_ℒp f).restrict s)∥ ≤ ∥f∥ :=
+begin
+  rw [norm_def, norm_def, ennreal.to_real_le_to_real (snorm_ne_top _) (snorm_ne_top _)],
+  refine (le_of_eq _).trans (snorm_mono_measure measure.restrict_le_self),
+  { exact s, },
+  exact snorm_congr_ae (mem_ℒp.coe_fn_to_Lp _),
+end
+
+def Lp_to_Lp_restrict_clm (α E 𝕜) [is_R_or_C 𝕜] [measurable_space α] (μ : measure α)
+  [measurable_space E] [normed_group E] [normed_space 𝕜 E] [borel_space E]
+  [second_countable_topology E] [measurable_space 𝕜] [borel_space 𝕜]
+  (p : ℝ≥0∞) [hp : fact(1 ≤ p)] (s : set α) :
+  @continuous_linear_map 𝕜 _ (Lp E p μ) _ _ (Lp E p (μ.restrict s)) _ _ _ _ :=
+@linear_map.mk_continuous 𝕜 (Lp E p μ) (Lp E p (μ.restrict s)) _ _ _ _ _
+  (Lp_to_Lp_restrict_lm α E 𝕜 μ p s) 1
+  (by { intro f, rw one_mul, exact norm_Lp_to_Lp_restrict_le α E p s f, })
+
+@[continuity]
+lemma continuous_Lp_to_Lp_restrict (α E 𝕜) [is_R_or_C 𝕜] [measurable_space α] {μ : measure α}
+  [measurable_space E] [normed_group E] [normed_space 𝕜 E] [borel_space E]
+  [second_countable_topology E] [measurable_space 𝕜] [borel_space 𝕜]
+  (p : ℝ≥0∞) [hp : fact(1 ≤ p)] (s : set α) :
+  continuous (Lp_to_Lp_restrict_clm α E 𝕜 μ p s) :=
+continuous_linear_map.continuous _
+
+lemma Lp_to_Lp_restrict_clm_coe_fn {α E} (𝕜) [is_R_or_C 𝕜] [measurable_space α] {μ : measure α}
+  [measurable_space E] [normed_group E] [normed_space 𝕜 E] [borel_space E]
+  [second_countable_topology E] [measurable_space 𝕜] [borel_space 𝕜]
+  {p : ℝ≥0∞} [hp : fact(1 ≤ p)] (s : set α) (f : Lp E p μ) :
+  Lp_to_Lp_restrict_clm α E 𝕜 μ p s f =ᵐ[μ.restrict s] f :=
+mem_ℒp.coe_fn_to_Lp ((Lp.mem_ℒp f).restrict s)
+
+@[continuity]
+lemma continuous_set_integral {E} [measurable_space E] [normed_group E] [borel_space E]
+  [second_countable_topology E] [normed_space ℝ E] [complete_space E] {s : set α}
+  (hs : measurable_set s) [finite_measure μ] :
+  continuous (λ f : α →₁[μ] E, ∫ x in s, f x ∂μ) :=
+begin
+  haveI : fact((1 : ℝ≥0∞) ≤ 1) := ⟨le_rfl⟩,
+  have h_comp : (λ f : α →₁[μ] E, ∫ x in s, f x ∂μ)
+    = (integral (μ.restrict s)) ∘ (λ f, Lp_to_Lp_restrict_clm α E ℝ μ 1 s f),
+  { ext1 f,
+    rw [function.comp_apply, integral_congr_ae (Lp_to_Lp_restrict_clm_coe_fn ℝ s f)], },
+  rw h_comp,
+  exact continuous_integral.comp (continuous_Lp_to_Lp_restrict α E ℝ 1 s),
+end
+
+end continuous_set_integral
+
 section condexp_def
 variables {m m0 : measurable_space α} (hm : m ≤ m0) [complete_space E]
   {μ : measure α} [finite_measure μ]
@@ -1633,15 +1779,6 @@ begin
     refine ⟨f', hf'_meas, _⟩,
     refine eventually_eq.trans (eventually_of_forall (λ x, _)) hf',
     refl, },
-end
-
-@[continuity]
-lemma continuous_set_integral {E} [measurable_space E] [normed_group E] [borel_space E]
-  [second_countable_topology E] [normed_space ℝ E] [complete_space E] {s : set α}
-  (hs : measurable_set s) :
-  continuous (λ f : α →₁[μ] E, ∫ x in s, f x ∂μ) :=
-begin
-  sorry,
 end
 
 lemma integral_eq_condexp_L1 (f : α →₁[μ] E) (s : set α) (hs : @measurable_set α m s) :
