@@ -287,14 +287,17 @@ end is_condexp
 section ae_eq_of_forall_set_integral_eq
 variables [measurable_space α] {μ : measure α}
 
-/-- TODO: write a statement about ess_inf -/
 lemma ae_const_le_iff_forall_lt_measure_zero (f : α → ℝ) (c : ℝ) :
   (∀ᵐ x ∂μ, c ≤ f x) ↔ ∀ b < c, μ {x | f x ≤ b} = 0 :=
 begin
   rw ae_iff,
   push_neg,
   have h_Union : {x | f x < c} = ⋃ (r : ℚ) (hr : ↑r < c), {x | f x ≤ r},
-  { sorry, },
+  { ext1 x,
+    simp_rw [set.mem_Union, set.mem_set_of_eq],
+    split; intro h,
+    { obtain ⟨q, lt_q, q_lt⟩ := exists_rat_btwn h, exact ⟨q, q_lt, lt_q.le⟩, },
+    { obtain ⟨q, q_lt, q_le⟩ := h, exact q_le.trans_lt q_lt, }, },
   rw h_Union,
   rw measure_Union_null_iff,
   split; intros h b,
@@ -1228,6 +1231,12 @@ def L1.simple_func.map [measurable_space α] [normed_group E] [borel_space E]
   (α →₁ₛ[μ] F) :=
 L1.simple_func.to_L1 ((L1.simple_func.to_simple_func f).map g) (simple_func.integrable _)
 
+@[ext] lemma L1.simple_func.ext [measurable_space α] [normed_group E] [borel_space E]
+  [second_countable_topology E]
+  {μ : measure α} [finite_measure μ] (f g : α →₁ₛ[μ] E) :
+  ⇑f =ᵐ[μ] g → f = g :=
+by { intro h, ext1, ext1, rwa [L1.simple_func.coe_coe, L1.simple_func.coe_coe], }
+
 lemma L1.simple_func.map_coe [measurable_space α] [normed_group E] [borel_space E]
   [second_countable_topology E]
   {μ : measure α} [finite_measure μ] (g : E → F) (f : α →₁ₛ[μ] E) :
@@ -1378,6 +1387,14 @@ begin
   exact le_abs_self _,
 end
 
+lemma L1.simple_func.coe_fn_neg [measurable_space α] [normed_group E] [borel_space E]
+  [second_countable_topology E] {μ : measure α} (f : α →₁ₛ[μ] E) :
+  ⇑(-f) =ᵐ[μ] -f :=
+begin
+  rw [← L1.simple_func.coe_coe, ← L1.simple_func.coe_coe, L1.simple_func.coe_neg],
+  exact Lp.coe_fn_neg _,
+end
+
 lemma condexp_L1s_R_jensen_norm {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
   [finite_measure μ] (f : α →₁ₛ[μ] ℝ) :
   ∀ᵐ x ∂μ, ∥condexp_L1s_lm ℝ hm f x∥ ≤ condexp_L1s_lm ℝ hm (L1.simple_func.map (λ x, ∥x∥) f) x :=
@@ -1387,7 +1404,10 @@ begin
   refine eventually.and _ _,
   { have h := condexp_L1s_R_le_abs hm (-f),
     have h_abs_neg : L1.simple_func.map abs (-f) = L1.simple_func.map abs f,
-    { sorry, },
+    { ext1,
+      refine (L1.simple_func.coe_fn_neg f).mp ((L1.simple_func.map_coe abs (-f)).mp
+        ((L1.simple_func.map_coe abs f).mono (λ x hx1 hx2 hx3, _))),
+      rw [hx1, hx2, function.comp_app, hx3, pi.neg_apply, function.comp_app, abs_neg], },
     simp_rw h_abs_neg at h,
     simp_rw neg_le,
     rw condexp_L1s_lm_neg ℝ hm f at h,
