@@ -1251,6 +1251,9 @@ variables (𝕜)
 def condexp_L1s_lm : (α →₁ₛ[μ] E) →ₗ[𝕜] (α →₁[μ] E) :=
 L2_to_L1_clm.to_linear_map.comp ((Lp_sub hm 𝕜 E 2 μ).subtype.comp
   ((condexp_L2_clm 𝕜 hm).to_linear_map.comp L1s_to_L2_lm))
+
+lemma condexp_L1s_lm_neg (f : α →₁ₛ[μ] E) : condexp_L1s_lm 𝕜 hm (-f) = -condexp_L1s_lm 𝕜 hm f :=
+linear_map.map_neg (condexp_L1s_lm 𝕜 hm) f
 variables {𝕜}
 
 lemma condexp_L1s_ae_eq_condexp_L2 (f : α →₁ₛ[μ] E) :
@@ -1362,12 +1365,32 @@ begin
   exact condexp_L1s_le_const hm (f-g) 0 h_sub_fg,
 end
 
+lemma condexp_L1s_R_le_abs {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
+  [finite_measure μ] (f : α →₁ₛ[μ] ℝ) :
+  condexp_L1s_lm ℝ hm f ≤ᵐ[μ] condexp_L1s_lm ℝ hm (L1.simple_func.map abs f) :=
+begin
+  refine condexp_L1s_mono hm f (L1.simple_func.map abs f) _,
+  refine (L1.simple_func.map_coe abs f).mono (λ x hx, _),
+  rw hx,
+  exact le_abs_self _,
+end
+
 lemma condexp_L1s_R_jensen_norm {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
   [finite_measure μ] (f : α →₁ₛ[μ] ℝ) :
   ∀ᵐ x ∂μ, ∥condexp_L1s_lm ℝ hm f x∥ ≤ condexp_L1s_lm ℝ hm (L1.simple_func.map (λ x, ∥x∥) f) x :=
 begin
   simp_rw real.norm_eq_abs,
-  sorry
+  simp_rw abs_le,
+  refine eventually.and _ _,
+  { have h := condexp_L1s_R_le_abs hm (-f),
+    have h_abs_neg : L1.simple_func.map abs (-f) = L1.simple_func.map abs f,
+    { sorry, },
+    simp_rw h_abs_neg at h,
+    simp_rw neg_le,
+    rw condexp_L1s_lm_neg ℝ hm f at h,
+    refine h.mp ((Lp.coe_fn_neg (condexp_L1s_lm ℝ hm f)).mono (λ x hx hxh, _)),
+    rwa [← pi.neg_apply, ← hx], },
+  { exact condexp_L1s_R_le_abs hm f, },
 end
 
 --lemma condexp_L1s_R_jensen {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
