@@ -712,10 +712,9 @@ the composition, as we are dealing with classes of functions, but it has already
 as `continuous_linear_map.comp_Lp`. We take advantage of this construction here.
 -/
 
-variables {μ : measure α} [normed_space ℝ E] {𝕜 : Type*} [is_R_or_C 𝕜] [normed_space 𝕜 E]
-  [is_scalar_tower ℝ 𝕜 E]
-variables [normed_group F] [normed_space ℝ F] [normed_space 𝕜 F] [is_scalar_tower ℝ 𝕜 F]
-variables {p : ennreal}
+variables {μ : measure α} {𝕜 : Type*} [is_R_or_C 𝕜] [normed_space 𝕜 E]
+  [normed_group F] [normed_space 𝕜 F]
+  {p : ennreal}
 
 local attribute [instance] fact_one_le_one_ennreal
 
@@ -729,20 +728,21 @@ lemma integrable_comp [opens_measurable_space E] {φ : α → E} (L : E →L[�
   (eventually_of_forall $ λ a, L.le_op_norm (φ a))
 
 variables [second_countable_topology F] [complete_space F]
-[borel_space E] [second_countable_topology E]
+[borel_space E] [second_countable_topology E] [normed_space ℝ F]
 
 lemma integral_comp_Lp (L : E →L[𝕜] F) (φ : Lp E p μ) :
   ∫ a, (L.comp_Lp φ) a ∂μ = ∫ a, L (φ a) ∂μ :=
 integral_congr_ae $ coe_fn_comp_Lp _ _
 
-lemma continuous_integral_comp_L1 (L : E →L[𝕜] F) :
+lemma continuous_integral_comp_L1 [measurable_space 𝕜] [opens_measurable_space 𝕜] (L : E →L[𝕜] F) :
   continuous (λ (φ : α →₁[μ] E), ∫ (a : α), L (φ a) ∂μ) :=
 begin
   rw ← funext L.integral_comp_Lp,
-  exact continuous_integral.comp (L.comp_LpL 1 μ).continuous
+  exact continuous_integral.comp (L.comp_LpL 1 μ).continuous,
 end
 
-variables [complete_space E]
+variables [complete_space E] [measurable_space 𝕜] [opens_measurable_space 𝕜]
+  [normed_space ℝ E] [is_scalar_tower ℝ 𝕜 E] [is_scalar_tower ℝ 𝕜 F]
 
 lemma integral_comp_comm (L : E →L[𝕜] F) {φ : α → E} (φ_int : integrable φ μ) :
   ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
@@ -782,38 +782,36 @@ end continuous_linear_map
 
 namespace linear_isometry
 
-variables [measurable_space F] [borel_space F] [complete_space E]
-[second_countable_topology F] [complete_space F]
-[borel_space E] [second_countable_topology E]
+variables [measurable_space F] [borel_space F] [second_countable_topology F] [complete_space F]
+  [normed_space ℝ F] [is_scalar_tower ℝ 𝕜 F]
+  [borel_space E] [second_countable_topology E] [complete_space E] [normed_space ℝ E]
+  [is_scalar_tower ℝ 𝕜 E]
+  [measurable_space 𝕜] [opens_measurable_space 𝕜]
 
-lemma integral_comp_comm (L : E →ₗᵢ[𝕜] F) (φ : α → E) :
-  ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
+lemma integral_comp_comm (L : E →ₗᵢ[𝕜] F) (φ : α → E) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
 L.to_continuous_linear_map.integral_comp_comm' L.antilipschitz _
 
 end linear_isometry
 
-variables [borel_space E] [second_countable_topology E] [complete_space E]
+variables [borel_space E] [second_countable_topology E] [complete_space E] [normed_space ℝ E]
   [measurable_space F] [borel_space F] [second_countable_topology F] [complete_space F]
+  [normed_space ℝ F]
+  [measurable_space 𝕜] [borel_space 𝕜]
 
-@[norm_cast] lemma integral_of_real {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜]
-  {f : α → ℝ} :
-  ∫ a, (f a : 𝕜) ∂μ = ↑∫ a, f a ∂μ :=
+@[norm_cast] lemma integral_of_real {f : α → ℝ} : ∫ a, (f a : 𝕜) ∂μ = ↑∫ a, f a ∂μ :=
 linear_isometry.integral_comp_comm is_R_or_C.of_real_li f
 
-lemma integral_re {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜] {f : α → 𝕜}
-  (hf : integrable f μ) :
+lemma integral_re {f : α → 𝕜} (hf : integrable f μ) :
   ∫ a, is_R_or_C.re (f a) ∂μ = is_R_or_C.re ∫ a, f a ∂μ :=
-@continuous_linear_map.integral_comp_comm α 𝕜 ℝ _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+@continuous_linear_map.integral_comp_comm α 𝕜 ℝ _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
   is_R_or_C.re_clm _ hf
 
-lemma integral_im {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜] {f : α → 𝕜}
-  (hf : integrable f μ) :
+lemma integral_im {f : α → 𝕜} (hf : integrable f μ) :
   ∫ a, is_R_or_C.im (f a) ∂μ = is_R_or_C.im ∫ a, f a ∂μ :=
-@continuous_linear_map.integral_comp_comm α 𝕜 ℝ _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+@continuous_linear_map.integral_comp_comm α 𝕜 ℝ _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
   is_R_or_C.im_clm _ hf
 
-lemma integral_conj {𝕜 : Type*} [is_R_or_C 𝕜] [measurable_space 𝕜] [borel_space 𝕜] {f : α → 𝕜} :
-  ∫ a, is_R_or_C.conj (f a) ∂μ = is_R_or_C.conj ∫ a, f a ∂μ :=
+lemma integral_conj {f : α → 𝕜} : ∫ a, is_R_or_C.conj (f a) ∂μ = is_R_or_C.conj ∫ a, f a ∂μ :=
 linear_isometry.integral_comp_comm is_R_or_C.conj_li f
 
 lemma fst_integral {f : α → E × F} (hf : integrable f μ) :
