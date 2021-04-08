@@ -1029,8 +1029,7 @@ begin
     refine ennreal.rpow_ne_top_of_nonneg _ _,
     simp [zero_le_one],
     exact measure_ne_top μ set.univ, },
-  refine (le_of_eq _).trans ((snorm_le_snorm_mul_rpow_measure_univ
-    ennreal.zero_lt_one (ennreal.one_le_two) ennreal.coe_lt_top
+  refine (le_of_eq _).trans ((snorm_le_snorm_mul_rpow_measure_univ (ennreal.one_le_two)
     ((Lp.ae_measurable g).sub (Lp.ae_measurable f))).trans (le_of_eq _)),
   { refine snorm_congr_ae _,
     exact eventually_eq.comp₂
