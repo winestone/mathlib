@@ -230,11 +230,6 @@ section is_condexp
 variables {G : Type*} [measurable_space G] [normed_group G] [borel_space G]
   [second_countable_topology G] [complete_space G] [normed_space ℝ G]
 
-def is_condexp_L1_sub {m m0 : measurable_space α} {hm : m ≤ m0} {μ : measure α} [complete_space E]
-  (f : Lp_sub hm 𝕜 E 1 μ) (g : α → E) :
-  Prop :=
-∀ s (hs : @measurable_set α m s), ∫ a in s, f a ∂μ = ∫ a in s, g a ∂μ
-
 /-- `f` is a conditional expectation of `g` with respect to the measurable space structure `m`. -/
 def is_condexp (m : measurable_space α) [m0 : measurable_space α] (f g : α → G) (μ : measure α) :
   Prop :=
@@ -272,15 +267,6 @@ end
 lemma is_condexp_congr_ae_right (hm : m ≤ m0) (hg12 : g₁ =ᵐ[μ] g₂) :
   is_condexp m f g₁ μ ↔ is_condexp m f g₂ μ :=
 ⟨λ h, is_condexp_congr_ae_right' hm hg12 h, λ h, is_condexp_congr_ae_right' hm hg12.symm h⟩
-
-lemma is_condexp_iff_is_condexp_L1_sub (hm : m ≤ m0) [complete_space E] (f : Lp_sub hm 𝕜 E 1 μ)
-  (g : α → E) :
-  is_condexp m (f : α → E) g μ ↔ is_condexp_L1_sub f g :=
-begin
-  have h_mem : mem_ℒp f 1 μ, from Lp.mem_ℒp (f : α →₁[μ] E),
-  simp_rw [is_condexp, is_condexp_L1_sub, ← mem_ℒp_one_iff_integrable, h_mem,
-    Lp_sub.ae_eq_measurable f, true_and],
-end
 
 end is_condexp
 
