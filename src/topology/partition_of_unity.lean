@@ -9,30 +9,6 @@ variables (X : Type u) [topological_space X]
 open function set filter
 open_locale big_operators topological_space classical
 
-lemma continuous_finprod {ι X M : Type*} [comm_monoid M] [topological_space X] [topological_space M]
-  [has_continuous_mul M] {f : ι → X → M} (hc : ∀ i, continuous (f i))
-  (hf : locally_finite (λ i, mul_support (f i))) :
-  continuous (λ x, ∏ᶠ i, f i x) :=
-begin
-  refine continuous_iff_continuous_at.2 (λ x, _),
-  rcases hf x with ⟨U, hxU, hUf⟩,
-  have : continuous_at (λ x, ∏ i in hUf.to_finset, f i x) x,
-    from tendsto_finset_prod _ (λ i hi, (hc i).continuous_at),
-  refine this.congr (mem_sets_of_superset hxU $ λ y hy, _),
-  refine (finprod_eq_prod_of_mul_support_subset _ (λ i hi, _)).symm,
-  rw [hUf.coe_to_finset],
-  exact ⟨y, hi, hy⟩
-end
-
-lemma continuous_finprod_cond {ι X M : Type*} [comm_monoid M] [topological_space X] [topological_space M]
-  [has_continuous_mul M] {f : ι → X → M} {p : ι → Prop} (hc : ∀ i, p i → continuous (f i))
-  (hf : locally_finite (λ i, mul_support (f i))) :
-  continuous (λ x, ∏ᶠ i (hi : p i), f i x) :=
-begin
-  simp only [← finprod_subtype_eq_finprod_cond],
-  exact continuous_finprod (λ i, hc i i.2) (hf.comp_injective subtype.coe_injective)
-end
-
 noncomputable theory
 
 /-- Continuous partition of unity. -/
