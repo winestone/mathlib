@@ -2490,6 +2490,50 @@ end
 
 end is_complete
 
+namespace measure_theory
+
+section trim
+
+def measure.trim {α} {m m0 : measurable_space α} (μ : @measure_theory.measure α m0) (hm : m ≤ m0) :
+  @measure_theory.measure α m :=
+@outer_measure.to_measure α m μ.to_outer_measure (hm.trans (le_to_outer_measure_caratheodory μ))
+
+@[simp] lemma trim_eq_self {α} {m0 : measurable_space α} {μ : measure α} :
+  μ.trim le_rfl = μ :=
+by simp [measure.trim]
+
+lemma outer_measure.to_measure_zero {α} [measurable_space α] :
+  (0 : outer_measure α).to_measure (by simp) = 0 :=
+by rw [← measure.measure_univ_eq_zero, to_measure_apply _ _ measurable_set.univ,
+  outer_measure.coe_zero, pi.zero_apply]
+
+@[simp] lemma trim_zero {α} {m m0 : measurable_space α} (hm : m ≤ m0) :
+  (0 : measure α).trim hm = (0 : @measure α m) :=
+by simp [measure.trim, outer_measure.to_measure_zero]
+
+lemma trim_measurable {α} {m m0 : measurable_space α} {μ : measure α} {s : set α}
+  (hm : m ≤ m0) (hs : @measurable_set α m s) :
+  μ.trim hm s = μ s :=
+by simp [measure.trim, hs]
+
+lemma le_trim {α} {m m0 : measurable_space α} {μ : measure α} {s : set α} (hm : m ≤ m0) :
+  μ s ≤ μ.trim hm s :=
+by {simp_rw [measure.trim], exact (@le_to_measure_apply _ m _ _ _), }
+
+lemma ae_eq_null_of_trim {α} {m m0 : measurable_space α} {μ : measure α} {s : set α} (hm : m ≤ m0)
+  (h : μ.trim hm s = 0) :
+  μ s = 0 :=
+le_antisymm ((le_trim hm).trans (le_of_eq h)) (zero_le _)
+
+lemma measure_trim_to_measurable_null {α} {m m0 : measurable_space α} {μ : measure α} {s : set α}
+  {hm : m ≤ m0} (hs : μ.trim hm s = 0) :
+  μ (@to_measurable α m (μ.trim hm) s) = 0 :=
+ae_eq_null_of_trim hm (by rwa measure_to_measurable)
+
+end trim
+
+end measure_theory
+
 /-!
 # Almost everywhere measurable functions
 

@@ -446,7 +446,7 @@ iff.intro (simple_func.eq') (congr_arg _)
   i.e., `dist f g = ennreal.to_real (∫⁻ a, edist (f a) (g a)`).
   Not declared as an instance as `α →₁ₛ[μ] β` will only be useful in the construction of the Bochner
   integral. -/
-protected def normed_group : normed_group (α →₁ₛ[μ] E) := by apply_instance
+instance normed_group : normed_group (α →₁ₛ[μ] E) := by apply_instance
 
 local attribute [instance] simple_func.normed_group
 
@@ -471,7 +471,7 @@ variables [normed_field 𝕜] [normed_space 𝕜 E] [measurable_space 𝕜] [ope
 
 /-- Not declared as an instance as `α →₁ₛ[μ] E` will only be useful in the construction of the
 Bochner integral. -/
-protected def has_scalar : has_scalar 𝕜 (α →₁ₛ[μ] E) := ⟨λk f, ⟨k • f,
+instance has_scalar : has_scalar 𝕜 (α →₁ₛ[μ] E) := ⟨λk f, ⟨k • f,
 begin
   rcases f with ⟨f, ⟨s, hs⟩⟩,
   use k • s,
@@ -487,7 +487,7 @@ local attribute [instance, priority 10000] simple_func.has_scalar
 
 /-- Not declared as an instance as `α →₁ₛ[μ] E` will only be useful in the construction of the
   Bochner integral. -/
-protected def semimodule : semimodule 𝕜 (α →₁ₛ[μ] E) :=
+instance semimodule : semimodule 𝕜 (α →₁ₛ[μ] E) :=
 { one_smul  := λf, simple_func.eq (by { simp only [coe_smul], exact one_smul _ _ }),
   mul_smul  := λx y f, simple_func.eq (by { simp only [coe_smul], exact mul_smul _ _ _ }),
   smul_add  := λx f g, simple_func.eq (by { simp only [coe_smul, coe_add], exact smul_add _ _ _ }),
@@ -499,7 +499,7 @@ local attribute [instance] simple_func.normed_group simple_func.semimodule
 
 /-- Not declared as an instance as `α →₁ₛ[μ] E` will only be useful in the construction of the
 Bochner integral. -/
-protected def normed_space : normed_space 𝕜 (α →₁ₛ[μ] E) :=
+instance normed_space : normed_space 𝕜 (α →₁ₛ[μ] E) :=
 ⟨ λc f, by { rw [norm_eq, norm_eq, coe_smul, norm_smul] } ⟩
 
 end instances
