@@ -1159,14 +1159,34 @@ lemma to_simple_func_indicator_L1s {hμs : μ s < ∞} {c : E} :
 
 end indicator_L1s
 
+lemma ae_all_finset {ι} [measurable_space α] {μ : measure α} (p : ι → α → Prop) (s : finset ι) :
+  (∀ᵐ x ∂μ, ∀ i ∈ s, p i x) ↔ ∀ i ∈ s, ∀ᵐ x ∂μ, p i x :=
+begin
+  refine ⟨λ h i hi, h.mono (λ x hx, hx i hi), _⟩,
+  haveI : decidable_eq ι := classical.dec_eq ι,
+  refine finset.induction _ _ s,
+  { simp only [eventually_true, finset.not_mem_empty, forall_false_left, implies_true_iff], },
+  intros i s his hs h_insert,
+  have h : ∀ (i : ι), i ∈ s → (∀ᵐ (x : α) ∂μ, p i x),
+    from λ j hj, h_insert j (finset.mem_insert_of_mem hj),
+  specialize hs h,
+  specialize h_insert i (finset.mem_insert_self i s),
+  refine h_insert.mp (hs.mono (λ x hx1 hx2, _)),
+  intros j hj,
+  rw finset.mem_insert at hj,
+  cases hj with hji hjs,
+  { rwa hji, },
+  { exact hx1 j hjs, },
+end
+
 lemma eventually_eq.finset_sum {ι} [measurable_space α] [normed_group E] [borel_space E]
   [second_countable_topology E] {μ : measure α} (f g : ι → α → E) (s : finset ι)
   (hf : ∀ i ∈ s, f i =ᵐ[μ] g i) :
   ∑ i in s, f i =ᵐ[μ] ∑ i in s, g i :=
 begin
-  have h : ∀ᵐ x ∂μ, ∀ i ∈ s, f i x = g i x,
-  { sorry, },
-  refine h.mono (λ x hx, _),
+  simp_rw eventually_eq at hf,
+  rw ← ae_all_finset _ s at hf,
+  refine hf.mono (λ x hx, _),
   rw [finset.sum_apply, finset.sum_apply],
   exact finset.sum_congr rfl hx,
 end
