@@ -529,18 +529,6 @@ omit 𝕜
 
 end ae_eq_of_forall_set_integral_eq
 
-lemma measurable_set_eq_fun [measurable_space α] [normed_group E] [measurable_space E]
-  [borel_space E] [second_countable_topology E] {f g : α → E} (hf : measurable f)
-  (hg : measurable g) :
-  measurable_set {x | f x = g x} :=
-begin
-  let s := {x | (f-g) x = (0 : E)},
-  have hs : measurable_set s, from (hf.sub hg) measurable_set_eq,
-  have h_set_eq : {x : α | f x = g x} = s,
-  { ext, simp_rw [set.mem_set_of_eq, pi.sub_apply, sub_eq_zero], },
-  rwa h_set_eq,
-end
-
 section integral_trim
 
 variables {m m0 : measurable_space α} {μ : measure α}
@@ -665,7 +653,7 @@ lemma ae_eq_trim_of_measurable {E} [normed_group E] [measurable_space E] [borel_
 begin
   rw [eventually_eq, ae_iff, trim_measurable hm _],
   { exact hfg, },
-  { exact @measurable_set.compl α _ m (@measurable_set_eq_fun α E _ m _ _ _ _ _ _ hf hg), },
+  { exact @measurable_set.compl α _ m (@measurable_set_eq_fun α m E _ _ _ _ _ _ hf hg), },
 end
 
 lemma ae_eq_trim_iff {E} [normed_group E] [measurable_space E] [borel_space E]
