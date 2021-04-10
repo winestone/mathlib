@@ -61,18 +61,17 @@ variables [inner_product_space 𝕜 E] [borel_space E] [second_countable_topolog
 
 notation α ` →₂[`:25 μ `] ` E := measure_theory.Lp E 2 μ
 
-include 𝕜
-private lemma add_mem' {m m0 : measurable_space α} (hm : m ≤ m0) {p : ℝ≥0∞} {μ : measure α}
+private lemma add_mem' {E} [measurable_space E] [normed_group E] [borel_space E]
+  [second_countable_topology E] {m m0 : measurable_space α} (hm : m ≤ m0) {p : ℝ≥0∞} {μ : measure α}
   (f g : Lp E p μ) (hf : ∃ f' : α → E, @measurable α _ m _ f' ∧ f =ᵐ[μ] f')
   (hg : ae_measurable' m g μ) :
   ae_measurable' m ⇑(f+g) μ :=
 begin
   rcases hf with ⟨f', h_f'_meas, hff'⟩,
   rcases hg with ⟨g', h_g'_meas, hgg'⟩,
-  refine ⟨f'+g', @measurable.add α m _ _ _ _ f' g' h_f'_meas h_g'_meas, _⟩,
-  exact eventually_eq.trans (Lp.coe_fn_add f g) (eventually_eq.comp₂ hff' (+) hgg'),
+  refine ⟨f' + g', @measurable.add α m _ _ _ _ f' g' h_f'_meas h_g'_meas, _⟩,
+  exact (Lp.coe_fn_add f g).trans (hff'.add hgg'),
 end
-omit 𝕜
 
 private lemma smul_mem' {m m0 : measurable_space α} (hm : m ≤ m0)
   {p : ℝ≥0∞} {μ : measure α} (c : 𝕜) (f : Lp E p μ)
@@ -81,7 +80,7 @@ private lemma smul_mem' {m m0 : measurable_space α} (hm : m ≤ m0)
 begin
   rcases hf with ⟨f', h_f'_meas, hff'⟩,
   refine ⟨c • f', @measurable.const_smul α m _ _ _ _ _ _ f' h_f'_meas c, _⟩,
-  exact eventually_eq.trans (Lp.coe_fn_smul c f) (eventually_eq.fun_comp hff' (λ x, c • x)),
+  exact (Lp.coe_fn_smul c f).trans (eventually_eq.fun_comp hff' (λ x, c • x)),
 end
 
 def Lp_sub {α} {m m0 : measurable_space α} (hm : m ≤ m0) (𝕜 E) [is_R_or_C 𝕜]
@@ -143,7 +142,7 @@ begin
       = snorm (g n.fst - g n.snd) p μ,
     { simp_rw h_snorm_eq at h_cauchy_seq',
       exact h_cauchy_seq', },
-    exact λ n, snorm_congr_ae (eventually_eq.comp₂ (hfg n.fst) (λ x y, x - y) (hfg n.snd)), },
+    exact λ n, snorm_congr_ae ((hfg n.fst).sub (hfg n.snd)), },
   have h_cau_g_m' : tendsto
     (λ (n : ι × ι), (@snorm α _ m _ (g n.fst - g n.snd) p (μ.trim hm)).to_real) at_top (𝓝 0),
   { have h_cau_g_m : tendsto (λ (n : ι × ι), @snorm α _ m _ (g n.fst - g n.snd) p (μ.trim hm))
@@ -171,7 +170,7 @@ begin
     { simp_rw h_eq,
       exact h_cau_g_m', },
     refine λ n, @snorm_congr_ae α _ m _ _ _ _ _ _,
-    exact eventually_eq.comp₂ (h_g_ae_m n.fst) (λ x y, x - y) (h_g_ae_m n.snd), },
+    exact (h_g_ae_m n.fst).sub (h_g_ae_m n.snd), },
   obtain ⟨g_Lp_lim, g_tendsto⟩ := cauchy_seq_tendsto_of_complete h_cau_seq_g_Lp,
   have h_g_lim_meas_m : @measurable α _ m _ g_Lp_lim,
     from @Lp.measurable α E m p (μ.trim hm) _ _ _ _ g_Lp_lim,
@@ -182,14 +181,14 @@ begin
   { rw @snorm_eq_zero_iff α E m0 p μ _ _ _ _ _ (ennreal.zero_lt_one.trans_le hp.elim).ne.symm
       at h_snorm_zero,
     { have h_add_sub : ⇑f_lim - ⇑g_Lp_lim + ⇑g_Lp_lim =ᵐ[μ] 0 + ⇑g_Lp_lim,
-        from eventually_eq.comp₂ h_snorm_zero (+) eventually_eq.rfl,
+        from h_snorm_zero.add eventually_eq.rfl,
       simpa using h_add_sub, },
     { exact (Lp.ae_measurable f_lim).sub h_g_lim_meas.ae_measurable, }, },
   have h_tendsto' : tendsto (λ (n : ι), snorm (g n - ⇑f_lim) p μ) at_top (𝓝 0),
   { suffices h_eq : ∀ (n : ι), snorm (g n - ⇑f_lim) p μ = snorm (⇑(f n) - ⇑f_lim) p μ,
     { simp_rw h_eq, exact h_tendsto, },
     refine λ n, snorm_congr_ae _,
-    exact eventually_eq.comp₂ (hfg n).symm (λ x y, x - y) (eventually_eq.refl μ.ae (⇑f_lim)), },
+    exact (hfg n).symm.sub eventually_eq.rfl, },
   have g_tendsto' : tendsto (λ (n : ι), snorm (g n - ⇑g_Lp_lim) p μ) at_top (𝓝 0),
   { suffices h_eq : ∀ (n : ι), snorm (g n - ⇑g_Lp_lim) p μ
       = @snorm α _ m _ (⇑(g_Lp n) - ⇑g_Lp_lim) p (μ.trim hm),
@@ -197,10 +196,9 @@ begin
     intro n,
     have h_eq_g : snorm (g n - ⇑g_Lp_lim) p μ = snorm (⇑(g_Lp n) - ⇑g_Lp_lim) p μ,
     { refine snorm_congr_ae _,
-      refine eventually_eq.comp₂ _ (λ x y, x - y) (eventually_eq.refl μ.ae (⇑g_Lp_lim)),
-      rw eventually_eq, rw ae_iff,
-      refine ae_eq_null_of_trim hm _,
-      exact (h_g_ae_m n).symm, },
+      refine eventually_eq.sub _ eventually_eq.rfl,
+      rw [eventually_eq, ae_iff],
+      exact ae_eq_null_of_trim hm (h_g_ae_m n).symm, },
     rw h_eq_g,
     refine (snorm_trim hm _).symm,
     refine @measurable.sub α m _ _ _ _ (g_Lp n) g_Lp_lim _ h_g_lim_meas_m,
@@ -216,14 +214,11 @@ begin
         = λ n, snorm (⇑f_lim - g n + (g n - ⇑g_Lp_lim)) p μ,
       { ext1 n, congr, abel, },
       simp_rw [h_add, snorm_add],
-      intro n,
-      dsimp only,
-      refine le_trans (snorm_add_le _ _ hp.elim) _,
+      refine λ n, (snorm_add_le _ _ hp.elim).trans _,
       { exact ((Lp.measurable f_lim).sub (hg_m0 n)).ae_measurable, },
       { exact ((hg_m0 n).sub h_g_lim_meas).ae_measurable, },
       refine add_le_add_right (le_of_eq _) _,
-      rw ← neg_sub,
-      rw snorm_neg, },
+      rw [← neg_sub, snorm_neg], },
   exact tendsto_nhds_unique tendsto_const_nhds sub_tendsto,
 end
 
@@ -280,9 +275,7 @@ lemma is_condexp_congr_ae_left' (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) (hf�
 begin
   rcases hf₁ with ⟨⟨f, h_meas, h_eq⟩, h_int_eq⟩,
   refine ⟨⟨f, h_meas, hf12.symm.trans h_eq⟩, λ s hs, _⟩,
-  have h_to_f1 : ∫ (a : α) in s, f₂ a ∂μ = ∫ (a : α) in s, f₁ a ∂μ,
-    from set_integral_congr_ae (hm s hs) (hf12.mono (λ x hx hxs, hx.symm)),
-  rw h_to_f1,
+  rw set_integral_congr_ae (hm s hs) (hf12.mono (λ x hx hxs, hx.symm)),
   exact h_int_eq s hs,
 end
 
@@ -295,9 +288,7 @@ lemma is_condexp_congr_ae_right' (hm : m ≤ m0) (hg12 : g₁ =ᵐ[μ] g₂) (hf
 begin
   rcases hf₁ with ⟨h_meas, h_int_eq⟩,
   refine ⟨h_meas, λ s hs, _⟩,
-  have h_to_g1 : ∫ (a : α) in s, g₂ a ∂μ = ∫ (a : α) in s, g₁ a ∂μ,
-    from set_integral_congr_ae (hm s hs) (hg12.mono (λ x hx hxs, hx.symm)),
-  rw h_to_g1,
+  rw set_integral_congr_ae (hm s hs) (hg12.mono (λ x hx hxs, hx.symm)),
   exact h_int_eq s hs,
 end
 
@@ -346,8 +337,10 @@ begin
     { simp [hbc], }, },
 end
 
-lemma ae_nonneg_of_forall_set_ℝ_measurable [finite_measure μ] (f : α → ℝ) (hf : integrable f μ)
-  (hfm : measurable f) (hf_zero : ∀ s : set α, measurable_set s → 0 ≤ ∫ x in s, f x ∂μ) :
+/-- Use `ae_nonneg_of_forall_set_ℝ` instead. -/
+private lemma ae_nonneg_of_forall_set_ℝ_measurable [finite_measure μ] (f : α → ℝ)
+  (hf : integrable f μ) (hfm : measurable f)
+  (hf_zero : ∀ s : set α, measurable_set s → 0 ≤ ∫ x in s, f x ∂μ) :
   0 ≤ᵐ[μ] f :=
 begin
   simp_rw [eventually_le, pi.zero_apply],
@@ -962,7 +955,7 @@ begin
   have hg : g.val =ᵐ[μ] mem_ℒp.to_Lp g (mem_ℒ2_simple_func_L1 g),
   { refine eventually_eq.trans _ (mem_ℒp.coe_fn_to_Lp _).symm,
     simp only [L1.simple_func.coe_coe, subtype.val_eq_coe], },
-  exact eventually_eq.comp₂ hf (+) hg,
+  exact hf.add hg,
 end
 
 lemma L1s_to_L2_smul [measurable_space α] {μ : measure α} [finite_measure μ] (c : 𝕜)
@@ -1007,7 +1000,7 @@ begin
   have hg : g.val =ᵐ[μ] mem_ℒp.to_Lp g
     (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp g) ennreal.one_le_two),
   { exact (mem_ℒp.coe_fn_to_Lp _).symm, },
-  exact eventually_eq.comp₂ hf (+) hg,
+  exact hf.add hg,
 end
 
 lemma L2_to_L1_smul [measurable_space α] {μ : measure α} [finite_measure μ] (c : 𝕜)
@@ -1057,9 +1050,8 @@ begin
   refine (le_of_eq _).trans ((snorm_le_snorm_mul_rpow_measure_univ (ennreal.one_le_two)
     ((Lp.ae_measurable g).sub (Lp.ae_measurable f))).trans (le_of_eq _)),
   { refine snorm_congr_ae _,
-    exact eventually_eq.comp₂
+    exact eventually_eq.sub
       (mem_ℒp.coe_fn_to_Lp (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp g) ennreal.one_le_two))
-      (λ x y, x - y)
       (mem_ℒp.coe_fn_to_Lp (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp f) ennreal.one_le_two)), },
   { congr,
     simp only [ennreal.one_to_real, ennreal.to_real_bit0, div_one],
