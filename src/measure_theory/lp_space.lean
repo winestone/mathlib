@@ -422,19 +422,6 @@ begin
   exact lintegral_mono' hμν le_rfl,
 end
 
-lemma limsup_le_limsup_of_le {α β} [conditionally_complete_lattice β] {f g : filter α} (h : f ≤ g)
-  {u : α → β} (hf : f.is_cobounded_under (≤) u . is_bounded_default)
-  (hg : g.is_bounded_under (≤) u . is_bounded_default) :
-  f.limsup u ≤ g.limsup u :=
-Limsup_le_Limsup_of_le (map_mono h) hf hg
-
-lemma ess_sup_mono_measure {μ ν : measure α} {f : α → ℝ≥0∞} (hμν : ν ≪ μ) :
-  ess_sup f ν ≤ ess_sup f μ :=
-begin
-  refine limsup_le_limsup_of_le (measure.ae_le_iff_absolutely_continuous.mpr hμν) _ _,
-  all_goals {is_bounded_default, },
-end
-
 lemma snorm_ess_sup_mono_measure {μ ν : measure α} {f : α → F} (hμν : ν ≪ μ) :
   snorm_ess_sup f ν ≤ snorm_ess_sup f μ :=
 by { simp_rw snorm_ess_sup, exact ess_sup_mono_measure hμν, }
