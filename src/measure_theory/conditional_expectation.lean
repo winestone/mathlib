@@ -1070,18 +1070,18 @@ lemma L2_to_L1_coe_fn [measurable_space α] {μ : measure α} [finite_measure μ
 mem_ℒp.coe_fn_to_Lp _
 omit 𝕜
 
-def indicator_simple_func [measurable_space α] [has_zero E] (s : set α) (hs : measurable_set s)
+def indicator_simple_func {E} [measurable_space α] [has_zero E] (s : set α) (hs : measurable_set s)
   (c : E) :
   simple_func α E :=
 simple_func.piecewise s hs (simple_func.const α c) (simple_func.const α 0)
 
-lemma indicator_simple_func_coe [measurable_space α] [has_zero E] {μ : measure α} {s : set α}
+lemma indicator_simple_func_coe {E} [measurable_space α] [has_zero E] {μ : measure α} {s : set α}
   {hs : measurable_set s} {c : E} :
   (indicator_simple_func s hs c) =ᵐ[μ] s.indicator (λ (_x : α), c) :=
 by simp only [indicator_simple_func, simple_func.coe_const, simple_func.const_zero,
   simple_func.coe_zero, set.piecewise_eq_indicator, simple_func.coe_piecewise]
 
-lemma simple_func.coe_finset_sum_apply {ι} [measurable_space α] [normed_group E]
+lemma simple_func.coe_finset_sum_apply {ι E} [measurable_space α] [normed_group E]
   (f : ι → simple_func α E) (s : finset ι) (x : α) :
   (∑ i in s, f i) x = ∑ i in s, f i x :=
 begin
@@ -1108,16 +1108,12 @@ begin
   haveI : decidable_eq ι := classical.dec_eq ι,
   refine finset.induction _ _ s,
   { simp only [finset.sum_empty],
-    rw ← L1.simple_func.coe_coe,
-    rw L1.simple_func.coe_zero,
+    rw [← L1.simple_func.coe_coe, L1.simple_func.coe_zero],
     exact Lp.coe_fn_zero _ _ _, },
   intros j s hjs h_sum,
-  rw finset.sum_insert hjs,
-  rw ← L1.simple_func.coe_coe,
-  rw L1.simple_func.coe_add,
+  rw [finset.sum_insert hjs, ← L1.simple_func.coe_coe, L1.simple_func.coe_add],
   refine (Lp.coe_fn_add _ _).trans _,
-  rw L1.simple_func.coe_coe,
-  rw L1.simple_func.coe_coe,
+  rw [L1.simple_func.coe_coe, L1.simple_func.coe_coe],
   have h : ⇑(f j) + ⇑∑ (x : ι) in s, f x =ᵐ[μ] ⇑(f j) + ∑ (x : ι) in s, ⇑(f x),
   { refine h_sum.mono (λ x hx, _),
     rw [pi.add_apply, pi.add_apply, hx], },
@@ -1146,14 +1142,16 @@ begin
 end
 
 section indicator_L1s
-variables [measurable_space α] [normed_group E] [borel_space E] [second_countable_topology E]
-  [complete_space E] {μ : measure α} [finite_measure μ] {s : set α} {hs : measurable_set s}
+
+variables [measurable_space α] {μ : measure α} {s : set α} {hs : measurable_set s}
+  [normed_group E] [borel_space E] [second_countable_topology E]
 
 lemma is_simple_func_indicator_ae (hs : measurable_set s) (hμs : μ s < ∞) (c : E) :
   ∃ (s : simple_func α E), (ae_eq_fun.mk s s.ae_measurable : α →ₘ[μ] E) = indicator_Lp 1 hs hμs c :=
 ⟨indicator_simple_func s hs c, ae_eq_fun.ext ((ae_eq_fun.coe_fn_mk _ _).trans
     ((indicator_simple_func_coe).trans (indicator_Lp_coe_fn _ _ _).symm))⟩
 
+/-- Indicator of a set as a `L1.simple_func`. -/
 def indicator_L1s (hs : measurable_set s) (hμs : μ s < ∞) (c : E) : α →₁ₛ[μ] E :=
 ⟨indicator_Lp 1 hs hμs c, is_simple_func_indicator_ae hs hμs c⟩
 
@@ -1192,9 +1190,8 @@ begin
   { exact hx1 j hjs, },
 end
 
-lemma eventually_eq.finset_sum {ι} [measurable_space α] [normed_group E] [borel_space E]
-  [second_countable_topology E] {μ : measure α} (f g : ι → α → E) (s : finset ι)
-  (hf : ∀ i ∈ s, f i =ᵐ[μ] g i) :
+lemma eventually_eq.finset_sum {ι E} [measurable_space α] [add_comm_group E]
+  {μ : measure α} (f g : ι → α → E) (s : finset ι) (hf : ∀ i ∈ s, f i =ᵐ[μ] g i) :
   ∑ i in s, f i =ᵐ[μ] ∑ i in s, g i :=
 begin
   simp_rw eventually_eq at hf,
@@ -1205,7 +1202,8 @@ begin
 end
 
 lemma L1.simple_func.sum_to_simple_func_coe {ι} [measurable_space α] [normed_group E]
-  [borel_space E] [second_countable_topology E] {μ : measure α} (f : ι → α →₁ₛ[μ] E) (s : finset ι) :
+  [borel_space E] [second_countable_topology E] {μ : measure α} (f : ι → α →₁ₛ[μ] E)
+  (s : finset ι) :
   L1.simple_func.to_simple_func (∑ i in s, f i)
     =ᵐ[μ] ∑ i in s, L1.simple_func.to_simple_func (f i) :=
 begin
@@ -1221,7 +1219,7 @@ lemma L1.simple_func.to_L1_coe_fn [measurable_space α] [normed_group E] [borel_
 by { rw [←L1.simple_func.coe_coe, L1.simple_func.to_L1_eq_to_L1], exact integrable.coe_fn_to_L1 _, }
 
 lemma L1.simple_func_eq_sum_indicator_L1s [measurable_space α] [normed_group E] [borel_space E]
-  [second_countable_topology E] [complete_space E] {μ : measure α} [finite_measure μ]
+  [second_countable_topology E] {μ : measure α} [finite_measure μ]
   (f : α →₁ₛ[μ] E) :
   f = ∑ y in (L1.simple_func.to_simple_func f).range,
     indicator_L1s (L1.simple_func.measurable f (measurable_set_singleton y))
@@ -1253,20 +1251,18 @@ begin
   refl,
 end
 
-lemma simple_func.integrable [measurable_space α] [normed_group E] [borel_space E]
-  [second_countable_topology E] {μ : measure α} [finite_measure μ] (f : simple_func α E) :
+lemma simple_func.integrable [measurable_space α] [normed_group E] [borel_space E] {μ : measure α}
+  [finite_measure μ] (f : simple_func α E) :
   integrable f μ :=
 mem_ℒp_one_iff_integrable.mp (mem_ℒp_simple_func 1 f)
 
 def L1.simple_func.map [measurable_space α] [normed_group E] [borel_space E]
-  [second_countable_topology E]
-  {μ : measure α} [finite_measure μ] (g : E → F) (f : α →₁ₛ[μ] E) :
+  [second_countable_topology E] {μ : measure α} [finite_measure μ] (g : E → F) (f : α →₁ₛ[μ] E) :
   (α →₁ₛ[μ] F) :=
 L1.simple_func.to_L1 ((L1.simple_func.to_simple_func f).map g) (simple_func.integrable _)
 
 @[ext] lemma L1.simple_func.ext [measurable_space α] [normed_group E] [borel_space E]
-  [second_countable_topology E]
-  {μ : measure α} [finite_measure μ] (f g : α →₁ₛ[μ] E) :
+  [second_countable_topology E] {μ : measure α} (f g : α →₁ₛ[μ] E) :
   ⇑f =ᵐ[μ] g → f = g :=
 by { intro h, ext1, ext1, rwa [L1.simple_func.coe_coe, L1.simple_func.coe_coe], }
 
@@ -1293,6 +1289,7 @@ variables {m m0 : measurable_space α} (hm : m ≤ m0) [complete_space E] {μ : 
   [finite_measure μ]
 
 variables (𝕜)
+/-- Conditional expectation as a linear map from the simple functions of L1 to L1. -/
 def condexp_L1s_lm : (α →₁ₛ[μ] E) →ₗ[𝕜] (α →₁[μ] E) :=
 L2_to_L1_clm.to_linear_map.comp ((Lp_sub hm 𝕜 E 2 μ).subtype.comp
   ((condexp_L2_clm 𝕜 hm).to_linear_map.comp L1s_to_L2_lm))
@@ -1392,6 +1389,11 @@ lemma condexp_L1s_nonneg {m m0 : measurable_space α} (hm : m ≤ m0)
   0 ≤ᵐ[μ] condexp_L1s_lm ℝ hm f :=
 condexp_L1s_const_le hm f 0 hf
 
+lemma condexp_L1s_nonpos {m m0 : measurable_space α} (hm : m ≤ m0)
+  {μ : measure α} [finite_measure μ] (f : α →₁ₛ[μ] ℝ) (hf : f ≤ᵐ[μ] 0) :
+  condexp_L1s_lm ℝ hm f ≤ᵐ[μ] 0 :=
+condexp_L1s_le_const hm f 0 hf
+
 lemma condexp_L1s_mono {m m0 : measurable_space α} (hm : m ≤ m0)
   {μ : measure α} [finite_measure μ] (f g : α →₁ₛ[μ] ℝ) (hfg : f ≤ᵐ[μ] g) :
   condexp_L1s_lm ℝ hm f ≤ᵐ[μ] condexp_L1s_lm ℝ hm g :=
@@ -1408,7 +1410,7 @@ begin
     refine (Lp.coe_fn_sub (f : α→₁[μ] ℝ) (g: α→₁[μ] ℝ)).mp (hfg.mono (λ x hx h_sub_fg, _)),
     rwa [h_sub_fg, L1.simple_func.coe_coe, L1.simple_func.coe_coe, pi.sub_apply, pi.zero_apply,
       sub_nonpos], },
-  exact condexp_L1s_le_const hm (f-g) 0 h_sub_fg,
+  exact condexp_L1s_nonpos hm (f-g) h_sub_fg,
 end
 
 lemma condexp_L1s_R_le_abs {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
@@ -1433,8 +1435,7 @@ lemma condexp_L1s_R_jensen_norm {m m0 : measurable_space α} (hm : m ≤ m0) {μ
   [finite_measure μ] (f : α →₁ₛ[μ] ℝ) :
   ∀ᵐ x ∂μ, ∥condexp_L1s_lm ℝ hm f x∥ ≤ condexp_L1s_lm ℝ hm (L1.simple_func.map (λ x, ∥x∥) f) x :=
 begin
-  simp_rw real.norm_eq_abs,
-  simp_rw abs_le,
+  simp_rw [real.norm_eq_abs, abs_le],
   refine eventually.and _ _,
   { have h := condexp_L1s_R_le_abs hm (-f),
     have h_abs_neg : L1.simple_func.map abs (-f) = L1.simple_func.map abs f,
@@ -1442,9 +1443,8 @@ begin
       refine (L1.simple_func.coe_fn_neg f).mp ((L1.simple_func.map_coe abs (-f)).mp
         ((L1.simple_func.map_coe abs f).mono (λ x hx1 hx2 hx3, _))),
       rw [hx1, hx2, function.comp_app, hx3, pi.neg_apply, function.comp_app, abs_neg], },
-    simp_rw h_abs_neg at h,
+    simp_rw [h_abs_neg, condexp_L1s_lm_neg ℝ hm f] at h,
     simp_rw neg_le,
-    rw condexp_L1s_lm_neg ℝ hm f at h,
     refine h.mp ((Lp.coe_fn_neg (condexp_L1s_lm ℝ hm f)).mono (λ x hx hxh, _)),
     rwa [← pi.neg_apply, ← hx], },
   { exact condexp_L1s_R_le_abs hm f, },
@@ -1457,8 +1457,8 @@ end
 --  sorry
 --end
 
-lemma norm_condexp_L1s_le_R {m m0 : measurable_space α} (hm : m ≤ m0)
-  {μ : measure α} [finite_measure μ] (f : α →₁ₛ[μ] ℝ) :
+lemma norm_condexp_L1s_le_R {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
+  [finite_measure μ] (f : α →₁ₛ[μ] ℝ) :
   ∥condexp_L1s_lm ℝ hm f∥ ≤ ∥f∥ :=
 begin
   simp_rw [L1.simple_func.norm_eq, norm_def],
@@ -1481,8 +1481,22 @@ begin
   have h_integral_eq := integral_condexp_L1s ℝ hm (L1.simple_func.map F f)
     (@measurable_set.univ α m),
   rw [integral_univ, integral_univ] at h_integral_eq,
-  rw [← (ennreal.to_real_le_to_real _ _),
-    ← integral_eq_lintegral_of_nonneg_ae _ (Lp.ae_measurable _),
+  rw ← (ennreal.to_real_le_to_real _ _),
+  swap, { have h := Lp.snorm_ne_top (condexp_L1s_lm ℝ hm (L1.simple_func.map F f)),
+    rw [snorm_eq_snorm' (one_ne_zero) ennreal.coe_ne_top, snorm', ennreal.one_to_real, one_div_one,
+      ennreal.rpow_one] at h,
+    simp_rw [ennreal.rpow_one, ← of_real_norm_eq_coe_nnnorm, ← lt_top_iff_ne_top] at h,
+    refine (lt_of_le_of_lt _ h).ne,
+    refine lintegral_mono_ae (eventually_of_forall (λ x, ennreal.of_real_le_of_real _)),
+    rw real.norm_eq_abs,
+    exact le_abs_self _, },
+  swap, { simp_rw of_real_norm_eq_coe_nnnorm,
+    have h := Lp.snorm_ne_top (f : α →₁[μ] ℝ),
+    rw [snorm_eq_snorm' (one_ne_zero) ennreal.coe_ne_top, snorm', ennreal.one_to_real, one_div_one,
+      ennreal.rpow_one] at h,
+    simp_rw ennreal.rpow_one at h,
+    exact h, },
+  rw [← integral_eq_lintegral_of_nonneg_ae _ (Lp.ae_measurable _),
     ← integral_eq_lintegral_of_nonneg_ae, h_integral_eq,
     integral_congr_ae (L1.simple_func.map_coe F f)],
   { simp only [L1.simple_func.coe_coe], },
@@ -1492,28 +1506,11 @@ begin
     refine (L1.simple_func.map_coe F f).mono (λ x hx, _),
     rw [hx, pi.zero_apply],
     simp only [norm_nonneg], },
-  { have h := Lp.snorm_ne_top (condexp_L1s_lm ℝ hm (L1.simple_func.map F f)),
-    rw [snorm_eq_snorm' (one_ne_zero) ennreal.coe_ne_top, snorm', ennreal.one_to_real, one_div_one,
-      ennreal.rpow_one] at h,
-    simp_rw ennreal.rpow_one at h,
-    simp_rw ← of_real_norm_eq_coe_nnnorm at h,
-    simp_rw ← lt_top_iff_ne_top at h ⊢,
-    refine lt_of_le_of_lt _ h,
-    refine lintegral_mono_ae (eventually_of_forall (λ x, _)),
-    refine ennreal.of_real_le_of_real _,
-    rw real.norm_eq_abs,
-    exact le_abs_self _, },
-  { simp_rw of_real_norm_eq_coe_nnnorm,
-    have h := Lp.snorm_ne_top (f : α →₁[μ] ℝ),
-    rw [snorm_eq_snorm' (one_ne_zero) ennreal.coe_ne_top, snorm', ennreal.one_to_real, one_div_one,
-      ennreal.rpow_one] at h,
-    simp_rw ennreal.rpow_one at h,
-    exact h, },
 end
 
 lemma norm_indicator_L1s [normed_group E] [borel_space E] [second_countable_topology E]
-  [complete_space E] {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
-  [finite_measure μ] {s : set α} {hs : measurable_set s} {hμs : μ s < ∞} {c : E} :
+  [measurable_space α] {μ : measure α} {s : set α} {hs : measurable_set s}
+  {hμs : μ s < ∞} {c : E} :
   ∥indicator_L1s hs hμs c∥ = ∥c∥ * (μ s).to_real :=
 by rw [L1.simple_func.norm_eq, indicator_L1s_coe,
   norm_indicator_Lp ennreal.zero_lt_one ennreal.coe_ne_top, ennreal.one_to_real, div_one,
@@ -1522,17 +1519,16 @@ by rw [L1.simple_func.norm_eq, indicator_L1s_coe,
 lemma norm_condexp_L1s_indicator_L1s_R_le {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
   [finite_measure μ] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : ℝ) :
   ∥condexp_L1s_lm ℝ hm (indicator_L1s hs hμs c)∥ ≤ ∥c∥ * (μ s).to_real :=
-(norm_condexp_L1s_le_R hm _).trans (norm_indicator_L1s hm).le
+(norm_condexp_L1s_le_R hm _).trans norm_indicator_L1s.le
 
 lemma indicator_const_eq_smul {α E} [add_comm_monoid E] [semimodule ℝ E] (s : set α) (c : E) :
   s.indicator (λ (_x : α), c) = λ (x : α), s.indicator (λ (_x : α), (1 : ℝ)) x • c :=
 by { ext1 x, by_cases h_mem : x ∈ s; simp [h_mem], }
 
-variables (𝕜)
-include 𝕜
-lemma indicator_L1s_eq_smul [measurable_space α] {μ : measure α} [finite_measure μ]
-  [complete_space E] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : E) :
-  indicator_L1s hs hμs c =ᵐ[μ] λ x, ((@indicator_L1s α ℝ _ _ _ _ _ _ μ _ s hs hμs 1) x) • c :=
+lemma indicator_L1s_eq_smul (𝕜) [is_R_or_C 𝕜] [inner_product_space 𝕜 E] [measurable_space α]
+  {μ : measure α} [borel_space E] [second_countable_topology E] [normed_space ℝ E]
+  {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : E) :
+  indicator_L1s hs hμs c =ᵐ[μ] λ x, ((@indicator_L1s α ℝ _ _ μ _ _ _ _ hs hμs 1) x) • c :=
 begin
   have h : (λ (x : α), (indicator_L1s hs hμs (1:ℝ)) x • c) =ᵐ[μ] λ x,
     (s.indicator (λ _, (1:ℝ)) x) • c,
@@ -1542,14 +1538,12 @@ begin
   refine (indicator_L1s_coe_fn).trans (eventually_eq.trans _ h.symm),
   exact eventually_of_forall (λ x, by rw indicator_const_eq_smul s c),
 end
-omit 𝕜
-variables {𝕜}
 
-lemma indicator_L1s_coe_ae_le [measurable_space α] {μ : measure α} [finite_measure μ]
-  {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : ℝ) :
+lemma indicator_L1s_coe_ae_le [measurable_space α] {μ : measure α} {s : set α}
+  (hs : measurable_set s) (hμs : μ s < ∞) (c : ℝ) :
   ∀ᵐ x ∂μ, abs (indicator_L1s hs hμs c x) ≤ abs c :=
 begin
-  refine (@indicator_L1s_coe_fn α ℝ _ _ _ _ _ _ μ _ s hs hμs c).mono (λ x hx, _),
+  refine (@indicator_L1s_coe_fn α ℝ _ _ μ s hs _ _ _ hμs c).mono (λ x hx, _),
   rw hx,
   by_cases hx_mem : x ∈ s; simp [hx_mem, abs_nonneg c],
 end
@@ -1558,7 +1552,7 @@ lemma condexp_L1s_indicator_L1s_eq {m m0 : measurable_space α} (hm : m ≤ m0) 
   {μ : measure α} [finite_measure μ] {s : set α} (hs : measurable_set s) (hμs : μ s < ∞)
   (c : E) :
   condexp_L1s_lm 𝕜 hm (indicator_L1s hs hμs c) =ᵐ[μ]
-    λ x, (condexp_L1s_lm ℝ hm (@indicator_L1s α ℝ _ _ _ _ _ _ μ _ s hs hμs 1) x) • c :=
+    λ x, (condexp_L1s_lm ℝ hm (@indicator_L1s α ℝ _ _ μ _ _ _ _ hs hμs 1) x) • c :=
 begin
   refine is_condexp_unique 𝕜 hm (is_condexp_condexp_L1s 𝕜 hm _) (Lp.integrable _ le_rfl) _ _,
   swap,
@@ -1566,7 +1560,7 @@ begin
     { simp [hc], },
     { exact (integrable_smul_const hc).mpr (Lp.integrable _ le_rfl), }, },
   obtain ⟨⟨f₁', h_meas₁, hff'₁⟩, h_int_eq₁⟩ := is_condexp_condexp_L1s ℝ hm
-    (@indicator_L1s α ℝ _ _ _ _ _ _ μ _ s hs hμs 1),
+    (@indicator_L1s α ℝ _ _ μ _ _ _ _ hs hμs 1),
   refine ⟨_, _⟩,
   { refine ⟨λ x, (f₁' x) • c, _, _⟩,
     { exact @measurable.smul _ m _ _ _ _ _ _ f₁' _ h_meas₁ (@measurable_const _ _ _ m c), },
@@ -1614,7 +1608,7 @@ begin
   rw linear_map.map_sum,
   refine (norm_sum_le _ _).trans _,
   refine finset.sum_le_sum (λ x hxf, (norm_condexp_L1s_indicator_L1s hm _ _ x).trans _),
-  rw [smul_eq_mul, mul_comm, norm_indicator_L1s hm],
+  rw [smul_eq_mul, mul_comm, norm_indicator_L1s],
 end
 
 section continuous_set_integral
