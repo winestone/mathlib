@@ -419,39 +419,27 @@ variable [opens_measurable_space E]
 section trim
 
 lemma lintegral_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0)
-  {f : α → ℝ≥0∞}
-  (hf : @measurable _ _ m _ f) :
+  {f : α → ℝ≥0∞} (hf : @measurable _ _ m _ f) :
   @lintegral _ m (μ.trim hm) f = ∫⁻ a, f a ∂μ :=
 begin
   refine @measurable.ennreal_induction α m
     (λ f, @lintegral _ m (μ.trim hm) f = ∫⁻ a, f a ∂μ) _ _ _ f hf,
   { intros c s hs,
-    rw @lintegral_indicator α m _ _ _ hs,
-    rw @lintegral_indicator α _ _ _ _ (hm s hs),
-    rw @set_lintegral_const α m,
-    rw set_lintegral_const,
-    suffices h_trim_s : μ.trim hm s = μ s,
-    { rw h_trim_s, },
+    rw [@lintegral_indicator α m _ _ _ hs, @lintegral_indicator α _ _ _ _ (hm s hs),
+      @set_lintegral_const α m, set_lintegral_const],
+    suffices h_trim_s : μ.trim hm s = μ s, by rw h_trim_s,
     exact trim_measurable hm hs, },
   { intros f g hfg hf hg hf_prop hg_prop,
     have h_m := @lintegral_add _ m (μ.trim hm) f g hf hg,
     have h_m0 := @lintegral_add _ m0 μ f g (measurable.mono hf hm le_rfl)
       (measurable.mono hg hm le_rfl),
-    rw [hf_prop, hg_prop, ← h_m0] at h_m,
-    exact h_m, },
+    rwa [hf_prop, hg_prop, ← h_m0] at h_m, },
   { intros f hf hf_mono hf_prop,
     rw @lintegral_supr α m (μ.trim hm) _ hf hf_mono,
     rw @lintegral_supr α m0 μ _ (λ n, measurable.mono (hf n) hm le_rfl) hf_mono,
     congr,
-    ext1 n,
-    exact hf_prop n, },
+    exact funext (λ n, hf_prop n), },
 end
-
-lemma ae_eq_of_ae_eq_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} {E} (hm : m ≤ m0)
-  {f₁ f₂ : α → E}
-  (h12 : eventually_eq (@measure.ae α m (μ.trim hm)) f₁ f₂) :
-  f₁ =ᵐ[μ] f₂ :=
-ae_eq_null_of_trim hm h12
 
 lemma lintegral_trim_ae {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0)
   {f : α → ℝ≥0∞} (hf : @ae_measurable _ _ m _ f (μ.trim hm)) :
@@ -497,19 +485,14 @@ end
 lemma ess_sup_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0)
   {f : α → ℝ≥0∞} (hf : @measurable _ _ m _ f) :
   @ess_sup α _ m _ f (μ.trim hm) = ess_sup f μ :=
-begin
-  simp_rw ess_sup,
-  exact limsup_trim hm hf,
-end
+by { simp_rw ess_sup, exact limsup_trim hm hf, }
 
 lemma snorm_ess_sup_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0)
   {f : α → E} (hf : @measurable _ _ m _ f) :
   @snorm_ess_sup α E m _ f (μ.trim hm) = snorm_ess_sup f μ :=
 begin
   simp_rw snorm_ess_sup,
-  refine ess_sup_trim hm _,
-  refine @measurable.ennreal_coe α m _ _,
-  exact @measurable.nnnorm E α _ _ _ m _ hf,
+  exact ess_sup_trim hm (@measurable.ennreal_coe α m _ (@measurable.nnnorm E α _ _ _ m _ hf)),
 end
 
 lemma snorm_trim {α : Type*} {m m0 : measurable_space α} {μ : measure α} (hm : m ≤ m0) {f : α → E}

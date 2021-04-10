@@ -545,14 +545,6 @@ section integral_trim
 
 variables {m m0 : measurable_space α} {μ : measure α}
 
-lemma trim_restrict (hm : m ≤ m0) (μ : measure α) {s : set α} (hs : @measurable_set α m s) :
-  @measure.restrict α m (μ.trim hm) s = (μ.restrict s).trim hm :=
-begin
-  ext1 t ht,
-  rw [@measure.restrict_apply α m _ _ _ ht, trim_measurable hm ht,
-    measure.restrict_apply (hm t ht), trim_measurable hm (@measurable_set.inter α m t s ht hs)],
-end
-
 lemma integrable_trim_of_measurable (hm : m ≤ m0) [normed_group E] [opens_measurable_space E]
   {f : α → E} (hf : @measurable α E m _ f) (hf_int : integrable f μ) :
   @integrable α E m _ _ f (μ.trim hm) :=

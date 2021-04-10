@@ -832,6 +832,11 @@ lemma nonpos_iff_eq_zero' : μ ≤ 0 ↔ μ = 0 :=
 @[simp] lemma measure_univ_eq_zero : μ univ = 0 ↔ μ = 0 :=
 ⟨λ h, bot_unique $ λ s hs, trans_rel_left (≤) (measure_mono (subset_univ s)) h, λ h, h.symm ▸ rfl⟩
 
+lemma outer_measure.to_measure_zero : (0 : outer_measure α).to_measure
+  ((le_top).trans outer_measure.zero_caratheodory.symm.le) = 0 :=
+by rw [← measure.measure_univ_eq_zero, to_measure_apply _ _ measurable_set.univ,
+  outer_measure.coe_zero, pi.zero_apply]
+
 /-! ### Pushforward and pullback -/
 
 /-- Lift a linear map between `outer_measure` spaces such that for each measure `μ` every measurable
@@ -2494,42 +2499,44 @@ namespace measure_theory
 
 section trim
 
-def measure.trim {α} {m m0 : measurable_space α} (μ : @measure_theory.measure α m0) (hm : m ≤ m0) :
+/-- Restriction of a measure to a sub-sigma algebra. -/
+def measure.trim {m m0 : measurable_space α} (μ : @measure_theory.measure α m0) (hm : m ≤ m0) :
   @measure_theory.measure α m :=
 @outer_measure.to_measure α m μ.to_outer_measure (hm.trans (le_to_outer_measure_caratheodory μ))
 
-@[simp] lemma trim_eq_self {α} {m0 : measurable_space α} {μ : measure α} :
-  μ.trim le_rfl = μ :=
+@[simp] lemma trim_eq_self [measurable_space α] {μ : measure α} : μ.trim le_rfl = μ :=
 by simp [measure.trim]
 
-lemma outer_measure.to_measure_zero {α} [measurable_space α] :
-  (0 : outer_measure α).to_measure (by simp) = 0 :=
-by rw [← measure.measure_univ_eq_zero, to_measure_apply _ _ measurable_set.univ,
-  outer_measure.coe_zero, pi.zero_apply]
+variables {m m0 : measurable_space α} {μ : measure α} {s : set α}
 
-@[simp] lemma trim_zero {α} {m m0 : measurable_space α} (hm : m ≤ m0) :
-  (0 : measure α).trim hm = (0 : @measure α m) :=
+@[simp] lemma trim_zero (hm : m ≤ m0) : (0 : measure α).trim hm = (0 : @measure α m) :=
 by simp [measure.trim, outer_measure.to_measure_zero]
 
-lemma trim_measurable {α} {m m0 : measurable_space α} {μ : measure α} {s : set α}
-  (hm : m ≤ m0) (hs : @measurable_set α m s) :
-  μ.trim hm s = μ s :=
+lemma trim_measurable (hm : m ≤ m0) (hs : @measurable_set α m s) : μ.trim hm s = μ s :=
 by simp [measure.trim, hs]
 
-lemma le_trim {α} {m m0 : measurable_space α} {μ : measure α} {s : set α} (hm : m ≤ m0) :
-  μ s ≤ μ.trim hm s :=
+lemma le_trim(hm : m ≤ m0) : μ s ≤ μ.trim hm s :=
 by {simp_rw [measure.trim], exact (@le_to_measure_apply _ m _ _ _), }
 
-lemma ae_eq_null_of_trim {α} {m m0 : measurable_space α} {μ : measure α} {s : set α} (hm : m ≤ m0)
-  (h : μ.trim hm s = 0) :
-  μ s = 0 :=
+lemma ae_eq_null_of_trim (hm : m ≤ m0) (h : μ.trim hm s = 0) : μ s = 0 :=
 le_antisymm ((le_trim hm).trans (le_of_eq h)) (zero_le _)
 
-lemma measure_trim_to_measurable_null {α} {m m0 : measurable_space α} {μ : measure α} {s : set α}
-  {hm : m ≤ m0} (hs : μ.trim hm s = 0) :
+lemma measure_trim_to_measurable_null {hm : m ≤ m0} (hs : μ.trim hm s = 0) :
   μ (@to_measurable α m (μ.trim hm) s) = 0 :=
 ae_eq_null_of_trim hm (by rwa measure_to_measurable)
 
+lemma ae_eq_of_ae_eq_trim {E} (hm : m ≤ m0) {f₁ f₂ : α → E}
+  (h12 : eventually_eq (@measure.ae α m (μ.trim hm)) f₁ f₂) :
+  f₁ =ᵐ[μ] f₂ :=
+ae_eq_null_of_trim hm h12
+
+lemma trim_restrict (hm : m ≤ m0) (μ : measure α) (hs : @measurable_set α m s) :
+  @measure.restrict α m (μ.trim hm) s = (μ.restrict s).trim hm :=
+begin
+  ext1 t ht,
+  rw [@measure.restrict_apply α m _ _ _ ht, trim_measurable hm ht,
+    measure.restrict_apply (hm t ht), trim_measurable hm (@measurable_set.inter α m t s ht hs)],
+end
 end trim
 
 end measure_theory
