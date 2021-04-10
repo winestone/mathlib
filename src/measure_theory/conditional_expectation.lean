@@ -233,7 +233,7 @@ variables {G : Type*} [measurable_space G] [normed_group G] [borel_space G]
 /-- `f` is a conditional expectation of `g` with respect to the measurable space structure `m`. -/
 def is_condexp (m : measurable_space α) [m0 : measurable_space α] (f g : α → G) (μ : measure α) :
   Prop :=
-integrable f μ ∧ (∃ f' : α → G, @measurable α _ m _ f' ∧ f =ᵐ[μ] f')
+(∃ f' : α → G, @measurable α _ m _ f' ∧ f =ᵐ[μ] f')
   ∧ ∀ s (hs : @measurable_set α m s), ∫ a in s, f a ∂μ = ∫ a in s, g a ∂μ
 
 variables {m m0 : measurable_space α} {μ : measure α} {f f₁ f₂ g g₁ g₂ : α → G}
@@ -241,8 +241,8 @@ variables {m m0 : measurable_space α} {μ : measure α} {f f₁ f₂ g g₁ g�
 lemma is_condexp_congr_ae' (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) (hf₁ : is_condexp m f₁ g μ) :
   is_condexp m f₂ g μ :=
 begin
-  rcases hf₁ with ⟨h_int, ⟨f, h_meas, h_eq⟩, h_int_eq⟩,
-  refine ⟨(integrable_congr hf12).mp h_int, ⟨f, h_meas, hf12.symm.trans h_eq⟩, λ s hs, _⟩,
+  rcases hf₁ with ⟨⟨f, h_meas, h_eq⟩, h_int_eq⟩,
+  refine ⟨⟨f, h_meas, hf12.symm.trans h_eq⟩, λ s hs, _⟩,
   have h_to_f1 : ∫ (a : α) in s, f₂ a ∂μ = ∫ (a : α) in s, f₁ a ∂μ,
     from set_integral_congr_ae (hm s hs) (hf12.mono (λ x hx hxs, hx.symm)),
   rw h_to_f1,
@@ -256,8 +256,8 @@ lemma is_condexp_congr_ae (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) :
 lemma is_condexp_congr_ae_right' (hm : m ≤ m0) (hg12 : g₁ =ᵐ[μ] g₂) (hf₁ : is_condexp m f g₁ μ) :
   is_condexp m f g₂ μ :=
 begin
-  rcases hf₁ with ⟨h_int, h_meas, h_int_eq⟩,
-  refine ⟨h_int, h_meas, λ s hs, _⟩,
+  rcases hf₁ with ⟨h_meas, h_int_eq⟩,
+  refine ⟨h_meas, λ s hs, _⟩,
   have h_to_g1 : ∫ (a : α) in s, g₂ a ∂μ = ∫ (a : α) in s, g₁ a ∂μ,
     from set_integral_congr_ae (hm s hs) (hg12.mono (λ x hx hxs, hx.symm)),
   rw h_to_g1,
@@ -449,11 +449,9 @@ begin
     rw is_R_or_C.ext_iff,
     simpa using hx, },
   have hf_inner_re : integrable (λ x, is_R_or_C.re (inner c (f x) : 𝕜)) μ,
-  { refine integrable.re _,
-    exact integrable.const_inner hf c, },
+    from integrable.re (integrable.const_inner hf c),
   have hf_inner_im : integrable (λ x, is_R_or_C.im (inner c (f x) : 𝕜)) μ,
-  { refine integrable.im _,
-    exact integrable.const_inner hf c, },
+    from integrable.im (integrable.const_inner hf c),
   have hf_zero_inner : ∀ s, measurable_set s → ∫ (x : α) in s, (inner c (f x) : 𝕜) ∂μ = 0,
   { intros s hs,
     rw integral_const_inner hf.integrable_on c,
@@ -627,12 +625,12 @@ end integral_trim
 variables (𝕜)
 include 𝕜
 lemma is_condexp_unique {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α} [finite_measure μ]
-  [complete_space E] {f₁ f₂ : α → E} (g : α → E) (hf₁ : is_condexp m f₁ g μ)
-  (hf₂ : is_condexp m f₂ g μ) :
+  [complete_space E] {f₁ f₂ : α → E} {g : α → E} (hf₁ : is_condexp m f₁ g μ)
+  (h_int₁ : integrable f₁ μ) (hf₂ : is_condexp m f₂ g μ) (h_int₂ : integrable f₂ μ):
   f₁ =ᵐ[μ] f₂ :=
 begin
-  rcases hf₁ with ⟨h_int₁, ⟨f₁', h_meas₁, hff'₁⟩, h_int_eq₁⟩,
-  rcases hf₂ with ⟨h_int₂, ⟨f₂', h_meas₂, hff'₂⟩, h_int_eq₂⟩,
+  rcases hf₁ with ⟨⟨f₁', h_meas₁, hff'₁⟩, h_int_eq₁⟩,
+  rcases hf₂ with ⟨⟨f₂', h_meas₂, hff'₂⟩, h_int_eq₂⟩,
   refine hff'₁.trans (eventually_eq.trans _ hff'₂.symm),
   have h : ∀ s : set α, @measurable_set α m s → ∫ x in s, f₁' x ∂μ = ∫ x in s, f₂' x ∂μ,
   { intros s hsm,
@@ -858,8 +856,7 @@ lemma is_condexp_condexp_L2 [complete_space E] {m m0 : measurable_space α} (hm 
 begin
   have h_one_le_two : (1 : ℝ≥0∞) ≤ 2,
     from ennreal.coe_le_coe.2 (show (1 : ℝ≥0) ≤ 2, by norm_num),
-  refine ⟨_, Lp_sub.ae_eq_measurable (condexp_L2_clm 𝕜 hm f), _⟩,
-  { exact Lp.integrable (condexp_L2_clm 𝕜 hm f) h_one_le_two, },
+  refine ⟨Lp_sub.ae_eq_measurable (condexp_L2_clm 𝕜 hm f), _⟩,
   intros s hs,
   have h_inner_zero : ∀ (g : Lp E 2 μ) (hg : g ∈ Lp_sub hm 𝕜 E 2 μ),
       inner (f - (condexp_L2_clm 𝕜 hm f)) g = (0 : 𝕜),
@@ -1290,7 +1287,7 @@ is_condexp_congr_ae' hm (condexp_L1s_ae_eq_condexp_L2 hm _).symm
 
 lemma integral_condexp_L1s (f : α →₁ₛ[μ] E) {s : set α} (hs : @measurable_set α m s) :
   ∫ a in s, (condexp_L1s_lm 𝕜 hm f) a ∂μ = ∫ a in s, f a ∂μ :=
-(is_condexp_condexp_L1s 𝕜 hm f).2.2 s hs
+(is_condexp_condexp_L1s 𝕜 hm f).2 s hs
 variables {𝕜}
 
 end condexp_L1s
@@ -1300,7 +1297,8 @@ lemma condexp_L1s_const_le {m m0 : measurable_space α} (hm : m ≤ m0)
   ∀ᵐ x ∂μ, c ≤ condexp_L1s_lm ℝ hm f x :=
 begin
   refine (ae_const_le_iff_forall_lt_measure_zero _ c).mpr (λ b hb, _),
-  obtain ⟨h_int, ⟨f', h_meas, hff'⟩, h_int_eq⟩ := is_condexp_condexp_L1s ℝ hm f,
+  obtain ⟨⟨f', h_meas, hff'⟩, h_int_eq⟩ := is_condexp_condexp_L1s ℝ hm f,
+  have h_int : integrable (condexp_L1s_lm ℝ hm f) μ, from Lp.integrable _ le_rfl,
   have h_int' : integrable f' μ := (integrable_congr hff').mp h_int,
   let s := {x | f' x ≤ b},
   have hsm : @measurable_set _ m s,
@@ -1517,26 +1515,14 @@ lemma condexp_L1s_indicator_L1s_eq {m m0 : measurable_space α} (hm : m ≤ m0) 
   condexp_L1s_lm 𝕜 hm (indicator_L1s hs hμs c) =ᵐ[μ]
     λ x, (condexp_L1s_lm ℝ hm (@indicator_L1s α ℝ _ _ _ _ _ _ μ _ s hs hμs 1) x) • c :=
 begin
-  refine is_condexp_unique 𝕜 hm (indicator_L1s hs hμs c) _ _,
-  exact is_condexp_condexp_L1s 𝕜 hm _,
-  obtain ⟨h_int₁, ⟨f₁', h_meas₁, hff'₁⟩, h_int_eq₁⟩ := is_condexp_condexp_L1s ℝ hm
+  refine is_condexp_unique 𝕜 hm (is_condexp_condexp_L1s 𝕜 hm _) (Lp.integrable _ le_rfl) _ _,
+  swap,
+  { by_cases hc : c = 0,
+    { simp [hc], },
+    { exact (integrable_smul_const hc).mpr (Lp.integrable _ le_rfl), }, },
+  obtain ⟨⟨f₁', h_meas₁, hff'₁⟩, h_int_eq₁⟩ := is_condexp_condexp_L1s ℝ hm
     (@indicator_L1s α ℝ _ _ _ _ _ _ μ _ s hs hμs 1),
-  refine ⟨_, _, _⟩,
-  { refine integrable.mono (integrable_const c) _ _,
-    { exact ae_measurable.smul (Lp.ae_measurable _) ae_measurable_const, },
-    { simp_rw norm_smul _ _,
-      suffices h_le_1 : ∀ᵐ a ∂μ, ∥((condexp_L1s_lm ℝ hm) (indicator_L1s hs hμs (1:ℝ))) a∥ ≤ 1,
-      { refine h_le_1.mono (λ x hx, _),
-        nth_rewrite 1 ← one_mul (∥c∥),
-        exact mul_le_mul hx le_rfl (norm_nonneg _) zero_le_one, },
-      simp_rw [real.norm_eq_abs, abs_le],
-      refine eventually.and _ _,
-      { refine condexp_L1s_const_le hm _ (-1 : ℝ) _,
-        refine (indicator_L1s_coe_ae_le hs hμs (1 : ℝ)).mono (λ x hx, _),
-        exact neg_le_of_abs_le (hx.trans (le_of_eq abs_one)), },
-      { refine condexp_L1s_le_const hm _ (1 : ℝ) _,
-        refine (indicator_L1s_coe_ae_le hs hμs (1 : ℝ)).mono (λ x hx, _),
-        exact le_of_abs_le (hx.trans (le_of_eq abs_one)), }, }, },
+  refine ⟨_, _⟩,
   { refine ⟨λ x, (f₁' x) • c, _, _⟩,
     { exact @measurable.smul _ m _ _ _ _ _ _ f₁' _ h_meas₁ (@measurable_const _ _ _ m c), },
     { exact eventually_eq.fun_comp hff'₁ (λ x, x • c), }, },
@@ -1781,7 +1767,7 @@ begin
     exact ⟨f_lim, h_meas, h⟩, },
   { intro fs,
     rw condexp_L1_eq_condexp_L1s,
-    obtain ⟨f', hf'_meas, hf'⟩ := (is_condexp_condexp_L1s 𝕜 hm fs).2.1,
+    obtain ⟨f', hf'_meas, hf'⟩ := (is_condexp_condexp_L1s 𝕜 hm fs).1,
     refine ⟨f', hf'_meas, _⟩,
     refine eventually_eq.trans (eventually_of_forall (λ x, _)) hf',
     refl, },
@@ -1798,25 +1784,25 @@ begin
     { continuity, }, },
   { intro fs,
     rw condexp_L1_eq_condexp_L1s,
-    exact (is_condexp_condexp_L1s 𝕜 hm fs).2.2 s hs, },
+    exact (is_condexp_condexp_L1s 𝕜 hm fs).2 s hs, },
 end
 
 lemma is_condexp_condexp_L1 (f : α →₁[μ] E) : is_condexp m (condexp_L1 𝕜 hm f) f μ :=
-⟨integrable_condexp_L1 𝕜 hm f, ae_measurable_condexp_L1 𝕜 hm f, integral_eq_condexp_L1 𝕜 hm f⟩
+⟨ae_measurable_condexp_L1 𝕜 hm f, integral_eq_condexp_L1 𝕜 hm f⟩
 
 include 𝕜 hm
 /-- Conditional expectation of an integrable function. -/
 def condexp (f : α → E) (hf : integrable f μ) : α → E :=
-(is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).2.1.some
+(is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).1.some
 omit 𝕜 hm
 
 lemma measurable_condexp (f : α → E) (hf : integrable f μ) :
   @measurable _ _ m _ (condexp 𝕜 hm f hf) :=
-(is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).2.1.some_spec.1
+(is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).1.some_spec.1
 
 lemma condexp_ae_eq_condexp_L1 (f : α → E) (hf : integrable f μ) :
   condexp 𝕜 hm f hf =ᵐ[μ] condexp_L1 𝕜 hm (hf.to_L1 f) :=
-(is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).2.1.some_spec.2.symm
+(is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).1.some_spec.2.symm
 
 lemma is_condexp_condexp {f : α → E} (hf : integrable f μ) :
   is_condexp m (condexp 𝕜 hm f hf) f μ :=
@@ -1828,12 +1814,12 @@ end
 variables {𝕜}
 
 lemma integrable_condexp (f : α → E) (hf : integrable f μ) : integrable (condexp 𝕜 hm f hf) μ :=
-(is_condexp_condexp 𝕜 hm hf).1
+(integrable_congr (condexp_ae_eq_condexp_L1 𝕜 hm f hf)).mpr (Lp.integrable _ le_rfl)
 
 lemma condexp_integral_eq {f : α → E} (hf : integrable f μ) {s : set α}
   (hs : @measurable_set α m s) :
   ∫ x in s, condexp 𝕜 hm f hf x ∂μ = ∫ x in s, f x ∂μ :=
-(is_condexp_condexp 𝕜 hm hf).2.2 s hs
+(is_condexp_condexp 𝕜 hm hf).2 s hs
 
 end condexp_def
 
