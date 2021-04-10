@@ -1,78 +1,135 @@
+/-
+Copyright (c) 2021 Yury Kudryashov. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yury Kudryashov
+-/
 import algebra.big_operators.finprod
 import topology.urysohns_lemma
 import topology.paracompact
 import topology.continuous_function.algebra
 
+/-!
+# Continuous partition of unity
+
+In this file we define `partition_of_unity X (s : set X := univ)` to be a continuous partition of
+unity on a topological space `X`.
+
+-/
+
 universes u v
-variables (X : Type u) [topological_space X]
 
 open function set filter
 open_locale big_operators topological_space classical
 
 noncomputable theory
 
-/-- Continuous partition of unity. -/
-structure partition_of_unity (s : set X := univ) :=
-(ι : Type u)
+/-- Continuous partition of unity on a set `s : set X` is a colletion of continuous functions `f i`
+such that
+
+* supports of `f i` form a locally finite family of sets, i.e., for every point `x : X` there exists
+  a neighborhood `U ⊇ x` such that all but finitely many functions `f i` are zero on `U`;
+* the functions `f i` are nonnegative;
+* the sum `∑ᶠ i, f i x` is equal to one for every `x ∈ s` and is less than or equal to one
+  otherwise.
+
+If `X` is a normal paracompact space, then `partition_of_unity.exists_is_subordinate` guarantees
+that for every open covering `U : set (set X)` of `s` there exists a partition of unity that is
+subordinate to `U`.
+-/
+structure partition_of_unity (ι X : Type*) [topological_space X] (s : set X := univ) :=
 (to_fun : ι → C(X, ℝ))
 (locally_finite' : locally_finite (λ i, support (to_fun i)))
 (nonneg' : 0 ≤ to_fun)
 (sum_eq_one' : ∀ x ∈ s, ∑ᶠ i, to_fun i x = 1)
 (sum_le_one' : ∀ x, ∑ᶠ i, to_fun i x ≤ 1)
 
-structure bump_covering (s : set X := univ) :=
-(ι : Type u)
+/-- A `bump_covering ι X s` is an indexed family of functions `f i`, `i : ι`, such that
+
+* supports of `f i` form a locally finite family of sets, i.e., for every point `x : X` there exists
+  a neighborhood `U ⊇ x` such that all but finitely many functions `f i` are zero on `U`;
+* for all `i`, `x` we have `0 ≤ f i x ≤ 1`;
+* each point `x ∈ s` belongs to the interior of `{x | f i x = 1}` for some `i`.
+
+One of the main use cases for a `bump_covering` is to define a `partition_of_unity`, see
+`bump_covering.to_partition_of_unity`, but some proofs can directly use a `bump_covering` instead of
+a `partition_of_unity`.
+
+If `X` is a normal paracompact space, then `bump_covering.exists_is_subordinate` guarantees that for
+every open covering `U : set (set X)` of `s` there exists a `bump_covering` of `s` that is
+subordinate to `U`.
+-/
+structure bump_covering (ι X : Type*) [topological_space X] (s : set X := univ) :=
 (to_fun : ι → C(X, ℝ))
 (locally_finite' : locally_finite (λ i, support (to_fun i)))
 (nonneg' : 0 ≤ to_fun)
 (le_one' : to_fun ≤ 1)
 (eventually_eq_one' : ∀ x ∈ s, ∃ i, to_fun i =ᶠ[𝓝 x] 1)
 
-variable {X}
+variables {ι : Type u} {X : Type v} [topological_space X]
 
 namespace partition_of_unity
 
-variables {s : set X} (fs : partition_of_unity X s)
+variables {s : set X} (f : partition_of_unity ι X s)
 
-instance : has_coe_to_fun (partition_of_unity X s) :=
-⟨_, to_fun⟩
+instance : has_coe_to_fun (partition_of_unity ι X s) := ⟨_, to_fun⟩
 
-protected lemma locally_finite : locally_finite (λ i, support (fs i)) :=
-fs.locally_finite'
+protected lemma locally_finite : locally_finite (λ i, support (f i)) :=
+f.locally_finite'
 
-lemma nonneg (i : fs.ι) (x : X) : 0 ≤ fs i x := fs.nonneg' i x
+lemma nonneg (i : ι) (x : X) : 0 ≤ f i x := f.nonneg' i x
 
-lemma sum_eq_one {x : X} (hx : x ∈ s) : ∑ᶠ i, fs i x = 1 := fs.sum_eq_one' x hx
+lemma sum_eq_one {x : X} (hx : x ∈ s) : ∑ᶠ i, f i x = 1 := f.sum_eq_one' x hx
 
-lemma sum_le_one (x : X) : ∑ᶠ i, fs i x ≤ 1 := fs.sum_le_one' x
+lemma sum_le_one (x : X) : ∑ᶠ i, f i x ≤ 1 := f.sum_le_one' x
 
-def is_subordinate (fs : partition_of_unity X s) (S : set (set X)) : Prop :=
-∀ i, ∃ s ∈ S, closure (support (fs i)) ⊆ s
+/-- A partition of unity `f i` is subordinate to a family of sets `U i` indexed by the same type if
+for each `i` the closure of the support of `f i` is a subset of `U i`. -/
+def is_subordinate (f : partition_of_unity ι X s) (U : ι → set X) : Prop :=
+∀ i, closure (support (f i)) ⊆ U i
 
 end partition_of_unity
 
 namespace bump_covering
 
-variables {s : set X} (fs : bump_covering X s) (f : bump_covering X)
+variables {s : set X} (f : bump_covering ι X s)
 
-instance : has_coe_to_fun (bump_covering X s) := ⟨_, to_fun⟩
+instance : has_coe_to_fun (bump_covering ι X s) := ⟨_, to_fun⟩
 
-protected lemma locally_finite : locally_finite (λ i, support (fs i)) :=
-fs.locally_finite'
+protected lemma locally_finite : locally_finite (λ i, support (f i)) :=
+f.locally_finite'
 
-protected lemma point_finite (x : X) : finite {i | fs i x ≠ 0} :=
-fs.locally_finite.point_finite x
+protected lemma point_finite (x : X) : finite {i | f i x ≠ 0} :=
+f.locally_finite.point_finite x
 
-lemma nonneg (i : fs.ι) (x : X) : 0 ≤ fs i x := fs.nonneg' i x
+lemma nonneg (i : ι) (x : X) : 0 ≤ f i x := f.nonneg' i x
 
-lemma le_one (i : fs.ι) (x : X) : fs i x ≤ 1 := fs.le_one' i x
+lemma le_one (i : ι) (x : X) : f i x ≤ 1 := f.le_one' i x
 
-def is_subordinate (S : set (set X)) : Prop :=
-∀ i, ∃ s ∈ S, closure (support (fs i)) ⊆ s
+protected def single (i : ι) : bump_covering ι X s :=
+{ to_fun := pi.single i 1,
+  locally_finite' := λ x, ⟨univ, univ_mem_sets, (finite_singleton i).subset $ λ j hj, _⟩ }
 
-lemma exists_is_subordinate_of_locally_finite {ι : Type u} [normal_space X] (hs : is_closed s)
+instance [inhabited ι] : inhabited (bump_covering ι X s) :=
+
+
+/-- A collection of bump functions `f i` is subordinate to a family of sets `U i` indexed by the
+same type if for each `i` the closure of the support of `f i` is a subset of `U i`. -/
+def is_subordinate (f : bump_covering ι X s) (U : ι → set X) : Prop :=
+∀ i, closure (support (f i)) ⊆ U i
+
+lemma is_subordinate.mono {f : bump_covering ι X s} {U V : ι → set X} (hU : f.is_subordinate U)
+  (hV : ∀ i, U i ⊆ V i) :
+  f.is_subordinate V :=
+λ i, subset.trans (hU i) (hV i)
+
+/-- If `X` is a normal topological space and `U i`, `i : ι`, is a locally finite open covering of a
+closed set `s`, then there exists a `bump_covering ι X s` that is subordinate to `U`. If `X` is a
+paracompact space, then the assumption `hf : locally_finite U` can be omitted, see
+`bump_covering.exists_is_subordinate`. -/
+lemma exists_is_subordinate_of_locally_finite [normal_space X] (hs : is_closed s)
   (U : ι → set X) (ho : ∀ i, is_open (U i)) (hf : locally_finite U)
-  (hU : s ⊆ ⋃ i, U i) : ∃ f : bump_covering X s, f.is_subordinate (range U) :=
+  (hU : s ⊆ ⋃ i, U i) :
+  ∃ f : bump_covering ι X s, f.is_subordinate U :=
 begin
   rcases exists_subset_Union_closure_subset hs ho (λ x _, hf.point_finite x) hU
     with ⟨V, hsV, hVo, hVU⟩,
@@ -84,50 +141,49 @@ begin
       is_closed_closure (disjoint_right.2 $ λ x hx, not_not.2 (hWV i hx)),
   have hsupp : ∀ i, support (f i) ⊆ V i,
     from λ i, support_subset_iff'.2 (hf0 i),
-  refine ⟨⟨ι, λ i, ⟨f i, hfc i⟩, hf.subset (λ i, subset.trans (hsupp i) (hVU' i)),
-    λ i x, (hf01 i x).1, λ i x, (hf01 i x).2, λ x hx, _⟩, λ i, _⟩,
-  { rcases mem_Union.1 (hsW hx) with ⟨i, hi⟩,
-    exact ⟨i, ((hf1 i).mono subset_closure).eventually_eq_of_mem (mem_nhds_sets (hWo i) hi)⟩ },
-  { exact ⟨U i, mem_range_self _, subset.trans (closure_mono (hsupp i)) (hVU i)⟩ }
+  refine ⟨⟨λ i, ⟨f i, hfc i⟩, hf.subset (λ i, subset.trans (hsupp i) (hVU' i)),
+    λ i x, (hf01 i x).1, λ i x, (hf01 i x).2, λ x hx, _⟩,
+    λ i, subset.trans (closure_mono (hsupp i)) (hVU i)⟩,
+  rcases mem_Union.1 (hsW hx) with ⟨i, hi⟩,
+  exact ⟨i, ((hf1 i).mono subset_closure).eventually_eq_of_mem (mem_nhds_sets (hWo i) hi)⟩
 end
 
+/-- If `X` is a paracompact normal topological space and `U` is an open covering of a closed set
+`s`, then there exists a `bump_covering ι X s` that is subordinate to `U`. -/
 lemma exists_is_subordinate [normal_space X] [paracompact_space X]
-  (hs : is_closed s) (U : set (set X)) (ho : ∀ s ∈ U, is_open s) (hU : s ⊆ ⋃₀ U) :
-  ∃ f : bump_covering X s, f.is_subordinate U :=
+  (hs : is_closed s) (U : ι → set X) (ho : ∀ i, is_open (U i)) (hU : s ⊆ ⋃ i, U i) :
+  ∃ f : bump_covering ι X s, f.is_subordinate U :=
 begin
-  rw [sUnion_eq_Union] at hU, rw [set_coe.forall'] at ho,
   rcases precise_refinement_set hs _ ho hU with ⟨V, hVo, hsV, hVf, hVU⟩,
   rcases exists_is_subordinate_of_locally_finite hs V hVo hVf hsV with ⟨f, hf⟩,
-  refine ⟨f, λ i, _⟩,
-  rcases hf i with ⟨_, ⟨t, rfl⟩, ht⟩,
-  exact ⟨t, t.2, subset.trans ht (hVU t)⟩
+  exact ⟨f, hf.mono hVU⟩
 end
 
 /-- Index of a bump function such that `fs i =ᶠ[𝓝 x] 1`. -/
-def ind (x : X) (hx : x ∈ s) : fs.ι := (fs.eventually_eq_one' x hx).some
+def ind (x : X) (hx : x ∈ s) : ι := (f.eventually_eq_one' x hx).some
 
-lemma eventually_eq_one (x : X) (hx : x ∈ s) : fs (fs.ind x hx) =ᶠ[𝓝 x] 1 :=
-(fs.eventually_eq_one' x hx).some_spec
+lemma eventually_eq_one (x : X) (hx : x ∈ s) : f (f.ind x hx) =ᶠ[𝓝 x] 1 :=
+(f.eventually_eq_one' x hx).some_spec
 
-lemma ind_apply (x : X) (hx : x ∈ s) : fs (fs.ind x hx) x = 1 :=
-(fs.eventually_eq_one x hx).eq_of_nhds
+lemma ind_apply (x : X) (hx : x ∈ s) : f (f.ind x hx) x = 1 :=
+(f.eventually_eq_one x hx).eq_of_nhds
 
-instance : linear_order fs.ι := linear_order_of_STO' well_ordering_rel
+/-- Partition of unity defined by a `bump_covering`. Use `bump_function.to_partition_of_unity`
+instead. -/
+def to_pou_fun (i : ι) (x : X) : ℝ :=
+f i x * ∏ᶠ j (hj : well_ordering_rel j i), (1 - f j x)
 
-def to_pou_fun (i : fs.ι) (x : X) : ℝ :=
-fs i x * ∏ᶠ j < i, (1 - fs j x)
-
-lemma to_pou_fun_zero_of_zero {i : fs.ι} {x : X} (h : fs i x = 0) :
-  to_pou_fun fs i x = 0 :=
+lemma to_pou_fun_zero_of_zero {i : ι} {x : X} (h : f i x = 0) :
+  f.to_pou_fun i x = 0 :=
 by rw [to_pou_fun, h, zero_mul]
 
-lemma support_to_pou_fun_subset (i : fs.ι) :
-  support (to_pou_fun fs i) ⊆ support (fs i) :=
- λ x, mt $ fs.to_pou_fun_zero_of_zero
+lemma support_to_pou_fun_subset (i : ι) :
+  support (f.to_pou_fun i) ⊆ support (f i) :=
+ λ x, mt $ f.to_pou_fun_zero_of_zero
 
-lemma to_pou_fun_eq_mul_prod (i : fs.ι) (x : X) (t : finset fs.ι)
-  (ht : ∀ j < i, fs j x ≠ 0 → j ∈ t) :
-  fs.to_pou_fun i x = fs i x * ∏ j in t.filter (< i), (1 - fs j x) :=
+lemma to_pou_fun_eq_mul_prod (i : ι) (x : X) (t : finset ι)
+  (ht : ∀ j, well_ordering_rel j i → f j x ≠ 0 → j ∈ t) :
+  f.to_pou_fun i x = f i x * ∏ j in t.filter (λ j, well_ordering_rel j i), (1 - f j x) :=
 begin
   refine congr_arg _ (finprod_cond_eq_prod_of_cond_iff _ (λ j hj, _)),
   rw [ne.def, sub_eq_self] at hj,
@@ -136,25 +192,28 @@ begin
 end
 
 lemma sum_to_pou_fun_eq (x : X) :
-  ∑ᶠ i, to_pou_fun fs i x = 1 - ∏ᶠ i, (1 - fs i x) :=
+  ∑ᶠ i, f.to_pou_fun i x = 1 - ∏ᶠ i, (1 - f i x) :=
 begin
-  set s := (fs.point_finite x).to_finset,
-  have hs : (s : set fs.ι) = {i | fs i x ≠ 0} := finite.coe_to_finset _,
-  have A : support (λ i, to_pou_fun fs i x) ⊆ s,
+  set s := (f.point_finite x).to_finset,
+  have hs : (s : set ι) = {i | f i x ≠ 0} := finite.coe_to_finset _,
+  have A : support (λ i, to_pou_fun f i x) ⊆ s,
   { rw hs,
-    exact λ i hi, fs.support_to_pou_fun_subset i hi },
-  have B : mul_support (λ i, 1 - fs i x) ⊆ s,
+    exact λ i hi, f.support_to_pou_fun_subset i hi },
+  have B : mul_support (λ i, 1 - f i x) ⊆ s,
   { rw [hs, mul_support_one_sub], exact λ i, id },
+  letI : linear_order ι := linear_order_of_STO' well_ordering_rel,
   rw [finsum_eq_sum_of_support_subset _ A, finprod_eq_prod_of_mul_support_subset _ B,
     finset.prod_one_sub_ordered, sub_sub_cancel],
-  refine finset.sum_congr rfl (λ i hi, fs.to_pou_fun_eq_mul_prod _ _ _ (λ j hji hj, _)),
+  refine finset.sum_congr rfl (λ i hi, _),
+  convert f.to_pou_fun_eq_mul_prod _ _ _ (λ j hji hj, _),
   rwa finite.mem_to_finset
 end
 
-lemma exists_finset_to_pou_fun_eventually_eq (i : fs.ι) (x : X) :
-  ∃ t : finset fs.ι, fs.to_pou_fun i =ᶠ[𝓝 x] fs i * ∏ j in t.filter (< i), (1 - fs j) :=
+lemma exists_finset_to_pou_fun_eventually_eq (i : ι) (x : X) :
+  ∃ t : finset ι, f.to_pou_fun i =ᶠ[𝓝 x]
+    f i * ∏ j in t.filter (λ j, well_ordering_rel j i), (1 - f j) :=
 begin
-  rcases fs.locally_finite x with ⟨U, hU, hf⟩,
+  rcases f.locally_finite x with ⟨U, hU, hf⟩,
   use hf.to_finset,
   filter_upwards [hU],
   intros y hyU,
@@ -164,58 +223,59 @@ begin
   exact hf.mem_to_finset.2 ⟨y, ⟨hj, hyU⟩⟩
 end
 
-lemma continuous_to_pou_fun (i : fs.ι) : continuous (fs.to_pou_fun i) :=
+lemma continuous_to_pou_fun (i : ι) : continuous (f.to_pou_fun i) :=
 begin
-  refine ((fs i).continuous.mul $
-    continuous_finprod_cond (λ j _, continuous_const.sub (fs j).continuous) _),
+  refine ((f i).continuous.mul $
+    continuous_finprod_cond (λ j _, continuous_const.sub (f j).continuous) _),
   simp only [mul_support_one_sub],
-  exact fs.locally_finite
+  exact f.locally_finite
 end
 
-def to_partition_of_unity : partition_of_unity X s :=
-{ ι := fs.ι,
-  to_fun := λ i, ⟨fs.to_pou_fun i, fs.continuous_to_pou_fun i⟩,
-  locally_finite' := fs.locally_finite.subset fs.support_to_pou_fun_subset,
-  nonneg' := λ i x, mul_nonneg (fs.nonneg i x)
-    (finprod_cond_nonneg $ λ j hj, sub_nonneg.2 $ fs.le_one j x),
+/-- The partition of unity defined by a `bump_covering`. -/
+def to_partition_of_unity : partition_of_unity ι X s :=
+{ to_fun := λ i, ⟨f.to_pou_fun i, f.continuous_to_pou_fun i⟩,
+  locally_finite' := f.locally_finite.subset f.support_to_pou_fun_subset,
+  nonneg' := λ i x, mul_nonneg (f.nonneg i x)
+    (finprod_cond_nonneg $ λ j hj, sub_nonneg.2 $ f.le_one j x),
   sum_eq_one' := λ x hx,
     begin
       simp only [continuous_map.coe_mk, sum_to_pou_fun_eq, sub_eq_self],
-      apply finprod_eq_zero (λ i, 1 - fs i x) (fs.ind x hx),
-      { simp only [fs.ind_apply x hx, sub_self] },
-      { rw mul_support_one_sub, exact fs.point_finite x }
+      apply finprod_eq_zero (λ i, 1 - f i x) (f.ind x hx),
+      { simp only [f.ind_apply x hx, sub_self] },
+      { rw mul_support_one_sub, exact f.point_finite x }
     end,
   sum_le_one' := λ x,
     begin
       simp only [continuous_map.coe_mk, sum_to_pou_fun_eq, sub_le_self_iff],
-      exact finprod_nonneg (λ i, sub_nonneg.2 $ fs.le_one i x)
+      exact finprod_nonneg (λ i, sub_nonneg.2 $ f.le_one i x)
     end }
 
-lemma to_partition_of_unity_apply (i : fs.ι) (x : X) :
-  fs.to_partition_of_unity i x = fs i x * ∏ᶠ j < i, (1 - fs j x) :=
+lemma to_partition_of_unity_apply (i : ι) (x : X) :
+  f.to_partition_of_unity i x = f i x * ∏ᶠ j (hj : well_ordering_rel j i), (1 - f j x) :=
 rfl
 
-lemma to_partition_of_unity_eq_mul_prod (i : fs.ι) (x : X) (t : finset fs.ι)
-  (ht : ∀ j < i, fs j x ≠ 0 → j ∈ t) :
-  fs.to_partition_of_unity i x = fs i x * ∏ j in t.filter (< i), (1 - fs j x) :=
-fs.to_pou_fun_eq_mul_prod i x t ht
+lemma to_partition_of_unity_eq_mul_prod (i : ι) (x : X) (t : finset ι)
+  (ht : ∀ j, well_ordering_rel j i → f j x ≠ 0 → j ∈ t) :
+  f.to_partition_of_unity i x = f i x * ∏ j in t.filter (λ j, well_ordering_rel j i), (1 - f j x) :=
+f.to_pou_fun_eq_mul_prod i x t ht
 
-lemma exists_finset_to_partition_of_unity_eventually_eq (i : fs.ι) (x : X) :
-  ∃ t : finset fs.ι, fs.to_partition_of_unity i =ᶠ[𝓝 x] fs i * ∏ j in t.filter (< i), (1 - fs j) :=
-fs.exists_finset_to_pou_fun_eventually_eq i x
+lemma exists_finset_to_partition_of_unity_eventually_eq (i : ι) (x : X) :
+  ∃ t : finset ι, f.to_partition_of_unity i =ᶠ[𝓝 x]
+    f i * ∏ j in t.filter (λ j, well_ordering_rel j i), (1 - f j) :=
+f.exists_finset_to_pou_fun_eventually_eq i x
 
-lemma support_to_partition_of_unity_subset (i : fs.ι) :
-  support (fs.to_partition_of_unity i) ⊆ support (fs i) :=
- λ x, mt $ fs.to_pou_fun_zero_of_zero
+lemma support_to_partition_of_unity_subset (i : ι) :
+  support (f.to_partition_of_unity i) ⊆ support (f i) :=
+f.support_to_pou_fun_subset i
 
 lemma sum_to_partition_of_unity_eq (x : X) :
-  ∑ᶠ i, fs.to_partition_of_unity i x = 1 - ∏ᶠ i, (1 - fs i x) :=
-fs.sum_to_pou_fun_eq x
+  ∑ᶠ i, f.to_partition_of_unity i x = 1 - ∏ᶠ i, (1 - f i x) :=
+f.sum_to_pou_fun_eq x
 
-lemma is_subordinate.to_partition_of_unity {S : set (set X)} {fs : bump_covering X s}
-  (h : fs.is_subordinate S) : fs.to_partition_of_unity.is_subordinate S :=
-λ i, (h i).imp $ λ s hs,
-  ⟨hs.fst, subset.trans (closure_mono $ fs.support_to_partition_of_unity_subset i) hs.snd⟩
+lemma is_subordinate.to_partition_of_unity {f : bump_covering ι X s} {U : ι → set X}
+  (h : f.is_subordinate U) :
+  f.to_partition_of_unity.is_subordinate U :=
+λ i, subset.trans (closure_mono $ f.support_to_partition_of_unity_subset i) (h i)
 
 end bump_covering
 
@@ -223,15 +283,22 @@ namespace partition_of_unity
 
 variables {s : set X}
 
-lemma exists_is_subordinate_of_locally_finite {ι : Type u} [normal_space X] (hs : is_closed s)
+/-- If `X` is a normal topological space and `U` is a locally finite open covering of a closed set
+`s`, then there exists a `partition_of_unity ι X s` that is subordinate to `U`. If `X` is a
+paracompact space, then the assumption `hf : locally_finite U` can be omitted, see
+`bump_covering.exists_is_subordinate`. -/
+lemma exists_is_subordinate_of_locally_finite [normal_space X] (hs : is_closed s)
   (U : ι → set X) (ho : ∀ i, is_open (U i)) (hf : locally_finite U)
-  (hU : s ⊆ ⋃ i, U i) : ∃ f : partition_of_unity X s, f.is_subordinate (range U) :=
+  (hU : s ⊆ ⋃ i, U i) :
+  ∃ f : partition_of_unity ι X s, f.is_subordinate U :=
 let ⟨f, hf⟩ := bump_covering.exists_is_subordinate_of_locally_finite hs U ho hf hU
 in ⟨f.to_partition_of_unity, hf.to_partition_of_unity⟩
 
-lemma exists_is_subordinate [normal_space X] [paracompact_space X]
-  (hs : is_closed s) (U : set (set X)) (ho : ∀ s ∈ U, is_open s) (hU : s ⊆ ⋃₀ U) :
-  ∃ f : partition_of_unity X s, f.is_subordinate U :=
+/-- If `X` is a paracompact normal topological space and `U` is an open covering of a closed set
+`s`, then there exists a `partition_of_unity ι X s` that is subordinate to `U`. -/
+lemma exists_is_subordinate [normal_space X] [paracompact_space X] (hs : is_closed s)
+  (U : ι → set X) (ho : ∀ i, is_open (U i)) (hU : s ⊆ ⋃ i, U i) :
+  ∃ f : partition_of_unity ι X s, f.is_subordinate U :=
 let ⟨f, hf⟩ := bump_covering.exists_is_subordinate hs U ho hU
 in ⟨f.to_partition_of_unity, hf.to_partition_of_unity⟩
 
