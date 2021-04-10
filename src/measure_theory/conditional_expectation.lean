@@ -33,10 +33,25 @@ lemma measurable.ae_measurable' {m m0 : measurable_space α} {f : α → E} {μ 
   ae_measurable' m f μ :=
 ⟨f, hf, eventually_eq.rfl⟩
 
+lemma ae_measurable'.mono {m2 m m0 : measurable_space α} (hm : m2 ≤ m) {f : α → E}
+  {μ : measure α} (hf : ae_measurable' m2 f μ) :
+  ae_measurable' m f μ :=
+by { obtain ⟨g, hg_meas, hfg⟩ := hf, exact ⟨g, measurable.mono hg_meas hm le_rfl, hfg⟩, }
+
 lemma ae_measurable'.ae_measurable {m m0 : measurable_space α} (hm : m ≤ m0) {f : α → E}
   {μ : measure α} (hf : ae_measurable' m f μ) :
   ae_measurable f μ :=
-by { obtain ⟨g, hg_meas, hfg⟩ := hf, exact ⟨g, measurable.mono hg_meas hm le_rfl, hfg⟩, }
+ae_measurable'.mono hm hf
+
+lemma ae_measurable'_of_ae_measurable'_trim {m m0 m0' : measurable_space α} (hm0 : m0 ≤ m0')
+  {f : α → E} {μ : measure α} (hf : ae_measurable' m f (μ.trim hm0)) :
+  ae_measurable' m f μ :=
+by { obtain ⟨g, hg_meas, hfg⟩ := hf, exact ⟨g, hg_meas, ae_eq_of_ae_eq_trim hm0 hfg⟩, }
+
+lemma ae_measurable'.restrict {m m0 : measurable_space α} {f : α → E}
+  {μ : measure α} (hf : ae_measurable' m f μ) (s : set α) :
+  ae_measurable' m f (μ.restrict s) :=
+by { obtain ⟨g, hg_meas, hfg⟩ := hf, exact ⟨g, hg_meas, ae_restrict_of_ae hfg⟩, }
 
 end ae_measurable'
 
@@ -641,6 +656,11 @@ begin
   exact tendsto_nhds_unique h_lim_1 h_lim_2,
 end
 
+lemma integral_trim_ae (hm : m ≤ m0) (f : α → E) (hf : ae_measurable' m f μ)
+  (hf_int : integrable f μ) :
+  ∫ x, f x ∂μ = @integral α E m _ _ _ _ _ _ (μ.trim hm) f :=
+sorry
+
 lemma integrable.restrict [measurable_space α] [normed_group E] {μ : measure α} {f : α → E}
   (hf : integrable f μ) (s : set α) :
   integrable f (μ.restrict s) :=
@@ -650,6 +670,12 @@ lemma set_integral_trim (hm : m ≤ m0) (f : α → E) (hf : @measurable α E m 
   (hf_int : integrable f μ) {s : set α} (hs : @measurable_set α m s) :
   ∫ x in s, f x ∂μ = @integral α E m _ _ _ _ _ _ ((μ.restrict s).trim hm) f :=
 integral_trim hm f hf (hf_int.restrict s)
+
+lemma set_integral_trim_ae (hm : m ≤ m0) (f : α → E) (hf : ae_measurable' m f μ)
+  (hf_int : integrable f μ) {s : set α} (hs : @measurable_set α m s) :
+  ∫ x in s, f x ∂μ = @integral α E m _ _ _ _ _ _ (@measure.restrict _ m (μ.trim hm) s) f :=
+by rwa [integral_trim_ae hm f (ae_measurable'.restrict hf s) (hf_int.restrict s),
+  trim_restrict hm μ]
 
 lemma ae_eq_trim_of_measurable {E} [normed_group E] [measurable_space E] [borel_space E]
   [second_countable_topology E] (hm : m ≤ m0)
@@ -1881,31 +1907,35 @@ lemma integral_condexp {m m0 : measurable_space α} {hm : m ≤ m0} {μ : measur
   ∫ x, condexp 𝕜 hm f hf x ∂μ = ∫ x, f x ∂μ :=
 by rw [← integral_univ, set_integral_condexp_eq hm hf (@measurable_set.univ α m), integral_univ]
 
-lemma is_condexp_comp {m2 m m0 : measurable_space α} {hm : m ≤ m0} {μ : measure α}
+lemma is_condexp_comp {m2 m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
   [finite_measure μ] (hm2 : m2 ≤ m) {f f2 g : α → E} (hfg : is_condexp m f g μ)
-  (hf : integrable f μ) (hff2 : @is_condexp _ _ _ _ _ _ _ _ m2 m f2 f (μ.trim hm)) :
+  (hf : integrable f μ) (hff2 : @is_condexp _ _ _ _ _ _ _ _ m2 m f2 f (μ.trim hm))
+  (hf2 : integrable f2 μ) :
   is_condexp m2 f2 g μ :=
 begin
-  obtain ⟨⟨f', f'_meas, ff'_eq⟩, f_int⟩ := hfg,
-  obtain ⟨⟨f2', f2'_meas, f2f2'_eq⟩, f2_int⟩ := hff2,
-  refine ⟨⟨f2', f2'_meas, ae_eq_of_ae_eq_trim hm f2f2'_eq⟩, λ s hs, _⟩,
+  obtain ⟨f_meas, f_int⟩ := hfg,
+  obtain ⟨f2_meas, f2_int⟩ := hff2,
+  have f2_meas_μ : ae_measurable' m2 f2 μ, from ae_measurable'_of_ae_measurable'_trim hm f2_meas,
+  have f2_meas_m_μ : ae_measurable' m f2 μ, from ae_measurable'.mono hm2 f2_meas_μ,
+  refine ⟨f2_meas_μ, λ s hs, _⟩,
   specialize f2_int s hs,
   specialize f_int s (hm2 s hs),
-  rw set_integral_trim hm2 at f2_int,
-  sorry,
-  sorry,
-  sorry,
-  sorry,
+  rw ← set_integral_trim_ae hm _ f2_meas_m_μ hf2 (hm2 s hs) at f2_int,
+  rw ← set_integral_trim_ae hm _ f_meas hf (hm2 s hs) at f2_int,
+  exact f2_int.trans f_int,
 end
 
-lemma condexp_comp {m2 m m0 : measurable_space α} {hm : m ≤ m0} {μ : measure α} [finite_measure μ]
-  (hm2 : m2 ≤ m) (hf : integrable f μ) :
+lemma condexp_comp {m2 m m0 : measurable_space α} {μ : measure α} [finite_measure μ]
+  (hm : m ≤ m0) (hm2 : m2 ≤ m) (hf : integrable f μ) :
   condexp 𝕜 hm2 (condexp 𝕜 hm f hf) (integrable_trim_condexp 𝕜 hm hf)
     =ᵐ[μ] condexp 𝕜 (hm2.trans hm) f hf :=
 begin
   refine is_condexp_unique 𝕜 (hm2.trans hm) _ _
     (is_condexp_condexp 𝕜 (hm2.trans hm) hf) (integrable_condexp 𝕜 (hm2.trans hm) hf),
-  { sorry, },
+  { refine is_condexp_comp hm hm2 (is_condexp_condexp 𝕜 hm hf) (integrable_condexp 𝕜 hm hf)
+      (is_condexp_condexp 𝕜 hm2 _) _,
+    have h := integrable_condexp 𝕜 hm2 (integrable_trim_condexp 𝕜 hm hf),
+    exact integrable_of_integrable_trim hm h, },
   { exact integrable_of_integrable_trim hm (integrable_condexp 𝕜 hm2 _), },
 end
 
