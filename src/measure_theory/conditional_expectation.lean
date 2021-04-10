@@ -646,18 +646,17 @@ lemma set_integral_trim (hm : m ≤ m0) (f : α → E) (hf : @measurable α E m 
   ∫ x in s, f x ∂μ = @integral α E m _ _ _ _ _ _ (@measure.restrict _ m (μ.trim hm) s) f :=
 by rwa [integral_trim hm f hf (hf_int.restrict s), trim_restrict hm μ]
 
-lemma ae_eq_trim_of_measurable {E} [normed_group E] [measurable_space E] [borel_space E]
-  [second_countable_topology E] (hm : m ≤ m0)
+lemma ae_eq_trim_of_measurable {E} [add_group E] [measurable_space E]
+  [measurable_singleton_class E] [has_measurable_sub₂ E] (hm : m ≤ m0)
   {f g : α → E} (hf : @measurable α E m _ f) (hg : @measurable α E m _ g) (hfg : f =ᵐ[μ] g) :
   eventually_eq (@measure.ae α m (μ.trim hm)) f g :=
 begin
-  rw [eventually_eq, ae_iff, trim_measurable hm _],
-  { exact hfg, },
-  { exact @measurable_set.compl α _ m (@measurable_set_eq_fun α m E _ _ _ _ _ _ hf hg), },
+  rwa [eventually_eq, ae_iff, trim_measurable hm _],
+  exact (@measurable_set.compl α _ m (@measurable_set_eq_fun α m E _ _ _ _ _ _ hf hg)),
 end
 
-lemma ae_eq_trim_iff {E} [normed_group E] [measurable_space E] [borel_space E]
-  [second_countable_topology E] (hm : m ≤ m0)
+lemma ae_eq_trim_iff {E} [add_group E] [measurable_space E]
+  [measurable_singleton_class E] [has_measurable_sub₂ E] (hm : m ≤ m0)
   {f g : α → E} (hf : @measurable α E m _ f) (hg : @measurable α E m _ g) :
   (eventually_eq (@measure.ae α m (μ.trim hm)) f g) ↔ f =ᵐ[μ] g :=
 ⟨ae_eq_of_ae_eq_trim hm, ae_eq_trim_of_measurable hm hf hg⟩
