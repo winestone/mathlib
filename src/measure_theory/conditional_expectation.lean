@@ -723,15 +723,10 @@ lemma mem_ℒ0_iff_ae_measurable [measurable_space α] [normed_group E] {μ : me
   mem_ℒp f 0 μ ↔ ae_measurable f μ :=
 by { simp_rw mem_ℒp, refine and_iff_left _, simp, }
 
-lemma indicator_comp {E F} [has_zero E] [has_zero F] (s : set α) (c : E) (f : E → F) (g : α → E)
-  (hf : f 0 = 0) :
-  (λ x, f (s.indicator g x)) = s.indicator (f ∘ g) :=
-by { ext1 x, by_cases hx : x ∈ s; simp [hx, hf] }
-
 lemma indicator_const_comp {E F} [has_zero E] [has_zero F] (s : set α) (c : E) (f : E → F)
   (hf : f 0 = 0) :
   (λ x, f (s.indicator (λ x, c) x)) = s.indicator (λ x, f c) :=
-indicator_comp s c f (λ x, c) hf
+(set.indicator_comp_of_zero hf).symm
 
 lemma snorm_ess_sup_indicator_le [measurable_space α] [normed_group E] {μ : measure α}
   (s : set α) (f : α → E) :
@@ -883,11 +878,6 @@ lemma integral_zero_of_forall_integral_inner_zero [measurable_space α] [complet
   (hf_int : ∀ (c : E), ∫ x, ⟪c, f x⟫ ∂μ = (0 : 𝕜)) :
   ∫ x, f x ∂μ = 0 :=
 by { specialize hf_int (∫ x, f x ∂μ), rwa [integral_inner hf, inner_self_eq_zero] at hf_int }
-
-lemma Lp.integrable [measurable_space α] {μ : measure α} [finite_measure μ] [normed_group E]
-  [borel_space E] [second_countable_topology E] (f : Lp E p μ) (hp : 1 ≤ p) :
-  integrable f μ :=
-mem_ℒp_one_iff_integrable.mp (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp f) hp)
 
 include 𝕜
 lemma is_condexp_condexp_L2 [complete_space E] {m m0 : measurable_space α} (hm : m ≤ m0)
