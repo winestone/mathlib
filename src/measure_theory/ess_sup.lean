@@ -119,13 +119,15 @@ end complete_linear_order
 
 namespace ennreal
 
+variables {f : α → ℝ≥0∞}
+
 lemma ae_le_ess_sup (f : α → ℝ≥0∞) : ∀ᵐ y ∂μ, f y ≤ ess_sup f μ :=
 eventually_le_limsup f
 
-@[simp] lemma ess_sup_eq_zero_iff {f : α → ℝ≥0∞} : ess_sup f μ = 0 ↔ f =ᵐ[μ] 0 :=
+@[simp] lemma ess_sup_eq_zero_iff : ess_sup f μ = 0 ↔ f =ᵐ[μ] 0 :=
 limsup_eq_zero_iff
 
-lemma ess_sup_const_mul {f : α → ℝ≥0∞} {a : ℝ≥0∞} :
+lemma ess_sup_const_mul {a : ℝ≥0∞} :
   ess_sup (λ (x : α), a * (f x)) μ = a * ess_sup f μ :=
 limsup_const_mul
 
@@ -136,5 +138,19 @@ lemma ess_sup_liminf_le {ι} [encodable ι] [linear_order ι] (f : ι → α →
   ess_sup (λ x, filter.at_top.liminf (λ n, f n x)) μ
     ≤ filter.at_top.liminf (λ n, ess_sup (λ x, f n x) μ) :=
 by { simp_rw ess_sup, exact ennreal.limsup_liminf_le_liminf_limsup (λ a b, f b a), }
+
+lemma ess_sup_mono_measure {μ ν : measure α} (hμν : ν ≪ μ) :
+  ess_sup f ν ≤ ess_sup f μ :=
+begin
+  refine limsup_le_limsup_of_le (measure.ae_le_iff_absolutely_continuous.mpr hμν) _ _,
+  all_goals {filter.is_bounded_default, },
+end
+
+lemma ess_inf_mono_measure {μ ν : measure α} (hμν : μ ≪ ν) :
+  ess_inf f ν ≤ ess_inf f μ :=
+begin
+  refine liminf_le_liminf_of_le (measure.ae_le_iff_absolutely_continuous.mpr hμν) _ _,
+  all_goals {filter.is_bounded_default, },
+end
 
 end ennreal

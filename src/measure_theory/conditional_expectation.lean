@@ -275,7 +275,7 @@ ae_measurable' m f μ ∧ ∀ s (hs : @measurable_set α m s), ∫ a in s, f a �
 
 variables {m m0 : measurable_space α} {μ : measure α} {f f₁ f₂ g g₁ g₂ : α → G}
 
-lemma is_condexp_congr_ae' (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) (hf₁ : is_condexp m f₁ g μ) :
+lemma is_condexp_congr_ae_left' (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) (hf₁ : is_condexp m f₁ g μ) :
   is_condexp m f₂ g μ :=
 begin
   rcases hf₁ with ⟨⟨f, h_meas, h_eq⟩, h_int_eq⟩,
@@ -286,9 +286,9 @@ begin
   exact h_int_eq s hs,
 end
 
-lemma is_condexp_congr_ae (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) :
+lemma is_condexp_congr_ae_left (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) :
   is_condexp m f₁ g μ ↔ is_condexp m f₂ g μ :=
-⟨λ h, is_condexp_congr_ae' hm hf12 h, λ h, is_condexp_congr_ae' hm hf12.symm h⟩
+⟨λ h, is_condexp_congr_ae_left' hm hf12 h, λ h, is_condexp_congr_ae_left' hm hf12.symm h⟩
 
 lemma is_condexp_congr_ae_right' (hm : m ≤ m0) (hg12 : g₁ =ᵐ[μ] g₂) (hf₁ : is_condexp m f g₁ μ) :
   is_condexp m f g₂ μ :=
@@ -304,6 +304,15 @@ end
 lemma is_condexp_congr_ae_right (hm : m ≤ m0) (hg12 : g₁ =ᵐ[μ] g₂) :
   is_condexp m f g₁ μ ↔ is_condexp m f g₂ μ :=
 ⟨λ h, is_condexp_congr_ae_right' hm hg12 h, λ h, is_condexp_congr_ae_right' hm hg12.symm h⟩
+
+lemma is_condexp_congr_ae' (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) (hg12 : g₁ =ᵐ[μ] g₂)
+  (hfg₁ : is_condexp m f₁ g₁ μ) :
+  is_condexp m f₂ g₂ μ :=
+is_condexp_congr_ae_left' hm hf12 (is_condexp_congr_ae_right' hm hg12 hfg₁)
+
+lemma is_condexp_congr_ae (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) (hg12 : g₁ =ᵐ[μ] g₂) :
+  is_condexp m f₁ g₁ μ ↔ is_condexp m f₂ g₂ μ :=
+⟨λ h, is_condexp_congr_ae' hm hf12 hg12 h, λ h, is_condexp_congr_ae' hm hf12.symm hg12.symm h⟩
 
 end is_condexp
 
@@ -1309,7 +1318,7 @@ is_condexp_congr_ae_right' hm (L1s_to_L2_coe_fn f) (is_condexp_condexp_L2 hm _)
 variables (𝕜)
 lemma is_condexp_condexp_L1s (f : α →₁ₛ[μ] E) :
   is_condexp m ((condexp_L1s_lm 𝕜 hm f) : α → E) f μ :=
-is_condexp_congr_ae' hm (condexp_L1s_ae_eq_condexp_L2 hm _).symm
+is_condexp_congr_ae_left' hm (condexp_L1s_ae_eq_condexp_L2 hm _).symm
   (is_condexp_condexp_L2_L1s_to_L2 hm f)
 
 lemma integral_condexp_L1s (f : α →₁ₛ[μ] E) {s : set α} (hs : @measurable_set α m s) :
@@ -1742,8 +1751,7 @@ mem_ℒp.coe_fn_to_Lp ((Lp.mem_ℒp f).restrict s)
 
 @[continuity]
 lemma continuous_set_integral {E} [measurable_space E] [normed_group E] [borel_space E]
-  [second_countable_topology E] [normed_space ℝ E] [complete_space E] {s : set α}
-  (hs : measurable_set s) [finite_measure μ] :
+  [second_countable_topology E] [normed_space ℝ E] [complete_space E] (s : set α) :
   continuous (λ f : α →₁[μ] E, ∫ x in s, f x ∂μ) :=
 begin
   haveI : fact((1 : ℝ≥0∞) ≤ 1) := ⟨le_rfl⟩,
@@ -1840,13 +1848,9 @@ lemma condexp_ae_eq_condexp_L1 (f : α → E) (hf : integrable f μ) :
   condexp 𝕜 hm f hf =ᵐ[μ] condexp_L1 𝕜 hm (hf.to_L1 f) :=
 (is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f)).1.some_spec.2.symm
 
-lemma is_condexp_condexp {f : α → E} (hf : integrable f μ) :
-  is_condexp m (condexp 𝕜 hm f hf) f μ :=
-begin
-  refine is_condexp_congr_ae_right' hm (integrable.coe_fn_to_L1 hf) _,
-  refine is_condexp_congr_ae' hm (condexp_ae_eq_condexp_L1 𝕜 hm f hf).symm _,
-  exact is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f),
-end
+lemma is_condexp_condexp {f : α → E} (hf : integrable f μ) : is_condexp m (condexp 𝕜 hm f hf) f μ :=
+is_condexp_congr_ae' hm (condexp_ae_eq_condexp_L1 𝕜 hm f hf).symm (integrable.coe_fn_to_L1 hf)
+  (is_condexp_condexp_L1 𝕜 hm (hf.to_L1 f))
 
 lemma integrable_condexp {f : α → E} (hf : integrable f μ) : integrable (condexp 𝕜 hm f hf) μ :=
 (integrable_congr (condexp_ae_eq_condexp_L1 𝕜 hm f hf)).mpr (Lp.integrable _ le_rfl)
@@ -1857,37 +1861,35 @@ integrable_trim_of_measurable hm (measurable_condexp 𝕜 hm hf) (integrable_con
 
 variables {𝕜}
 
-lemma set_integral_condexp_eq {f : α → E} (hf : integrable f μ) {s : set α}
-  (hs : @measurable_set α m s) :
-  ∫ x in s, condexp 𝕜 hm f hf x ∂μ = ∫ x in s, f x ∂μ :=
-(is_condexp_condexp 𝕜 hm hf).2 s hs
-
 end condexp_def
 
 section condexp_properties
 include 𝕜
 
-variables [complete_space E] {f : α → E}
+variables [complete_space E] {f f₂ g : α → E}
+  {m₂ m m0 : measurable_space α} {μ : measure α} [finite_measure μ]
 
-lemma integral_condexp {m m0 : measurable_space α} {hm : m ≤ m0} {μ : measure α} [finite_measure μ]
-  (hf : integrable f μ) :
+lemma set_integral_condexp_eq {hm : m ≤ m0} (hf : integrable f μ) {s : set α}
+  (hs : @measurable_set α m s) :
+  ∫ x in s, condexp 𝕜 hm f hf x ∂μ = ∫ x in s, f x ∂μ :=
+(is_condexp_condexp 𝕜 hm hf).2 s hs
+
+lemma integral_condexp {hm : m ≤ m0} (hf : integrable f μ) :
   ∫ x, condexp 𝕜 hm f hf x ∂μ = ∫ x, f x ∂μ :=
-by rw [← integral_univ, set_integral_condexp_eq hm hf (@measurable_set.univ α m), integral_univ]
+by rw [← integral_univ, set_integral_condexp_eq hf (@measurable_set.univ α m), integral_univ]
 
-lemma is_condexp_comp {m2 m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
-  [finite_measure μ] (hm2 : m2 ≤ m) {f f2 g : α → E} (hfg : is_condexp m f g μ)
-  (hff2 : is_condexp m2 f2 f μ) :
-  is_condexp m2 f2 g μ :=
-⟨hff2.1, λ s hs, (hff2.2 s hs).trans (hfg.2 s (hm2 s hs))⟩
+lemma is_condexp_comp (hm2 : m₂ ≤ m) (hm : m ≤ m0) (hfg : is_condexp m f g μ)
+  (hff₂ : is_condexp m₂ f₂ f μ) :
+  is_condexp m₂ f₂ g μ :=
+⟨hff₂.1, λ s hs, (hff₂.2 s hs).trans (hfg.2 s (hm2 s hs))⟩
 
-lemma condexp_comp {m2 m m0 : measurable_space α} {μ : measure α} [finite_measure μ]
-  (hm : m ≤ m0) (hm2 : m2 ≤ m) (hf : integrable f μ) :
+lemma condexp_comp (hm2 : m₂ ≤ m) (hm : m ≤ m0) (hf : integrable f μ) :
   condexp 𝕜 (hm2.trans hm) (condexp 𝕜 hm f hf) (integrable_condexp 𝕜 hm hf)
     =ᵐ[μ] condexp 𝕜 (hm2.trans hm) f hf :=
 begin
   refine is_condexp_unique 𝕜 (hm2.trans hm) _ (integrable_condexp 𝕜 (hm2.trans hm) _)
     (is_condexp_condexp 𝕜 (hm2.trans hm) hf) (integrable_condexp 𝕜 (hm2.trans hm) hf),
-  exact is_condexp_comp hm hm2 (is_condexp_condexp 𝕜 hm hf) (is_condexp_condexp 𝕜 (hm2.trans hm) _),
+  exact is_condexp_comp hm2 hm (is_condexp_condexp 𝕜 hm hf) (is_condexp_condexp 𝕜 (hm2.trans hm) _),
 end
 
 omit 𝕜
