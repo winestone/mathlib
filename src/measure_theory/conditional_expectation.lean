@@ -291,7 +291,7 @@ def is_condexp (m : measurable_space α) [m0 : measurable_space α] (f g : α �
   Prop :=
 ae_measurable' m f μ ∧ ∀ s (hs : @measurable_set α m s), ∫ a in s, f a ∂μ = ∫ a in s, g a ∂μ
 
-variables {m m0 : measurable_space α} {μ : measure α} {f f₁ f₂ g g₁ g₂ : α → G}
+variables {m₂ m m0 : measurable_space α} {μ : measure α} {f f₁ f₂ g g₁ g₂ : α → G}
 
 lemma is_condexp_congr_ae_left' (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) (hf₁ : is_condexp m f₁ g μ) :
   is_condexp m f₂ g μ :=
@@ -327,6 +327,10 @@ is_condexp_congr_ae_left' hm hf12 (is_condexp_congr_ae_right' hm hg12 hfg₁)
 lemma is_condexp_congr_ae (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) (hg12 : g₁ =ᵐ[μ] g₂) :
   is_condexp m f₁ g₁ μ ↔ is_condexp m f₂ g₂ μ :=
 ⟨λ h, is_condexp_congr_ae' hm hf12 hg12 h, λ h, is_condexp_congr_ae' hm hf12.symm hg12.symm h⟩
+
+lemma is_condexp_comp (hm2 : m₂ ≤ m) (hfg : is_condexp m f g μ) (hff₂ : is_condexp m₂ f₂ f μ) :
+  is_condexp m₂ f₂ g μ :=
+⟨hff₂.1, λ s hs, (hff₂.2 s hs).trans (hfg.2 s (hm2 s hs))⟩
 
 end is_condexp
 
@@ -431,10 +435,12 @@ begin
   exact ae_nonneg_of_forall_set_ℝ (-f) hf_neg hf_nonneg_neg,
 end
 
-lemma forall_inner_eq_zero_iff (x : E) : (∀ c : E, inner c x = (0 : 𝕜)) ↔ x = 0 :=
+lemma forall_inner_eq_zero_iff {E 𝕜} [is_R_or_C 𝕜] [inner_product_space 𝕜 E] (x : E) :
+  (∀ c : E, inner c x = (0 : 𝕜)) ↔ x = 0 :=
 ⟨λ hx, inner_self_eq_zero.mp (hx x), λ hx, by simp [hx]⟩
 
-lemma ae_eq_zero_of_forall_inner_ae_eq_zero (μ : measure α) (f : α → E)
+lemma ae_eq_zero_of_forall_inner_ae_eq_zero {E 𝕜} [is_R_or_C 𝕜] [inner_product_space 𝕜 E]
+  [second_countable_topology E] (μ : measure α) (f : α → E)
   (hf : ∀ c : E, ∀ᵐ x ∂μ, inner c (f x) = (0 : 𝕜)) :
   f =ᵐ[μ] 0 :=
 begin
@@ -481,8 +487,9 @@ begin
   exact integrable.mono hf (ae_measurable.im hf.1) (eventually_of_forall h_norm_le),
 end
 
-include 𝕜
-lemma integrable.const_inner {f : α → E} (hf : integrable f μ)
+lemma integrable.const_inner {E 𝕜} [is_R_or_C 𝕜] [inner_product_space 𝕜 E] [measurable_space E]
+  [borel_space E] [second_countable_topology E]
+  [measurable_space 𝕜] [borel_space 𝕜] {f : α → E} (hf : integrable f μ)
   (c : E) :
   integrable (λ x, (inner c (f x) : 𝕜)) μ :=
 begin
@@ -499,6 +506,7 @@ lemma integral_const_inner [complete_space E] {f : α → E} (hf : integrable f 
 @continuous_linear_map.integral_comp_comm α E 𝕜 _ _ _ μ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
   (inner_right c) _ hf
 
+include 𝕜
 lemma ae_eq_zero_of_forall_set [finite_measure μ] [complete_space E] (f : α → E)
   (hf : integrable f μ) (hf_zero : ∀ s : set α, measurable_set s → ∫ x in s, f x ∂μ = 0) :
   f =ᵐ[μ] 0 :=
@@ -569,7 +577,7 @@ begin
   exact @measurable.nnnorm E α _ _ _ m _ hf,
 end
 
-lemma ae_measurable_of_ae_measurable_trim (hm : m ≤ m0) [normed_group E] [opens_measurable_space E]
+lemma ae_measurable_of_ae_measurable_trim (hm : m ≤ m0)
   {f : α → E} (hf : @ae_measurable α E m _ f (μ.trim hm)) :
   ae_measurable f μ :=
 begin
@@ -596,11 +604,12 @@ end
 variables [normed_group E] [borel_space E] [second_countable_topology E] [complete_space E]
   [normed_space ℝ E]
 
-def simple_func_larger_space (hm : m ≤ m0) (f : @simple_func α m E) : simple_func α E :=
+/-- Simple func seen as simple func of a larger measurable_space. -/
+def simple_func_larger_space {E} (hm : m ≤ m0) (f : @simple_func α m E) : simple_func α E :=
 ⟨@simple_func.to_fun α m E f, λ x, hm _ (@simple_func.measurable_set_fiber α E m f x),
   @simple_func.finite_range α E m f⟩
 
-lemma simple_func_larger_space_eq (hm : m ≤ m0) (f : @simple_func α m E) :
+lemma simple_func_larger_space_eq {E} (hm : m ≤ m0) (f : @simple_func α m E) :
   ⇑(simple_func_larger_space hm f) = f :=
 rfl
 
@@ -661,8 +670,8 @@ begin
   exact tendsto_nhds_unique h_lim_1 h_lim_2,
 end
 
-lemma integrable.restrict [measurable_space α] [normed_group E] {μ : measure α} {f : α → E}
-  (hf : integrable f μ) (s : set α) :
+lemma integrable.restrict {α E} [measurable_space α] [measurable_space E] [normed_group E]
+  {μ : measure α} {f : α → E} (hf : integrable f μ) (s : set α) :
   integrable f (μ.restrict s) :=
 integrable_on.integrable (integrable.integrable_on hf)
 
@@ -724,8 +733,9 @@ end
 omit 𝕜
 
 /-- Conditional expectation of a function in L2 with respect to a sigma-algebra -/
-def condexp_L2_clm [complete_space E] {m m0 : measurable_space α}
-  (hm : m ≤ m0) {μ : measure α} :
+def condexp_L2_clm {E} [inner_product_space 𝕜 E] [measurable_space E] [borel_space E]
+  [second_countable_topology E] [complete_space E] {m m0 : measurable_space α} (hm : m ≤ m0)
+  {μ : measure α} :
   (α →₂[μ] E) →L[𝕜] (Lp_sub E 𝕜 m 2 μ) :=
 begin
   haveI : fact (m ≤ m0) := ⟨hm⟩,
@@ -733,6 +743,7 @@ begin
 end
 variables {𝕜}
 
+/-- Indicator of a set as an ` α →ₘ[μ] E`. -/
 def indicator_ae {α E} [measurable_space α] [measurable_space E] [normed_group E]
   (μ : measure α) {s : set α} (hs : measurable_set s) (c : E) :
   α →ₘ[μ] E :=
@@ -857,6 +868,7 @@ section indicator_Lp
 variables [measurable_space α] [normed_group E] [borel_space E] [second_countable_topology E]
   {μ : measure α} {s : set α} {hs : measurable_set s} {hμs : μ s < ∞} {c : E}
 
+/-- Indicator of a set as an element of `Lp`. -/
 def indicator_Lp (p : ℝ≥0∞) (hs : measurable_set s) (hμs : μ s < ∞) (c : E) : Lp E p μ :=
 mem_ℒp.to_Lp (indicator_ae μ hs c) (mem_ℒp_indicator_ae hs hμs c)
 
@@ -902,8 +914,9 @@ end
 
 end indicator_Lp
 
-lemma mem_Lp_sub_indicator_Lp {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α} {s : set α}
-  (hs : @measurable_set α m s) {hμs : μ s < ∞} {c : E} :
+lemma mem_Lp_sub_indicator_Lp {E} [inner_product_space 𝕜 E] [measurable_space E] [borel_space E]
+  [second_countable_topology E] {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
+  {s : set α} (hs : @measurable_set α m s) {hμs : μ s < ∞} {c : E} :
   indicator_Lp p (hm s hs) hμs c ∈ Lp_sub E 𝕜 m p μ :=
 begin
   rw mem_Lp_sub_iff_ae_measurable',
@@ -911,7 +924,7 @@ begin
   exact @measurable.indicator α _ m _ _ s (λ x, c) (@measurable_const _ α _ m _) hs,
 end
 
-lemma inner_indicator_Lp [measurable_space α] [complete_space E] {μ : measure α} (f : Lp E 2 μ)
+lemma inner_indicator_Lp [measurable_space α] {μ : measure α} (f : Lp E 2 μ)
   {s : set α} (hs : measurable_set s) (hμs : μ s < ∞) (c : E) :
   inner (indicator_Lp 2 hs hμs c) f = ∫ x in s, ⟪c, f x⟫ ∂μ :=
 begin
@@ -995,7 +1008,7 @@ lemma simple_func.exists_forall_norm_le {α β} [measurable_space α] [has_norm 
   ∃ C, ∀ x, ∥f x∥ ≤ C :=
 simple_func.exists_forall_le (simple_func.map (λ x, ∥x∥) f)
 
-lemma mem_ℒp_top_simple_func [measurable_space α] [normed_group E] [borel_space E]
+lemma mem_ℒp_top_simple_func [measurable_space α] [normed_group E]
   (f : simple_func α E) (μ : measure α) [finite_measure μ] :
   mem_ℒp f ∞ μ :=
 begin
@@ -1165,7 +1178,7 @@ begin
   rw [finset.sum_insert hjs, simple_func.coe_add, pi.add_apply, h_sum, ← finset.sum_insert hjs],
 end
 
-lemma simple_func.coe_finset_sum {ι} [measurable_space α] [normed_group E]
+lemma simple_func.coe_finset_sum {ι E} [measurable_space α] [normed_group E]
   (f : ι → simple_func α E) (s : finset ι) :
   ⇑(∑ i in s, f i) = ∑ i in s, f i :=
 begin
@@ -1194,7 +1207,7 @@ begin
   rw ← finset.sum_insert hjs,
 end
 
-lemma simple_func_eq_sum_indicator [measurable_space α] [normed_group E] (f : simple_func α E) :
+lemma simple_func_eq_sum_indicator {E} [measurable_space α] [normed_group E] (f : simple_func α E) :
   f = ∑ y in f.range,
     indicator_simple_func (f ⁻¹' ({y} : set E)) (simple_func.measurable_set_fiber f y) y :=
 begin
@@ -1892,18 +1905,13 @@ lemma integral_condexp {hm : m ≤ m0} (hf : integrable f μ) :
   ∫ x, condexp 𝕜 hm f hf x ∂μ = ∫ x, f x ∂μ :=
 by rw [← integral_univ, set_integral_condexp_eq hf (@measurable_set.univ α m), integral_univ]
 
-lemma is_condexp_comp (hm2 : m₂ ≤ m) (hm : m ≤ m0) (hfg : is_condexp m f g μ)
-  (hff₂ : is_condexp m₂ f₂ f μ) :
-  is_condexp m₂ f₂ g μ :=
-⟨hff₂.1, λ s hs, (hff₂.2 s hs).trans (hfg.2 s (hm2 s hs))⟩
-
 lemma condexp_comp (hm2 : m₂ ≤ m) (hm : m ≤ m0) (hf : integrable f μ) :
   condexp 𝕜 (hm2.trans hm) (condexp 𝕜 hm f hf) (integrable_condexp 𝕜 hm hf)
     =ᵐ[μ] condexp 𝕜 (hm2.trans hm) f hf :=
 begin
   refine is_condexp_unique 𝕜 (hm2.trans hm) _ (integrable_condexp 𝕜 (hm2.trans hm) _)
     (is_condexp_condexp 𝕜 (hm2.trans hm) hf) (integrable_condexp 𝕜 (hm2.trans hm) hf),
-  exact is_condexp_comp hm2 hm (is_condexp_condexp 𝕜 hm hf) (is_condexp_condexp 𝕜 (hm2.trans hm) _),
+  exact is_condexp_comp hm2 (is_condexp_condexp 𝕜 hm hf) (is_condexp_condexp 𝕜 (hm2.trans hm) _),
 end
 
 omit 𝕜
