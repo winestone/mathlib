@@ -581,19 +581,19 @@ section integral_trim
 
 variables {m m0 : measurable_space α} {μ : measure α}
 
-lemma integrable_trim_of_measurable (hm : m ≤ m0) [normed_group β] [opens_measurable_space β]
-  {f : α → β} (hf : @measurable α β m _ f) (hf_int : integrable f μ) :
-  @integrable α β m _ _ f (μ.trim hm) :=
+lemma integrable_trim_of_measurable (hm : m ≤ m0) [opens_measurable_space H]
+  {f : α → H} (hf : @measurable _ _ m _ f) (hf_int : integrable f μ) :
+  @integrable _ _ m _ _ f (μ.trim hm) :=
 begin
-  refine ⟨@measurable.ae_measurable α β m _ f (μ.trim hm) hf, _⟩,
+  refine ⟨@measurable.ae_measurable α _ m _ f (μ.trim hm) hf, _⟩,
   rw [has_finite_integral, lintegral_trim hm _],
   { exact hf_int.2, },
   refine @measurable.ennreal_coe α m _ _,
-  exact @measurable.nnnorm β α _ _ _ m _ hf,
+  exact @measurable.nnnorm _ α _ _ _ m _ hf,
 end
 
-lemma ae_measurable_of_ae_measurable_trim (hm : m ≤ m0) {f : α → E}
-  (hf : @ae_measurable α E m _ f (μ.trim hm)) :
+lemma ae_measurable_of_ae_measurable_trim (hm : m ≤ m0) {f : α → β}
+  (hf : @ae_measurable _ _ m _ f (μ.trim hm)) :
   ae_measurable f μ :=
 begin
   let f' := @ae_measurable.mk _ _ m _ _ _ hf,
@@ -604,8 +604,8 @@ begin
   exact ⟨f', measurable.mono hf'_meas hm le_rfl, hff'.symm⟩,
 end
 
-lemma integrable_of_integrable_trim (hm : m ≤ m0) [normed_group E] [opens_measurable_space E]
-  {f : α → E} (hf_int : @integrable α E m _ _ f (μ.trim hm)) :
+lemma integrable_of_integrable_trim (hm : m ≤ m0) [opens_measurable_space H]
+  {f : α → H} (hf_int : @integrable α H m _ _ f (μ.trim hm)) :
   integrable f μ :=
 begin
   obtain ⟨hf_meas_ae, hf⟩ := hf_int,
@@ -613,15 +613,15 @@ begin
   rw has_finite_integral at hf ⊢,
   rwa lintegral_trim_ae hm _ at hf,
   refine @ae_measurable.ennreal_coe α m _ _ _,
-  exact @ae_measurable.nnnorm E α _ _ _ m _ _ hf_meas_ae,
+  exact @ae_measurable.nnnorm H α _ _ _ m _ _ hf_meas_ae,
 end
 
 /-- Simple func seen as simple func of a larger measurable_space. -/
-def simple_func_larger_space {E} (hm : m ≤ m0) (f : @simple_func α m E) : simple_func α E :=
-⟨@simple_func.to_fun α m E f, λ x, hm _ (@simple_func.measurable_set_fiber α E m f x),
-  @simple_func.finite_range α E m f⟩
+def simple_func_larger_space {γ} (hm : m ≤ m0) (f : @simple_func α m γ) : simple_func α γ :=
+⟨@simple_func.to_fun α m γ f, λ x, hm _ (@simple_func.measurable_set_fiber α γ m f x),
+  @simple_func.finite_range α γ m f⟩
 
-lemma simple_func_larger_space_eq {E} (hm : m ≤ m0) (f : @simple_func α m E) :
+lemma simple_func_larger_space_eq {γ} (hm : m ≤ m0) (f : @simple_func α m γ) :
   ⇑(simple_func_larger_space hm f) = f :=
 rfl
 
@@ -1143,6 +1143,7 @@ begin
     norm_num, },
 end
 
+/-- Continuous linear map sending a function of L2 to L1. -/
 def L2_to_L1_clm [borel_space 𝕂] [measurable_space α] {μ : measure α} [finite_measure μ] :
   (α →₂[μ] E) →L[𝕂] (α →₁[μ] E) :=
 { to_fun := λ f, (mem_ℒp.mem_ℒp_of_exponent_le (Lp.mem_ℒp f) ennreal.one_le_two).to_Lp f,
@@ -1155,6 +1156,7 @@ lemma L2_to_L1_coe_fn [borel_space 𝕂] [measurable_space α] {μ : measure α}
   L2_to_L1_clm f =ᵐ[μ] f :=
 mem_ℒp.coe_fn_to_Lp _
 
+/-- Indicator of as set as as `simple_func`. -/
 def indicator_simple_func {γ} [measurable_space α] [has_zero γ] (s : set α) (hs : measurable_set s)
   (c : γ) :
   simple_func α γ :=
@@ -1335,6 +1337,7 @@ lemma simple_func.integrable [measurable_space α] [borel_space H] {μ : measure
   integrable f μ :=
 mem_ℒp_one_iff_integrable.mp (mem_ℒp_simple_func 1 f)
 
+/-- Composition of a function and a `L1.simple_func`, as a `L1.simple_func`. -/
 def L1.simple_func.map [measurable_space α] {μ : measure α} [finite_measure μ] (g : G → F)
   (f : α →₁ₛ[μ] G) :
   (α →₁ₛ[μ] F) :=
@@ -1741,6 +1744,8 @@ begin
 end
 
 variables (α F 𝕂)
+/-- Continuous linear map sending a function of `Lp F p μ` to the same function in
+`Lp F p (μ.restrict s)`. -/
 def Lp_to_Lp_restrict_clm [borel_space 𝕂] (μ : measure α) (p : ℝ≥0∞) [hp : fact(1 ≤ p)]
   (s : set α) :
   @continuous_linear_map 𝕂 _ (Lp F p μ) _ _ (Lp F p (μ.restrict s)) _ _ _ _ :=
