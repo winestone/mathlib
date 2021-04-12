@@ -1552,7 +1552,7 @@ end
 
 /-! ### `Lp` is complete iff Cauchy sequences of `ℒp` have limits in `ℒp` -/
 
-lemma tendsto_Lp_iff_tendsto_ℒp' {ι} [linear_order ι] [hp : fact (1 ≤ p)]
+lemma tendsto_Lp_iff_tendsto_ℒp' {ι} [preorder ι] [hp : fact (1 ≤ p)]
   (f : ι → Lp E p μ) (f_lim : Lp E p μ) :
   at_top.tendsto f (𝓝 f_lim) ↔ at_top.tendsto (λ n, snorm (f n - f_lim) p μ) (𝓝 0) :=
 begin
@@ -1569,7 +1569,7 @@ begin
   exact ennreal.tendsto_of_real h,
 end
 
-lemma tendsto_Lp_iff_tendsto_ℒp {ι} [linear_order ι] [hp : fact (1 ≤ p)]
+lemma tendsto_Lp_iff_tendsto_ℒp {ι} [preorder ι] [hp : fact (1 ≤ p)]
   (f : ι → Lp E p μ) (f_lim : α → E) (f_lim_ℒp : mem_ℒp f_lim p μ) :
   at_top.tendsto f (𝓝 (f_lim_ℒp.to_Lp f_lim))
     ↔ at_top.tendsto (λ n, snorm (f n - f_lim) p μ) (𝓝 0) :=
@@ -1582,7 +1582,7 @@ begin
   exact snorm_congr_ae (eventually_eq.sub eventually_eq.rfl (mem_ℒp.coe_fn_to_Lp f_lim_ℒp)),
 end
 
-lemma tendsto_Lp_of_tendsto_ℒp {ι} [linear_order ι] [hp : fact (1 ≤ p)]
+lemma tendsto_Lp_of_tendsto_ℒp {ι} [preorder ι] [hp : fact (1 ≤ p)]
   {f : ι → Lp E p μ} (f_lim : α → E) (f_lim_ℒp : mem_ℒp f_lim p μ)
   (h_tendsto : at_top.tendsto (λ n, snorm (f n - f_lim) p μ) (𝓝 0)) :
   at_top.tendsto f (𝓝 (f_lim_ℒp.to_Lp f_lim)) :=

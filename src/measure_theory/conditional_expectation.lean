@@ -152,8 +152,36 @@ lemma Lp_sub_coe {m m0 : measurable_space α} {p : ℝ≥0∞} {μ : measure α}
   ⇑f = (f : Lp F p μ) :=
 coe_fn_coe_base f
 
-lemma ae_eq_measurable_of_tendsto {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
-  {ι} [nonempty ι] [linear_order ι] [hp : fact (1 ≤ p)] [complete_space G]
+lemma tendsto_zero_at_top_snorm_to_real {ι} [preorder ι] [measurable_space α] {μ : measure α}
+  (f : ι → Lp G p μ) :
+  tendsto (λ n, (snorm (f n) p μ).to_real) at_top (𝓝 0)
+    ↔ tendsto (λ n, snorm (f n) p μ) at_top (𝓝 0) :=
+begin
+  split; intro h,
+  { have h_real : (λ n, snorm (f n) p μ) = λ n, ennreal.of_real (snorm (f n) p μ).to_real,
+      by { ext1 n, rw ennreal.of_real_to_real, exact Lp.snorm_ne_top _, },
+    simp_rw h_real,
+    rw ← ennreal.of_real_to_real ennreal.zero_ne_top,
+    refine ennreal.tendsto_of_real _,
+    rwa ennreal.zero_to_real, },
+  { rw ← ennreal.zero_to_real,
+    exact tendsto.comp (ennreal.tendsto_to_real ennreal.coe_ne_top) h, },
+end
+
+lemma cauchy_seq_Lp_iff_cauchy_seq_ℒp {ι} [nonempty ι] [semilattice_sup ι] [measurable_space α]
+  {μ : measure α} [hp : fact (1 ≤ p)](f : ι → Lp G p μ) :
+  cauchy_seq f ↔ tendsto (λ (n : ι × ι), snorm (f n.fst - f n.snd) p μ) at_top (𝓝 0) :=
+begin
+  simp_rw [cauchy_seq_iff_tendsto_dist_at_top_0, dist_def],
+  have h_snorm_eq : ∀ n : ι × ι, snorm (⇑(f n.fst) - ⇑(f n.snd)) p μ
+      = snorm ⇑(f n.fst - f n.snd) p μ,
+    from λ n, snorm_congr_ae (Lp.coe_fn_sub _ _).symm,
+  simp_rw h_snorm_eq,
+  exact tendsto_zero_at_top_snorm_to_real (λ n : ι × ι, f n.fst - f n.snd),
+end
+
+lemma ae_measurable'_of_tendsto' {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
+  {ι} [nonempty ι] [semilattice_sup ι] [hp : fact (1 ≤ p)] [complete_space G]
   (f : ι → Lp G p μ) (g : ι → α → G)
   (f_lim : Lp G p μ) (hfg : ∀ n, f n =ᵐ[μ] g n) (hg : ∀ n, @measurable α _ m _ (g n))
   (h_tendsto : filter.at_top.tendsto f (𝓝 f_lim)) :
@@ -161,53 +189,33 @@ lemma ae_eq_measurable_of_tendsto {m m0 : measurable_space α} (hm : m ≤ m0) {
 begin
   have hg_m0 : ∀ n, measurable (g n), from λ n, measurable.mono (hg n) hm le_rfl,
   have h_cauchy_seq := h_tendsto.cauchy_seq,
-  rw cauchy_seq_iff_tendsto_dist_at_top_0 at h_cauchy_seq,
-  simp_rw dist_def at h_cauchy_seq,
   have h_cau_g : tendsto (λ (n : ι × ι), snorm (g n.fst - g n.snd) p μ) at_top (𝓝 0),
-  { have h_cauchy_seq' : tendsto (λ (n : ι × ι), snorm (⇑(f n.fst) - ⇑(f n.snd)) p μ) at_top (𝓝 0),
-    { have h_real : (λ (n : ι × ι), snorm (⇑(f n.fst) - ⇑(f n.snd)) p μ)
-        = λ (n : ι × ι), ennreal.of_real (snorm (⇑(f n.fst) - ⇑(f n.snd)) p μ).to_real,
-      { ext1 n,
-        rw ennreal.of_real_to_real,
-        rw snorm_congr_ae (Lp.coe_fn_sub _ _).symm,
-        exact Lp.snorm_ne_top _, },
-      rw h_real,
-      rw ← ennreal.of_real_to_real ennreal.zero_ne_top,
-      refine ennreal.tendsto_of_real _,
-      rwa ennreal.zero_to_real, },
+  { rw cauchy_seq_Lp_iff_cauchy_seq_ℒp at h_cauchy_seq,
     suffices h_snorm_eq : ∀ n : ι × ι, snorm (⇑(f n.fst) - ⇑(f n.snd)) p μ
-      = snorm (g n.fst - g n.snd) p μ,
-    { simp_rw h_snorm_eq at h_cauchy_seq',
-      exact h_cauchy_seq', },
+        = snorm (g n.fst - g n.snd) p μ,
+      by { simp_rw h_snorm_eq at h_cauchy_seq, exact h_cauchy_seq, },
     exact λ n, snorm_congr_ae ((hfg n.fst).sub (hfg n.snd)), },
-  have h_cau_g_m' : tendsto
-    (λ (n : ι × ι), (@snorm α _ m _ (g n.fst - g n.snd) p (μ.trim hm)).to_real) at_top (𝓝 0),
-  { have h_cau_g_m : tendsto (λ (n : ι × ι), @snorm α _ m _ (g n.fst - g n.snd) p (μ.trim hm))
+  have h_cau_g_m : tendsto (λ (n : ι × ι), @snorm α _ m _ (g n.fst - g n.snd) p (μ.trim hm))
       at_top (𝓝 0),
     { suffices h_snorm_trim : ∀ n : ι × ι, @snorm α _ m _ (g n.fst - g n.snd) p (μ.trim hm)
         = snorm (g n.fst - g n.snd) p μ,
       { simp_rw h_snorm_trim, exact h_cau_g, },
       refine λ n, snorm_trim _ _,
       exact @measurable.sub α m _ _ _ _ (g n.fst) (g n.snd) (hg n.fst) (hg n.snd), },
-    rw ← ennreal.zero_to_real,
-    exact tendsto.comp (ennreal.tendsto_to_real ennreal.zero_ne_top) h_cau_g_m, },
   have mem_Lp_g : ∀ n, @mem_ℒp α G m _ _ (g n) p (μ.trim hm),
   { refine λ n, ⟨@measurable.ae_measurable α _ m _ _ _ (hg n), _⟩,
     have h_snorm_fg : @snorm α _ m _ (g n) p (μ.trim hm) = snorm (f n) p μ,
-    { rw snorm_trim hm (hg n), exact snorm_congr_ae (hfg n).symm, },
+      by { rw snorm_trim hm (hg n), exact snorm_congr_ae (hfg n).symm, },
     rw h_snorm_fg,
     exact Lp.snorm_lt_top (f n), },
   let g_Lp := λ n, @mem_ℒp.to_Lp α G m p _ _ _ _ _ (g n) (mem_Lp_g n),
   have h_g_ae_m := λ n, @mem_ℒp.coe_fn_to_Lp α G m p _ _ _ _ _ _ (mem_Lp_g n),
   have h_cau_seq_g_Lp : cauchy_seq g_Lp,
-  { rw cauchy_seq_iff_tendsto_dist_at_top_0,
-    simp_rw dist_def,
+  { rw cauchy_seq_Lp_iff_cauchy_seq_ℒp,
     suffices h_eq : ∀ n : ι × ι, @snorm α _ m _ ((g_Lp n.fst) - (g_Lp n.snd)) p (μ.trim hm)
-      = @snorm α _ m _ (g n.fst - g n.snd) p (μ.trim hm),
-    { simp_rw h_eq,
-      exact h_cau_g_m', },
-    refine λ n, @snorm_congr_ae α _ m _ _ _ _ _ _,
-    exact (h_g_ae_m n.fst).sub (h_g_ae_m n.snd), },
+        = @snorm α _ m _ (g n.fst - g n.snd) p (μ.trim hm),
+      by { simp_rw h_eq, exact h_cau_g_m, },
+    exact λ n, @snorm_congr_ae α _ m _ _ _ _ _ ((h_g_ae_m n.fst).sub (h_g_ae_m n.snd)), },
   obtain ⟨g_Lp_lim, g_tendsto⟩ := cauchy_seq_tendsto_of_complete h_cau_seq_g_Lp,
   have h_g_lim_meas_m : @measurable α _ m _ g_Lp_lim,
     from @Lp.measurable α G m p (μ.trim hm) _ _ _ _ g_Lp_lim,
@@ -223,19 +231,15 @@ begin
     { exact (Lp.ae_measurable f_lim).sub h_g_lim_meas.ae_measurable, }, },
   have h_tendsto' : tendsto (λ (n : ι), snorm (g n - ⇑f_lim) p μ) at_top (𝓝 0),
   { suffices h_eq : ∀ (n : ι), snorm (g n - ⇑f_lim) p μ = snorm (⇑(f n) - ⇑f_lim) p μ,
-    { simp_rw h_eq, exact h_tendsto, },
-    refine λ n, snorm_congr_ae _,
-    exact (hfg n).symm.sub eventually_eq.rfl, },
+      by { simp_rw h_eq, exact h_tendsto, },
+    exact λ n, snorm_congr_ae ((hfg n).symm.sub eventually_eq.rfl), },
   have g_tendsto' : tendsto (λ (n : ι), snorm (g n - ⇑g_Lp_lim) p μ) at_top (𝓝 0),
   { suffices h_eq : ∀ (n : ι), snorm (g n - ⇑g_Lp_lim) p μ
-      = @snorm α _ m _ (⇑(g_Lp n) - ⇑g_Lp_lim) p (μ.trim hm),
-    { simp_rw h_eq, exact g_tendsto, },
+        = @snorm α _ m _ (⇑(g_Lp n) - ⇑g_Lp_lim) p (μ.trim hm),
+      by { simp_rw h_eq, exact g_tendsto, },
     intro n,
     have h_eq_g : snorm (g n - ⇑g_Lp_lim) p μ = snorm (⇑(g_Lp n) - ⇑g_Lp_lim) p μ,
-    { refine snorm_congr_ae _,
-      refine eventually_eq.sub _ eventually_eq.rfl,
-      rw [eventually_eq, ae_iff],
-      exact ae_eq_null_of_trim hm (h_g_ae_m n).symm, },
+      from snorm_congr_ae ((ae_eq_of_ae_eq_trim hm (h_g_ae_m n).symm).sub eventually_eq.rfl),
     rw h_eq_g,
     refine (snorm_trim hm _).symm,
     refine @measurable.sub α m _ _ _ _ (g_Lp n) g_Lp_lim _ h_g_lim_meas_m,
@@ -243,58 +247,42 @@ begin
   have sub_tendsto : tendsto (λ (n : ι), snorm (⇑f_lim - ⇑g_Lp_lim) p μ) at_top (𝓝 0),
   { let snorm_add := λ (n : ι), snorm (g n - ⇑f_lim) p μ + snorm (g n - ⇑g_Lp_lim) p μ,
     have h_add_tendsto : tendsto snorm_add at_top (𝓝 0),
-    { rw ← add_zero (0 : ℝ≥0∞),
-      refine tendsto.add h_tendsto' g_tendsto', },
+      by { rw ← add_zero (0 : ℝ≥0∞), exact tendsto.add h_tendsto' g_tendsto', },
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h_add_tendsto
       (λ n, zero_le _) _,
-      have h_add : (λ n, snorm (⇑f_lim - ⇑g_Lp_lim) p μ)
-        = λ n, snorm (⇑f_lim - g n + (g n - ⇑g_Lp_lim)) p μ,
-      { ext1 n, congr, abel, },
-      simp_rw [h_add, snorm_add],
-      refine λ n, (snorm_add_le _ _ hp.elim).trans _,
-      { exact ((Lp.measurable f_lim).sub (hg_m0 n)).ae_measurable, },
-      { exact ((hg_m0 n).sub h_g_lim_meas).ae_measurable, },
-      refine add_le_add_right (le_of_eq _) _,
-      rw [← neg_sub, snorm_neg], },
+    have h_add : (λ n, snorm (f_lim - g_Lp_lim) p μ)
+        = λ n, snorm (f_lim - g n + (g n - g_Lp_lim)) p μ,
+      by { ext1 n, congr, abel, },
+    simp_rw h_add,
+    refine λ n, (snorm_add_le _ _ hp.elim).trans _,
+    { exact ((Lp.measurable f_lim).sub (hg_m0 n)).ae_measurable, },
+    { exact ((hg_m0 n).sub h_g_lim_meas).ae_measurable, },
+    refine add_le_add_right (le_of_eq _) _,
+    rw [← neg_sub, snorm_neg], },
   exact tendsto_nhds_unique tendsto_const_nhds sub_tendsto,
 end
 
-/-- TODO: why E and not F ?-/
-instance {m m0 : measurable_space α} [hm : fact (m ≤ m0)] {μ : measure α} [complete_space E]
-  [hp : fact (1 ≤ p)] : complete_space (Lp_sub E 𝕂 m p μ) :=
-begin
-  refine metric.complete_of_cauchy_seq_tendsto (λ f hf_cau, _),
-  let g := λ n, (Lp_sub.ae_measurable' (f n)).some,
-  have h_g_meas := λ n, (Lp_sub.ae_measurable' (f n)).some_spec.1,
-  have h_fg : ∀ n, f n =ᵐ[μ] g n := λ n, (Lp_sub.ae_measurable' (f n)).some_spec.2,
-  let f' := λ n, (f n : Lp E p μ),
-  have h_f'g : ∀ n, f' n =ᵐ[μ] g n,
-  by { intro n,
-    simp_rw [f'], rw [← Lp_sub_coe], exact h_fg n, },
-  have hf'_cau : cauchy_seq f',
-  { rw cauchy_seq_iff_tendsto_dist_at_top_0 at hf_cau ⊢,
-    have hff' : ∀ n : ℕ × ℕ, dist (f' n.fst) (f' n.snd) = dist (f n.fst) (f n.snd),
-    { rw [prod.forall],
-      intros n m,
-      simp_rw [dist_eq_norm, f', ← submodule.coe_sub, submodule.norm_coe], },
-    simp_rw hff',
-    exact hf_cau, },
-  obtain ⟨f_lim, h_lim'⟩ := cauchy_seq_tendsto_of_complete hf'_cau,
-  suffices h_sub : f_lim ∈ Lp_sub E 𝕂 m p μ,
-  { have h_lim : tendsto f at_top (𝓝 ⟨f_lim, h_sub⟩),
-    { rw tendsto_iff_dist_tendsto_zero at h_lim' ⊢,
-      have h_lim_coe : ∀ b, dist (f b) ⟨f_lim, h_sub⟩ = dist (f' b) f_lim,
-      { intro b,
-        have h_dist_coe : dist (f' b) f_lim = dist (f' b) (⟨f_lim, h_sub⟩ : Lp_sub E 𝕂 m p μ),
-          by congr,
-        simp_rw [h_dist_coe, dist_eq_norm, f', ← submodule.coe_sub, submodule.norm_coe], },
-      simp_rw h_lim_coe,
-      exact h_lim', },
-    exact ⟨⟨f_lim, h_sub⟩, h_lim⟩, },
-  obtain ⟨f_lim_m, h_lim_m, h_ae_eq⟩ := ae_eq_measurable_of_tendsto hm.elim f' g f_lim h_f'g
-    h_g_meas h_lim',
-  exact ⟨f_lim_m, h_lim_m, h_ae_eq⟩,
-end
+lemma ae_measurable'_of_tendsto {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
+  {ι} [nonempty ι] [linear_order ι] [hp : fact (1 ≤ p)] [complete_space G]
+  (f : ι → Lp G p μ) (hf : ∀ n, ae_measurable' m (f n) μ) (f_lim : Lp G p μ)
+  (h_tendsto : filter.at_top.tendsto f (𝓝 f_lim)) :
+  ae_measurable' m f_lim μ :=
+ae_measurable'_of_tendsto' hm f (λ n, (hf n).some) f_lim (λ n, (hf n).some_spec.2)
+  (λ n, (hf n).some_spec.1) h_tendsto
+
+lemma is_seq_closed_Lp_sub_carrier [complete_space G] {m m0 : measurable_space α} (hm : m ≤ m0)
+  {μ : measure α} [hp : fact (1 ≤ p)] :
+  is_seq_closed {f : Lp G p μ | ae_measurable' m f μ} :=
+is_seq_closed_of_def (λ F f F_mem F_tendsto_f, ae_measurable'_of_tendsto hm F F_mem f F_tendsto_f)
+
+lemma is_closed_Lp_sub_carrier [complete_space G] {m m0 : measurable_space α} (hm : m ≤ m0)
+  {μ : measure α} [hp : fact (1 ≤ p)] :
+  is_closed {f : Lp G p μ | ae_measurable' m f μ} :=
+is_seq_closed_iff_is_closed.mp (is_seq_closed_Lp_sub_carrier hm)
+
+instance {m m0 : measurable_space α} [hm : fact (m ≤ m0)] {μ : measure α} [complete_space F]
+  [hp : fact (1 ≤ p)] : complete_space (Lp_sub F 𝕂 m p μ) :=
+is_closed.complete_space_coe (is_closed_Lp_sub_carrier hm.elim)
 
 end Lp_sub
 
@@ -1780,6 +1768,7 @@ begin
   exact @continuous_linear_map.uniform_continuous 𝕂 (α →₁ₛ[μ] E') (α →₁[μ] E') _ _ _ _ _
     (@condexp_L1s_clm α E' 𝕂 _ _ _ _ _ _ _ _ _ _ _ hm μ _ _),
 end
+variables {𝕂}
 
 lemma ae_measurable'_condexp_L1 (f : α →₁[μ] E') :
   ae_measurable' m (condexp_L1 𝕂 hm f) μ :=
@@ -1788,16 +1777,8 @@ begin
   { change is_closed ((condexp_L1 𝕂 hm) ⁻¹'
       {x : ↥(Lp E' 1 μ) | ∃ f', @measurable _ _ m _ f' ∧ x =ᵐ[μ] f'}),
     refine is_closed.preimage (continuous_linear_map.continuous _) _,
-    rw ← is_seq_closed_iff_is_closed,
-    refine is_seq_closed_of_def (λ F f F_mem F_tendsto_f, _),
-    rw set.mem_set_of_eq,
-    change ∀ n, ∃ f', @measurable _ _ m _ f' ∧ ⇑(F n) =ᵐ[μ] f' at F_mem,
-    let G := λ n, (F_mem n).some,
-    have hG_meas : ∀ n, @measurable _ _ m _ (G n), from λ n, (F_mem n).some_spec.1,
-    have hF_eq_G : ∀ n, F n =ᵐ[μ] G n, from λ n, (F_mem n).some_spec.2,
-    haveI : fact (1 ≤ (1 : ℝ≥0∞)) := ⟨le_rfl⟩,
-    obtain ⟨f_lim, h_meas, h⟩ := ae_eq_measurable_of_tendsto hm F G f hF_eq_G hG_meas F_tendsto_f,
-    exact ⟨f_lim, h_meas, h⟩, },
+    haveI : fact ((1 : ℝ≥0∞) ≤ 1) := ⟨le_rfl⟩,
+    exact is_closed_Lp_sub_carrier hm, },
   { intro fs,
     rw condexp_L1_eq_condexp_L1s,
     obtain ⟨f', hf'_meas, hf'⟩ := (is_condexp_condexp_L1s 𝕂 hm fs).1,
@@ -1821,34 +1802,15 @@ begin
 end
 
 lemma is_condexp_condexp_L1 (f : α →₁[μ] E') : is_condexp m (condexp_L1 𝕂 hm f) f μ :=
-⟨ae_measurable'_condexp_L1 𝕂 hm f, integral_eq_condexp_L1 𝕂 hm f⟩
+⟨ae_measurable'_condexp_L1 hm f, integral_eq_condexp_L1 hm f⟩
 
+variables (𝕂)
 include 𝕂 hm
-/-- Conditional expectation of an integrable function. -/
+/-- Conditional expectation of an integrable function. This is an `m`-measurable function such
+that for all `m`-measurable sets `s`, `∫ x in s, condexp 𝕂 hm f hf x ∂μ = ∫ x in s, f x ∂μ`. -/
 def condexp (f : α → E') (hf : integrable f μ) : α → E' :=
-(is_condexp_condexp_L1 𝕂 hm (hf.to_L1 f)).1.some
+(is_condexp_condexp_L1 hm (hf.to_L1 f)).1.some
 omit 𝕂 hm
-
-lemma measurable_condexp {f : α → E'} (hf : integrable f μ) :
-  @measurable _ _ m _ (condexp 𝕂 hm f hf) :=
-(is_condexp_condexp_L1 𝕂 hm (hf.to_L1 f)).1.some_spec.1
-
-lemma condexp_ae_eq_condexp_L1 {f : α → E'} (hf : integrable f μ) :
-  condexp 𝕂 hm f hf =ᵐ[μ] condexp_L1 𝕂 hm (hf.to_L1 f) :=
-(is_condexp_condexp_L1 𝕂 hm (hf.to_L1 f)).1.some_spec.2.symm
-
-lemma is_condexp_condexp {f : α → E'} (hf : integrable f μ) :
-  is_condexp m (condexp 𝕂 hm f hf) f μ :=
-is_condexp_congr_ae' hm (condexp_ae_eq_condexp_L1 𝕂 hm hf).symm (integrable.coe_fn_to_L1 hf)
-  (is_condexp_condexp_L1 𝕂 hm (hf.to_L1 f))
-
-lemma integrable_condexp {f : α → E'} (hf : integrable f μ) : integrable (condexp 𝕂 hm f hf) μ :=
-(integrable_congr (condexp_ae_eq_condexp_L1 𝕂 hm hf)).mpr (Lp.integrable _ le_rfl)
-
-lemma integrable_trim_condexp {f : α → E'} (hf : integrable f μ) :
-  @integrable α E' m _ _ (condexp 𝕂 hm f hf) (μ.trim hm) :=
-integrable_trim_of_measurable hm (measurable_condexp 𝕂 hm hf) (integrable_condexp 𝕂 hm hf)
-
 variables {𝕂}
 
 end condexp_def
@@ -1856,25 +1818,41 @@ end condexp_def
 section condexp_properties
 include 𝕂
 
-variables {f f₂ g : α → E'} {m₂ m m0 : measurable_space α} {μ : measure α} [finite_measure μ]
-  [borel_space 𝕂]
+variables {f f₂ g : α → E'} {m₂ m m0 : measurable_space α} {hm : m ≤ m0} {μ : measure α}
+  [finite_measure μ] [borel_space 𝕂]
 
-lemma set_integral_condexp_eq {hm : m ≤ m0} (hf : integrable f μ) {s : set α}
-  (hs : @measurable_set α m s) :
+lemma measurable_condexp (hf : integrable f μ) : @measurable _ _ m _ (condexp 𝕂 hm f hf) :=
+(is_condexp_condexp_L1 hm (hf.to_L1 f)).1.some_spec.1
+
+lemma condexp_ae_eq_condexp_L1 (hf : integrable f μ) :
+  condexp 𝕂 hm f hf =ᵐ[μ] condexp_L1 𝕂 hm (hf.to_L1 f) :=
+(is_condexp_condexp_L1 hm (hf.to_L1 f)).1.some_spec.2.symm
+
+lemma is_condexp_condexp (hf : integrable f μ) : is_condexp m (condexp 𝕂 hm f hf) f μ :=
+is_condexp_congr_ae' hm (condexp_ae_eq_condexp_L1 hf).symm (integrable.coe_fn_to_L1 hf)
+  (is_condexp_condexp_L1 hm (hf.to_L1 f))
+
+lemma integrable_condexp (hf : integrable f μ) : integrable (condexp 𝕂 hm f hf) μ :=
+(integrable_congr (condexp_ae_eq_condexp_L1 hf)).mpr (Lp.integrable _ le_rfl)
+
+lemma integrable_trim_condexp (hf : integrable f μ) :
+  @integrable α E' m _ _ (condexp 𝕂 hm f hf) (μ.trim hm) :=
+integrable_trim_of_measurable hm (measurable_condexp hf) (integrable_condexp hf)
+
+lemma set_integral_condexp_eq (hf : integrable f μ) {s : set α} (hs : @measurable_set α m s) :
   ∫ x in s, condexp 𝕂 hm f hf x ∂μ = ∫ x in s, f x ∂μ :=
-(is_condexp_condexp 𝕂 hm hf).2 s hs
+(is_condexp_condexp hf).2 s hs
 
-lemma integral_condexp {hm : m ≤ m0} (hf : integrable f μ) :
-  ∫ x, condexp 𝕂 hm f hf x ∂μ = ∫ x, f x ∂μ :=
+lemma integral_condexp (hf : integrable f μ) : ∫ x, condexp 𝕂 hm f hf x ∂μ = ∫ x, f x ∂μ :=
 by rw [← integral_univ, set_integral_condexp_eq hf (@measurable_set.univ α m), integral_univ]
 
 lemma condexp_comp (hm2 : m₂ ≤ m) (hm : m ≤ m0) (hf : integrable f μ) :
-  condexp 𝕂 (hm2.trans hm) (condexp 𝕂 hm f hf) (integrable_condexp 𝕂 hm hf)
+  condexp 𝕂 (hm2.trans hm) (condexp 𝕂 hm f hf) (integrable_condexp hf)
     =ᵐ[μ] condexp 𝕂 (hm2.trans hm) f hf :=
 begin
-  refine is_condexp_unique 𝕂 (hm2.trans hm) _ (integrable_condexp 𝕂 (hm2.trans hm) _)
-    (is_condexp_condexp 𝕂 (hm2.trans hm) hf) (integrable_condexp 𝕂 (hm2.trans hm) hf),
-  exact is_condexp_comp hm2 (is_condexp_condexp 𝕂 hm hf) (is_condexp_condexp 𝕂 (hm2.trans hm) _),
+  refine is_condexp_unique 𝕂 (hm2.trans hm) _ (integrable_condexp _)
+    (is_condexp_condexp hf) (integrable_condexp hf),
+  exact is_condexp_comp hm2 (is_condexp_condexp hf) (is_condexp_condexp _),
 end
 
 omit 𝕂
