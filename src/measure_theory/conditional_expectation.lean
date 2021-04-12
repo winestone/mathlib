@@ -263,7 +263,7 @@ begin
 end
 
 lemma ae_measurable'_of_tendsto {m m0 : measurable_space α} (hm : m ≤ m0) {μ : measure α}
-  {ι} [nonempty ι] [linear_order ι] [hp : fact (1 ≤ p)] [complete_space G]
+  {ι} [nonempty ι] [semilattice_sup ι] [hp : fact (1 ≤ p)] [complete_space G]
   (f : ι → Lp G p μ) (hf : ∀ n, ae_measurable' m (f n) μ) (f_lim : Lp G p μ)
   (h_tendsto : filter.at_top.tendsto f (𝓝 f_lim)) :
   ae_measurable' m f_lim μ :=
@@ -330,7 +330,7 @@ lemma is_condexp_congr_ae (hm : m ≤ m0) (hf12 : f₁ =ᵐ[μ] f₂) (hg12 : g�
   is_condexp m f₁ g₁ μ ↔ is_condexp m f₂ g₂ μ :=
 ⟨λ h, is_condexp_congr_ae' hm hf12 hg12 h, λ h, is_condexp_congr_ae' hm hf12.symm hg12.symm h⟩
 
-lemma is_condexp_comp (hm2 : m₂ ≤ m) (hfg : is_condexp m f g μ) (hff₂ : is_condexp m₂ f₂ f μ) :
+lemma is_condexp.trans (hm2 : m₂ ≤ m) (hff₂ : is_condexp m₂ f₂ f μ) (hfg : is_condexp m f g μ)  :
   is_condexp m₂ f₂ g μ :=
 ⟨hff₂.1, λ s hs, (hff₂.2 s hs).trans (hfg.2 s (hm2 s hs))⟩
 
@@ -1852,7 +1852,7 @@ lemma condexp_comp (hm2 : m₂ ≤ m) (hm : m ≤ m0) (hf : integrable f μ) :
 begin
   refine is_condexp_unique 𝕂 (hm2.trans hm) _ (integrable_condexp _)
     (is_condexp_condexp hf) (integrable_condexp hf),
-  exact is_condexp_comp hm2 (is_condexp_condexp hf) (is_condexp_condexp _),
+  exact is_condexp.trans hm2 (is_condexp_condexp _) (is_condexp_condexp hf),
 end
 
 omit 𝕂
