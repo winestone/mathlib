@@ -54,6 +54,10 @@ instance : has_coe C^n⟮I, M; I', M'⟯ C(M, M') :=
 
 variables {f g : C^n⟮I, M; I', M'⟯}
 
+@[simp] lemma coe_fn_mk (f : M → M') (hf : times_cont_mdiff I I' n f) :
+  (mk f hf : M → M') = f :=
+rfl
+
 protected lemma times_cont_mdiff (f : C^n⟮I, M; I', M'⟯) :
   times_cont_mdiff I I' n f := f.times_cont_mdiff_to_fun
 

@@ -133,14 +133,17 @@ by { rw ← finprod_one, congr' with x, exact (ha x).elim }
 @[simp, to_additive] lemma finprod_false (f : false → M) : ∏ᶠ i, f i = 1 :=
 finprod_of_empty id _
 
-@[to_additive] lemma finprod_unique [unique α] (f : α → M) : ∏ᶠ i, f i = f (default α) :=
+@[to_additive] lemma finprod_eq_single (f : α → M) (a : α) (ha : ∀ x ≠ a, f x = 1) :
+  ∏ᶠ x, f x = f a :=
 begin
-  have : mul_support (f ∘ plift.down) ⊆ (finset.univ : finset (plift α)),
-    from λ x _, finset.mem_univ x,
-  rw [finprod_eq_prod_plift_of_mul_support_subset this, univ_unique,
-    finset.prod_singleton],
-  exact congr_arg f (plift.down_up _)
+  have : mul_support (f ∘ plift.down) ⊆ ({plift.up a} : finset (plift α)),
+  { intro x, contrapose,
+    simpa [plift.eq_up_iff_down_eq] using ha x.down },
+  rw [finprod_eq_prod_plift_of_mul_support_subset this, finset.prod_singleton],
 end
+
+@[to_additive] lemma finprod_unique [unique α] (f : α → M) : ∏ᶠ i, f i = f (default α) :=
+finprod_eq_single f (default α) $ λ x hx, (hx $ unique.eq_default _).elim
 
 @[simp, to_additive] lemma finprod_true (f : true → M) : ∏ᶠ i, f i = f trivial :=
 @finprod_unique true M _ ⟨⟨trivial⟩, λ _, rfl⟩ f
@@ -177,6 +180,11 @@ begin
   { exact finset.prod_nonneg (λ x _, hf _) },
   { exact zero_le_one }
 end
+
+#check finset.sum_nonneg
+@[to_additive] lemma one_le_finprod {M : Type*} [ordered_comm_monoid M] {f : α → M}
+  (hf : ∀ x, 1 ≤ f x) : 1 ≤ ∏ᶠ x, f x :=
+
 
 @[to_additive] lemma monoid_hom.map_finprod_plift (f : M →* N) (g : α → M)
   (h : finite (mul_support $ g ∘ plift.down)) :

@@ -105,12 +105,24 @@ lemma nonneg (i : ι) (x : X) : 0 ≤ f i x := f.nonneg' i x
 
 lemma le_one (i : ι) (x : X) : f i x ≤ 1 := f.le_one' i x
 
-protected def single (i : ι) : bump_covering ι X s :=
+/-- A `bump_covering` that consists of a single function, defined as an example
+for `inhabited` instance. -/
+protected def single (i : ι) (s : set X) : bump_covering ι X s :=
 { to_fun := pi.single i 1,
-  locally_finite' := λ x, ⟨univ, univ_mem_sets, (finite_singleton i).subset $ λ j hj, _⟩ }
+  locally_finite' := λ x,
+    begin
+      refine ⟨univ, univ_mem_sets, (finite_singleton i).subset _⟩,
+      rintro j ⟨x, hx, -⟩,
+      contrapose! hx,
+      rw [mem_singleton_iff] at hx,
+      simp [hx]
+    end,
+  nonneg' := le_update_iff.2 ⟨λ x, zero_le_one, λ _ _, le_rfl⟩,
+  le_one' := update_le_iff.2 ⟨le_rfl, λ _ _ _, zero_le_one⟩,
+  eventually_eq_one' := λ x _, ⟨i, by simp⟩ }
 
 instance [inhabited ι] : inhabited (bump_covering ι X s) :=
-
+⟨bump_covering.single (default ι) s⟩
 
 /-- A collection of bump functions `f i` is subordinate to a family of sets `U i` indexed by the
 same type if for each `i` the closure of the support of `f i` is a subset of `U i`. -/
@@ -282,6 +294,9 @@ end bump_covering
 namespace partition_of_unity
 
 variables {s : set X}
+
+instance [inhabited ι] : inhabited (partition_of_unity ι X s) :=
+⟨(default (bump_covering ι X s)).to_partition_of_unity⟩
 
 /-- If `X` is a normal topological space and `U` is a locally finite open covering of a closed set
 `s`, then there exists a `partition_of_unity ι X s` that is subordinate to `U`. If `X` is a

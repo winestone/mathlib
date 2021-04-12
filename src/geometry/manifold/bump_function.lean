@@ -29,13 +29,13 @@ point `x ∈ s` there exists a bump function `f i` in the collection such that `
 structure is the main building block in the construction of a smooth partition of unity (see TODO),
 and can be used instead of a partition of unity in some proofs.
 
-We say that `f : smooth_bump_covering I s` is *subordinate* to a map `U : M → set M` if for each
+We say that `f : smooth_bump_covering I M s` is *subordinate* to a map `U : M → set M` if for each
 index `i`, we have `closure (support (f i)) ⊆ U (f i).c`. This notion is a bit more general than
 being subordinate to an open covering of `M`, because we make no assumption about the way `U x`
 depends on `x`.
 
 We prove that on a smooth finitely dimensional real manifold with `σ`-compact Hausdorff topology,
-for any `U : M → set M` such that `∀ x ∈ s, U x ∈ 𝓝 x` there exists a `smooth_bump_covering I s`
+for any `U : M → set M` such that `∀ x ∈ s, U x ∈ 𝓝 x` there exists a `smooth_bump_covering I M s`
 subordinate to `U`. Then we use this fact to prove a version of the Whitney embedding theorem: any
 compact real manifold can be embedded into `ℝ^n` for large enough `n`.
 
@@ -45,9 +45,6 @@ compact real manifold can be embedded into `ℝ^n` for large enough `n`.
   embedded into `ℝ^(2m+1)`. This requires a version of Sard's theorem: for a locally Lipschitz
   continuous map `f : ℝ^m → ℝ^n`, `m < n`, the range has Hausdorff dimension at most `m`, hence it
   has measure zero.
-
-* Construct a smooth partition of unity. While we can do it now, the formulas will be much nicer if
-  we wait for `finprod` and `finsum` coming in #6355.
 
 * Deduce some corollaries from existence of a smooth partition of unity.
 
@@ -62,8 +59,8 @@ compact real manifold can be embedded into `ℝ^n` for large enough `n`.
 manifold, smooth bump function, partition of unity, Whitney theorem
 -/
 
-universes uE uF uH uM
-variables
+universes uι uE uF uH uM
+variables {ι : Type uι}
 {E : Type uE} [normed_group E] [normed_space ℝ E] [finite_dimensional ℝ E]
 {H : Type uH} [topological_space H] (I : model_with_corners ℝ E H)
 {M : Type uM} [topological_space M] [charted_space H M] [smooth_manifold_with_corners I M]
@@ -364,17 +361,19 @@ end smooth_bump_function
 /-!
 ### Covering by supports of smooth bump functions
 
-In this section we define `smooth_bump_covering I s` to be a collection of `smooth_bump_function`s
+In this section we define `smooth_bump_covering I M s` to be a collection of `smooth_bump_function`s
 such that their supports is a locally finite family of sets and for each `x ∈ s` some function `f i`
 from the collection is equal to `1` in a neighborhood of `x`. A covering of this type is useful to
 construct a smooth partition of unity and can be used instead of a partition of unity in some
 proofs.
 
 We prove that on a smooth finite dimensional real manifold with `σ`-compact Hausdorff topology,
-for any `U : M → set M` such that `∀ x ∈ s, U x ∈ 𝓝 x` there exists a `smooth_bump_covering I s`
+for any `U : M → set M` such that `∀ x ∈ s, U x ∈ 𝓝 x` there exists a `smooth_bump_covering I M s`
 subordinate to `U`. Then we use this fact to prove a version of the Whitney embedding theorem: any
 compact real manifold can be embedded into `ℝ^n` for large enough `n`.
 -/
+
+variables (ι M)
 
 /-- We say that a collection of `smooth_bump_function`s is a `smooth_bump_covering` of a set `s` if
 
@@ -391,7 +390,7 @@ then a choice of `smooth_bump_covering` is available as `smooth_bump_covering.ch
 
 This covering can be used, e.g., to construct a partition of unity and to prove the weak
 Whitney embedding theorem. -/
-structure smooth_bump_covering (s : set M) :=
+structure smooth_bump_covering (s : set M := univ) :=
 (ι : Type uM)
 (c : ι → M)
 (to_fun : Π i, smooth_bump_function I (c i))
@@ -399,23 +398,41 @@ structure smooth_bump_covering (s : set M) :=
 (locally_finite' : locally_finite (λ i, support (to_fun i)))
 (eventually_eq_one' : ∀ x ∈ s, ∃ i, to_fun i =ᶠ[𝓝 x] 1)
 
+/-- We say that that a collection of functions form a smooth partition of unity on a set `s` if
+
+* all functions are infinitely smooth and nonnegative;
+* the family `λ i, support (f i)` is locally finite;
+* for all `x ∈ s` the sum `∑ᶠ i, f i x` equals one;
+* for all `x`, the sum `∑ᶠ i, f i x` is less than or equal to one. -/
+structure smooth_partition_of_unity (s : set M := univ) :=
+(to_fun : ι → C^∞⟮I, M; 𝓘(ℝ), ℝ⟯)
+(locally_finite' : locally_finite (λ i, support (to_fun i)))
+(nonneg' : ∀ i x, 0 ≤ to_fun i x)
+(sum_eq_one' : ∀ x ∈ s, ∑ᶠ i, to_fun i x = 1)
+(sum_le_one' : ∀ x, ∑ᶠ i, to_fun i x ≤ 1)
+
+variables {ι M}
+
+instance {s : set M} : has_coe_to_fun (smooth_partition_of_unity ι I M s) :=
+⟨λ _, ι → C^∞⟮I, M; 𝓘(ℝ), ℝ⟯, smooth_partition_of_unity.to_fun⟩
+
 namespace smooth_bump_covering
 
-variables {s : set M} {U : M → set M} (fs : smooth_bump_covering I s) {I}
+variables {s : set M} {U : M → set M} (fs : smooth_bump_covering I M s) {I}
 
-instance : has_coe_to_fun (smooth_bump_covering I s) := ⟨_, to_fun⟩
+instance : has_coe_to_fun (smooth_bump_covering I M s) := ⟨_, to_fun⟩
 
 @[simp] lemma coe_mk (ι : Type uM) (c : ι → M) (to_fun : Π i, smooth_bump_function I (c i))
-  (h₁ h₂ h₃) : ⇑(mk ι c to_fun h₁ h₂ h₃ : smooth_bump_covering I s) = to_fun :=
+  (h₁ h₂ h₃) : ⇑(mk ι c to_fun h₁ h₂ h₃ : smooth_bump_covering I M s) = to_fun :=
 rfl
 
 /-- 
-We say that `f : smooth_bump_covering I s` is *subordinate* to a map `U : M → set M` if for each
+We say that `f : smooth_bump_covering I M s` is *subordinate* to a map `U : M → set M` if for each
 index `i`, we have `closure (support (f i)) ⊆ U (f i).c`. This notion is a bit more general than
 being subordinate to an open covering of `M`, because we make no assumption about the way `U x`
 depends on `x`.
 -/
-def is_subordinate {s : set M} (f : smooth_bump_covering I s) (U : M → set M) :=
+def is_subordinate {s : set M} (f : smooth_bump_covering I M s) (U : M → set M) :=
 ∀ i, closure (support $ f i) ⊆ U (f.c i)
 
 variable (I)
@@ -426,7 +443,7 @@ in `M` and `U : M → set M` be a collection of sets such that `U x ∈ 𝓝 x` 
 Then there exists a smooth bump covering of `s` that is subordinate to `U`. -/
 lemma exists_is_subordinate [t2_space M] [sigma_compact_space M] (hs : is_closed s)
   (hU : ∀ x ∈ s, U x ∈ 𝓝 x) :
-  ∃ f : smooth_bump_covering I s, f.is_subordinate U :=
+  ∃ f : smooth_bump_covering I M s, f.is_subordinate U :=
 begin
   -- First we deduce some missing instances
   haveI : locally_compact_space H := I.locally_compact,
@@ -450,18 +467,18 @@ end
 
 /-- Choice of a covering of a closed set `s` by supports of smooth bump functions. -/
 def choice_set [t2_space M] [sigma_compact_space M] (s : set M) (hs : is_closed s) :
-  smooth_bump_covering I s :=
+  smooth_bump_covering I M s :=
 (exists_is_subordinate I hs (λ x hx, univ_mem_sets)).some
 
 instance [t2_space M] [sigma_compact_space M] {s : set M} [is_closed s] :
-  inhabited (smooth_bump_covering I s) :=
+  inhabited (smooth_bump_covering I M s) :=
 ⟨choice_set I s ‹_›⟩
 
 variable (M)
 
 /-- Choice of a covering of a manifold by supports of smooth bump functions. -/
 def choice [t2_space M] [sigma_compact_space M] :
-  smooth_bump_covering I (univ : set M) :=
+  smooth_bump_covering I M :=
 choice_set I univ is_closed_univ
 
 variables {I M}
@@ -499,18 +516,52 @@ lemma mem_ext_chart_at_ind_source (x : M) (hx : x ∈ s) :
   x ∈ (ext_chart_at I (fs.c (fs.ind x hx))).source :=
 fs.mem_ext_chart_at_source_of_eq_one (fs.apply_ind x hx)
 
-def to_bump_covering [t2_space M] : bump_covering M s :=
-{ ι := fs.ι,
-  to_fun := λ i, ⟨fs i, (fs i).continuous⟩,
+instance fintype_ι_of_compact [compact_space M] : fintype fs.ι :=
+fs.locally_finite.fintype_of_compact $ λ i, (fs i).nonempty_support
+
+variable [t2_space M]
+
+/-- Reinterpret a `smooth_bump_covering` as a continuous `bump_covering`. -/
+def to_bump_covering : bump_covering fs.ι M s :=
+{ to_fun := λ i, ⟨fs i, (fs i).continuous⟩,
   locally_finite' := fs.locally_finite,
   nonneg' := λ i x, (fs i).nonneg,
   le_one' := λ i x, (fs i).le_one,
   eventually_eq_one' := fs.eventually_eq_one' }
 
-lemma smooth_to_bump_covering_to_partition_of_unity [t2_space M] (i : fs.ι) :
+lemma smooth_to_bump_covering_to_partition_of_unity (i : fs.ι) :
   smooth I 𝓘(ℝ) (fs.to_bump_covering.to_partition_of_unity i) :=
 (fs i).smooth.mul $ smooth_finprod_cond (λ j _, smooth_const.sub (fs j).smooth) $
   by { simp only [mul_support_one_sub], exact fs.locally_finite }
+
+/-- Every `smooth_bump_covering` defines a smooth partition of unity. -/
+def to_smooth_partition_of_unity : smooth_partition_of_unity fs.ι I M s :=
+{ to_fun := λ i, ⟨fs.to_bump_covering.to_partition_of_unity i,
+    fs.smooth_to_bump_covering_to_partition_of_unity i⟩,
+  .. fs.to_bump_covering.to_partition_of_unity }
+
+lemma to_smooth_partition_of_unity_apply (i : fs.ι) (x : M) :
+  fs.to_smooth_partition_of_unity i x = fs i x * ∏ᶠ j (hj : well_ordering_rel j i), (1 - fs j x) :=
+rfl
+
+lemma to_smooth_partition_of_unity_eq_mul_prod (i : fs.ι) (x : M) (t : finset fs.ι)
+  (ht : ∀ j, well_ordering_rel j i → fs j x ≠ 0 → j ∈ t) :
+  fs.to_smooth_partition_of_unity i x =
+    fs i x * ∏ j in t.filter (λ j, well_ordering_rel j i), (1 - fs j x) :=
+fs.to_bump_covering.to_partition_of_unity_eq_mul_prod i x t ht
+
+lemma exists_finset_to_smooth_partition_of_unity_eventually_eq (i : fs.ι) (x : M) :
+  ∃ t : finset fs.ι, fs.to_smooth_partition_of_unity i =ᶠ[𝓝 x]
+    fs i * ∏ j in t.filter (λ j, well_ordering_rel j i), (1 - fs j) :=
+fs.to_bump_covering.exists_finset_to_partition_of_unity_eventually_eq i x
+
+lemma support_to_smooth_partition_of_unity_subset (i : fs.ι) :
+  support (fs.to_smooth_partition_of_unity i) ⊆ support (fs i) :=
+fs.to_bump_covering.support_to_partition_of_unity_subset i
+
+lemma sum_to_smooth_partition_of_unity_eq (x : M) :
+  ∑ᶠ i, fs.to_smooth_partition_of_unity i x = 1 - ∏ᶠ i, (1 - fs i x) :=
+fs.to_bump_covering.sum_to_partition_of_unity_eq x
 
 section embedding
 
@@ -521,11 +572,7 @@ In this section we prove a version of the Whitney embedding theorem: for any com
 `M`, for sufficiently large `n` there exists a smooth embedding `M → ℝ^n`.
 -/
 
-instance fintype_ι_of_compact [compact_space M] : fintype fs.ι :=
-fs.locally_finite.fintype_of_compact $ λ i, (fs i).nonempty_support
-
-variables [t2_space M] [fintype fs.ι] (f : smooth_bump_covering I (univ : set M))
-  [fintype f.ι]
+variables [fintype fs.ι] (f : smooth_bump_covering I M) [fintype f.ι]
 
 /-- Smooth embedding of `M` into `(E × ℝ) ^ f.ι`. -/
 def embedding_pi_tangent : C^∞⟮I, M; 𝓘(ℝ, fs.ι → (E × ℝ)), fs.ι → (E × ℝ)⟯ :=
@@ -588,7 +635,7 @@ end embedding
 /-- Baby version of the Whitney weak embedding theorem: if `M` admits a finite covering by
 supports of bump functions, then for some `n` it can be immersed into the `n`-dimensional
 Euclidean space. -/
-lemma exists_immersion_findim [t2_space M] (f : smooth_bump_covering I (univ : set M))
+lemma exists_immersion_findim [t2_space M] (f : smooth_bump_covering I M)
   [fintype f.ι] :
   ∃ (n : ℕ) (e : M → euclidean_space ℝ (fin n)), smooth I (𝓡 n) e ∧
     injective e ∧ ∀ x : M, injective (mfderiv I (𝓡 n) e x) :=
@@ -619,13 +666,35 @@ begin
   exact ⟨n, e, hsmooth, hsmooth.continuous.closed_embedding hinj, hinj_mfderiv⟩
 end
 
-variable (M)
+namespace smooth_partition_of_unity
 
-/-- Smooth partition of unity. -/
-structure smooth_partition_of_unity (s : set M := univ) :=
-(ι : Type uM)
-(to_fun : ι → C^∞⟮I, M; 𝓘(ℝ), ℝ⟯)
-(locally_finite' : locally_finite (λ i, support (to_fun i)))
-(nonneg' : ∀ i x, 0 ≤ to_fun i x)
-(sum_eq_one' : ∀ x ∈ s, ∑ᶠ i, to_fun i x = 1)
-(sum_le_one' : ∀ x, ∑ᶠ i, to_fun i x ≤ 1)
+variables {I} {s : set M} (f : smooth_partition_of_unity ι I M s)
+
+protected lemma locally_finite : locally_finite (λ i, support (f i)) :=
+f.locally_finite'
+
+lemma nonneg (i : ι) (x : M) : 0 ≤ f i x := f.nonneg' i x
+
+lemma sum_eq_one {x} (hx : x ∈ s) : ∑ᶠ i, f i x = 1 := f.sum_eq_one' x hx
+
+lemma sum_le_one (x : M) : ∑ᶠ i, f i x ≤ 1 := f.sum_le_one' x
+
+lemma smooth_sum : smooth I 𝓘(ℝ) (λ x, ∑ᶠ i, f i x) :=
+smooth_finsum (λ i, (f i).smooth) f.locally_finite
+
+lemma sum_nonneg (x : M) : 0 ≤ ∑ᶠ i, f i x :=
+finprod_nonneg
+
+end smooth_partition_of_unity
+
+lemma exists_smooth_zero_one_of_closed [t2_space M] [sigma_compact_space M] {s t : set M}
+  (hs : is_closed s) (ht : is_closed t) (hd : disjoint s t) :
+  ∃ f : C^∞⟮I, M; 𝓘(ℝ), ℝ⟯, eq_on f 0 s ∧ eq_on f 1 t ∧ ∀ x, f x ∈ Icc (0 : ℝ) 1 :=
+begin
+  have : ∀ x ∈ t, sᶜ ∈ 𝓝 x, from λ x hx, mem_nhds_sets hs.is_open_compl (disjoint_right.1 hd hx),
+  rcases smooth_bump_covering.exists_is_subordinate I ht this with ⟨f, hf⟩,
+  set g := f.to_smooth_partition_of_unity,
+  refine ⟨⟨_, g.smooth_sum⟩, _,
+    λ x, g.sum_eq_one, λ x, ⟨g.nonneg, _⟩⟩,
+
+end
