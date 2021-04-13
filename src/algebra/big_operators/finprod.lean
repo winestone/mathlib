@@ -172,19 +172,29 @@ by { subst q, exact finprod_congr hfg }
 
 attribute [congr] finsum_congr_Prop
 
-lemma finprod_nonneg {R : Type*} [ordered_comm_semiring R] {f : α → R} (hf : ∀ x, 0 ≤ f x) :
-  0 ≤ ∏ᶠ x, f x :=
+/-- To prove a property of a finite product, it suffices to prove that the property is
+multiplicative and holds on multipliers. -/
+@[to_additive] lemma finprod_induction {f : α → M} (p : M → Prop) (hp₀ : p 1)
+  (hp₁ : ∀ x y, p x → p y → p (x * y)) (hp₂ : ∀ i, p (f i)) :
+  p (∏ᶠ i, f i) :=
 begin
   rw finprod,
   split_ifs,
-  { exact finset.prod_nonneg (λ x _, hf _) },
-  { exact zero_le_one }
+  exacts [finset.prod_induction _ _ hp₁ hp₀ (λ i hi, hp₂ _), hp₀]
 end
 
-#check finset.sum_nonneg
-@[to_additive] lemma one_le_finprod {M : Type*} [ordered_comm_monoid M] {f : α → M}
-  (hf : ∀ x, 1 ≤ f x) : 1 ≤ ∏ᶠ x, f x :=
+/-- To prove a property of a finite sum, it suffices to prove that the property is
+additive and holds on summands. -/
+add_decl_doc finsum_induction
 
+lemma finprod_nonneg {R : Type*} [ordered_comm_semiring R] {f : α → R} (hf : ∀ x, 0 ≤ f x) :
+  0 ≤ ∏ᶠ x, f x :=
+finprod_induction (λ x, 0 ≤ x) zero_le_one (λ x y, mul_nonneg) hf
+
+@[to_additive finsum_nonneg]
+lemma one_le_finprod' {M : Type*} [ordered_comm_monoid M] {f : α → M} (hf : ∀ i, 1 ≤ f i) :
+  1 ≤ ∏ᶠ i, f i :=
+finprod_induction _ le_rfl (λ _ _, one_le_mul) hf
 
 @[to_additive] lemma monoid_hom.map_finprod_plift (f : M →* N) (g : α → M)
   (h : finite (mul_support $ g ∘ plift.down)) :
@@ -652,18 +662,22 @@ multiplicative and holds on multipliers. -/
 @[to_additive] lemma finprod_mem_induction (p : M → Prop) (hp₀ : p 1)
   (hp₁ : ∀ x y, p x → p y → p (x * y)) (hp₂ : ∀ x ∈ s, p $ f x) :
   p (∏ᶠ i ∈ s, f i) :=
-begin
-  by_cases hs : (s ∩ mul_support f).finite,
-  { rw [finprod_mem_eq_prod _ hs],
-    refine finset.prod_induction _ p hp₁ hp₀ (λ x hx, hp₂ x _),
-    rw hs.mem_to_finset at hx, exact hx.1 },
-  { exact (finprod_mem_eq_one_of_infinite hs).symm ▸ hp₀ }
-end
+finprod_induction _ hp₀ hp₁ $ λ x, finprod_induction _ hp₀ hp₁ $ hp₂ x
 
 lemma finprod_cond_nonneg {R : Type*} [ordered_comm_semiring R] {p : α → Prop} {f : α → R}
   (hf : ∀ x, p x → 0 ≤ f x) :
   0 ≤ ∏ᶠ x (h : p x), f x :=
 finprod_nonneg $ λ x, finprod_nonneg $ hf x
+
+@[to_additive]
+lemma single_le_finprod {M : Type*} [ordered_comm_monoid M] (i : α) {f : α → M}
+  (hf : finite (mul_support f)) (h : ∀ j, 1 ≤ f j) :
+  f i ≤ ∏ᶠ j, f j :=
+by classical;
+calc f i ≤ ∏ j in insert i hf.to_finset, f j :
+  finset.single_le_prod' (λ j hj, h j) (finset.mem_insert_self _ _)
+     ... = ∏ᶠ j, f j                :
+  (finprod_eq_prod_of_mul_support_to_finset_subset _ hf (finset.subset_insert _ _)).symm
 
 lemma finprod_eq_zero {M₀ : Type*} [comm_monoid_with_zero M₀] (f : α → M₀) (x : α)
   (hx : f x = 0) (hf : finite (mul_support f)) :

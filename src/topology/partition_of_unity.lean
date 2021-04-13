@@ -82,6 +82,11 @@ lemma sum_eq_one {x : X} (hx : x ∈ s) : ∑ᶠ i, f i x = 1 := f.sum_eq_one' x
 
 lemma sum_le_one (x : X) : ∑ᶠ i, f i x ≤ 1 := f.sum_le_one' x
 
+lemma sum_nonneg (x : X) : 0 ≤ ∑ᶠ i, f i x := finsum_nonneg $ λ i, f.nonneg i x
+
+lemma le_one (i : ι) (x : X) : f i x ≤ 1 :=
+(single_le_finsum i (f.locally_finite.point_finite x) (λ j, f.nonneg j x)).trans (f.sum_le_one x)
+
 /-- A partition of unity `f i` is subordinate to a family of sets `U i` indexed by the same type if
 for each `i` the closure of the support of `f i` is a subset of `U i`. -/
 def is_subordinate (f : partition_of_unity ι X s) (U : ι → set X) : Prop :=
@@ -137,27 +142,60 @@ lemma is_subordinate.mono {f : bump_covering ι X s} {U V : ι → set X} (hU : 
 /-- If `X` is a normal topological space and `U i`, `i : ι`, is a locally finite open covering of a
 closed set `s`, then there exists a `bump_covering ι X s` that is subordinate to `U`. If `X` is a
 paracompact space, then the assumption `hf : locally_finite U` can be omitted, see
-`bump_covering.exists_is_subordinate`. -/
-lemma exists_is_subordinate_of_locally_finite [normal_space X] (hs : is_closed s)
-  (U : ι → set X) (ho : ∀ i, is_open (U i)) (hf : locally_finite U)
+`bump_covering.exists_is_subordinate`. This version assumes that `p : (X → ℝ) → Prop` is a predicate
+that satisfies the Urysohn's lemma, and provides a `bump_covering` such that each function of the
+covering satisfies `p`. -/
+lemma exists_is_subordinate_of_locally_finite_of_prop [normal_space X] (p : (X → ℝ) → Prop)
+  (h01 : ∀ s t, is_closed s → is_closed t → disjoint s t →
+    ∃ f : C(X, ℝ), p f ∧ eq_on f 0 s ∧ eq_on f 1 t ∧ ∀ x, f x ∈ Icc (0 : ℝ) 1)
+  (hs : is_closed s) (U : ι → set X) (ho : ∀ i, is_open (U i)) (hf : locally_finite U)
   (hU : s ⊆ ⋃ i, U i) :
-  ∃ f : bump_covering ι X s, f.is_subordinate U :=
+  ∃ f : bump_covering ι X s, (∀ i, p (f i)) ∧ f.is_subordinate U :=
 begin
   rcases exists_subset_Union_closure_subset hs ho (λ x _, hf.point_finite x) hU
     with ⟨V, hsV, hVo, hVU⟩,
   have hVU' : ∀ i, V i ⊆ U i, from λ i, subset.trans subset_closure (hVU i),
   rcases exists_subset_Union_closure_subset hs hVo
     (λ x _, (hf.subset hVU').point_finite x) hsV with ⟨W, hsW, hWo, hWV⟩,
-  choose f hfc hf0 hf1 hf01
-    using λ i, exists_continuous_zero_one_of_closed (is_closed_compl_iff.2 $ hVo i)
+  choose f hfp hf0 hf1 hf01
+    using λ i, h01 _ _ (is_closed_compl_iff.2 $ hVo i)
       is_closed_closure (disjoint_right.2 $ λ x hx, not_not.2 (hWV i hx)),
   have hsupp : ∀ i, support (f i) ⊆ V i,
     from λ i, support_subset_iff'.2 (hf0 i),
-  refine ⟨⟨λ i, ⟨f i, hfc i⟩, hf.subset (λ i, subset.trans (hsupp i) (hVU' i)),
-    λ i x, (hf01 i x).1, λ i x, (hf01 i x).2, λ x hx, _⟩,
+  refine ⟨⟨f, hf.subset (λ i, subset.trans (hsupp i) (hVU' i)),
+    λ i x, (hf01 i x).1, λ i x, (hf01 i x).2, λ x hx, _⟩, hfp,
     λ i, subset.trans (closure_mono (hsupp i)) (hVU i)⟩,
   rcases mem_Union.1 (hsW hx) with ⟨i, hi⟩,
   exact ⟨i, ((hf1 i).mono subset_closure).eventually_eq_of_mem (mem_nhds_sets (hWo i) hi)⟩
+end
+
+/-- If `X` is a normal topological space and `U i`, `i : ι`, is a locally finite open covering of a
+closed set `s`, then there exists a `bump_covering ι X s` that is subordinate to `U`. If `X` is a
+paracompact space, then the assumption `hf : locally_finite U` can be omitted, see
+`bump_covering.exists_is_subordinate`. -/
+lemma exists_is_subordinate_of_locally_finite [normal_space X] (hs : is_closed s)
+  (U : ι → set X) (ho : ∀ i, is_open (U i)) (hf : locally_finite U)
+  (hU : s ⊆ ⋃ i, U i) :
+  ∃ f : bump_covering ι X s, f.is_subordinate U :=
+let ⟨f, _, hfU⟩ :=
+  exists_is_subordinate_of_locally_finite_of_prop (λ _, true)
+    (λ s t hs ht hd, (exists_continuous_zero_one_of_closed hs ht hd).imp $ λ f hf, ⟨trivial, hf⟩)
+    hs U ho hf hU
+in ⟨f, hfU⟩
+
+/-- If `X` is a paracompact normal topological space and `U` is an open covering of a closed set
+`s`, then there exists a `bump_covering ι X s` that is subordinate to `U`. This version assumes that
+`p : (X → ℝ) → Prop` is a predicate that satisfies the Urysohn's lemma, and provides a
+`bump_covering` such that each function of the covering satisfies `p`. -/
+lemma exists_is_subordinate_of_prop [normal_space X] [paracompact_space X] (p : (X → ℝ) → Prop)
+  (h01 : ∀ s t, is_closed s → is_closed t → disjoint s t →
+    ∃ f : C(X, ℝ), p f ∧ eq_on f 0 s ∧ eq_on f 1 t ∧ ∀ x, f x ∈ Icc (0 : ℝ) 1)
+  (hs : is_closed s) (U : ι → set X) (ho : ∀ i, is_open (U i)) (hU : s ⊆ ⋃ i, U i) :
+  ∃ f : bump_covering ι X s, (∀ i, p (f i)) ∧ f.is_subordinate U :=
+begin
+  rcases precise_refinement_set hs _ ho hU with ⟨V, hVo, hsV, hVf, hVU⟩,
+  rcases exists_is_subordinate_of_locally_finite_of_prop p h01 hs V hVo hVf hsV with ⟨f, hfp, hf⟩,
+  exact ⟨f, hfp, hf.mono hVU⟩
 end
 
 /-- If `X` is a paracompact normal topological space and `U` is an open covering of a closed set
@@ -275,6 +313,10 @@ lemma exists_finset_to_partition_of_unity_eventually_eq (i : ι) (x : X) :
   ∃ t : finset ι, f.to_partition_of_unity i =ᶠ[𝓝 x]
     f i * ∏ j in t.filter (λ j, well_ordering_rel j i), (1 - f j) :=
 f.exists_finset_to_pou_fun_eventually_eq i x
+
+lemma to_partition_of_unity_zero_of_zero {i : ι} {x : X} (h : f i x = 0) :
+  f.to_partition_of_unity i x = 0 :=
+f.to_pou_fun_zero_of_zero h
 
 lemma support_to_partition_of_unity_subset (i : ι) :
   support (f.to_partition_of_unity i) ⊆ support (f i) :=

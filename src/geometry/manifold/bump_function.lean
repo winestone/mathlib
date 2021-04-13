@@ -411,10 +411,84 @@ structure smooth_partition_of_unity (s : set M := univ) :=
 (sum_eq_one' : ∀ x ∈ s, ∑ᶠ i, to_fun i x = 1)
 (sum_le_one' : ∀ x, ∑ᶠ i, to_fun i x ≤ 1)
 
-variables {ι M}
+variables {ι M I}
+
+namespace smooth_partition_of_unity
+
+variables {s : set M} (f : smooth_partition_of_unity ι I M s)
 
 instance {s : set M} : has_coe_to_fun (smooth_partition_of_unity ι I M s) :=
 ⟨λ _, ι → C^∞⟮I, M; 𝓘(ℝ), ℝ⟯, smooth_partition_of_unity.to_fun⟩
+
+protected lemma locally_finite : locally_finite (λ i, support (f i)) :=
+f.locally_finite'
+
+lemma nonneg (i : ι) (x : M) : 0 ≤ f i x := f.nonneg' i x
+
+lemma sum_eq_one {x} (hx : x ∈ s) : ∑ᶠ i, f i x = 1 := f.sum_eq_one' x hx
+
+lemma sum_le_one (x : M) : ∑ᶠ i, f i x ≤ 1 := f.sum_le_one' x
+
+/-- Reinterpret a smooth partition of unity as a continuous partition of unity. -/
+def to_partition_of_unity : partition_of_unity ι M s :=
+{ to_fun := λ i, f i, .. f }
+
+lemma smooth_sum : smooth I 𝓘(ℝ) (λ x, ∑ᶠ i, f i x) :=
+smooth_finsum (λ i, (f i).smooth) f.locally_finite
+
+lemma le_one (i : ι) (x : M) : f i x ≤ 1 := f.to_partition_of_unity.le_one i x
+
+lemma sum_nonneg (x : M) : 0 ≤ ∑ᶠ i, f i x := f.to_partition_of_unity.sum_nonneg x
+
+/-- A smooth partition of unity `f i` is subordinate to a family of sets `U i` indexed by the same
+type if for each `i` the closure of the support of `f i` is a subset of `U i`. -/
+def is_subordinate (f : smooth_partition_of_unity ι I M s) (U : ι → set M) :=
+∀ i, closure (support (f i)) ⊆ U i
+
+@[simp] lemma is_subordinate_to_partition_of_unity {f : smooth_partition_of_unity ι I M s}
+  {U : ι → set M} :
+  f.to_partition_of_unity.is_subordinate U ↔ f.is_subordinate U :=
+iff.rfl
+
+alias is_subordinate_to_partition_of_unity ↔
+  _ smooth_partition_of_unity.is_subordinate.to_partition_of_unity
+
+end smooth_partition_of_unity
+
+namespace bump_covering
+
+variables {s : set M}
+
+lemma smooth_to_partition_of_unity (f : bump_covering ι M s)
+  (hf : ∀ i, smooth I 𝓘(ℝ) (f i)) (i : ι) :
+  smooth I 𝓘(ℝ) (f.to_partition_of_unity i) :=
+(hf i).mul $ smooth_finprod_cond (λ j _, smooth_const.sub (hf j)) $
+  by { simp only [mul_support_one_sub], exact f.locally_finite }
+
+/-- A `bump_covering` such that all functions in this covering are smooth generates a smooth
+partition of unity. -/
+def to_smooth_partition_of_unity (f : bump_covering ι M s) (hf : ∀ i, smooth I 𝓘(ℝ) (f i)) :
+  smooth_partition_of_unity ι I M s :=
+{ to_fun := λ i, ⟨f.to_partition_of_unity i,
+    f.smooth_to_partition_of_unity hf i⟩,
+  .. f.to_partition_of_unity }
+
+@[simp] lemma to_smooth_partition_of_unity_to_partition_of_unity (f : bump_covering ι M s)
+  (hf : ∀ i, smooth I 𝓘(ℝ) (f i)) :
+  (f.to_smooth_partition_of_unity hf).to_partition_of_unity = f.to_partition_of_unity :=
+rfl
+
+@[simp] lemma coe_to_smooth_partition_of_unity (f : bump_covering ι M s)
+  (hf : ∀ i, smooth I 𝓘(ℝ) (f i)) (i : ι) :
+  ⇑(f.to_smooth_partition_of_unity hf i) = f.to_partition_of_unity i :=
+rfl
+
+lemma is_subordinate.to_smooth_partition_of_unity {f : bump_covering ι M s}
+  {U : ι → set M} (h : f.is_subordinate U) (hf : ∀ i, smooth I 𝓘(ℝ) (f i)) :
+  (f.to_smooth_partition_of_unity hf).is_subordinate U :=
+h.to_partition_of_unity
+
+end bump_covering
 
 namespace smooth_bump_covering
 
@@ -434,6 +508,11 @@ depends on `x`.
 -/
 def is_subordinate {s : set M} (f : smooth_bump_covering I M s) (U : M → set M) :=
 ∀ i, closure (support $ f i) ⊆ U (f.c i)
+
+lemma is_subordinate.support_subset {fs : smooth_bump_covering I M s} {U : M → set M}
+  (h : fs.is_subordinate U) (i : fs.ι) :
+  support (fs i) ⊆ U (fs.c i) :=
+subset.trans subset_closure (h i)
 
 variable (I)
 
@@ -529,16 +608,16 @@ def to_bump_covering : bump_covering fs.ι M s :=
   le_one' := λ i x, (fs i).le_one,
   eventually_eq_one' := fs.eventually_eq_one' }
 
-lemma smooth_to_bump_covering_to_partition_of_unity (i : fs.ι) :
-  smooth I 𝓘(ℝ) (fs.to_bump_covering.to_partition_of_unity i) :=
-(fs i).smooth.mul $ smooth_finprod_cond (λ j _, smooth_const.sub (fs j).smooth) $
-  by { simp only [mul_support_one_sub], exact fs.locally_finite }
+@[simp] lemma is_subordinate_to_bump_covering {f : smooth_bump_covering I M s} {U : M → set M} :
+  f.to_bump_covering.is_subordinate (λ i, U (f.c i)) ↔ f.is_subordinate U :=
+iff.rfl
+
+alias is_subordinate_to_bump_covering ↔
+  _ smooth_bump_covering.is_subordinate.to_bump_covering
 
 /-- Every `smooth_bump_covering` defines a smooth partition of unity. -/
 def to_smooth_partition_of_unity : smooth_partition_of_unity fs.ι I M s :=
-{ to_fun := λ i, ⟨fs.to_bump_covering.to_partition_of_unity i,
-    fs.smooth_to_bump_covering_to_partition_of_unity i⟩,
-  .. fs.to_bump_covering.to_partition_of_unity }
+fs.to_bump_covering.to_smooth_partition_of_unity (λ i, (fs i).smooth)
 
 lemma to_smooth_partition_of_unity_apply (i : fs.ι) (x : M) :
   fs.to_smooth_partition_of_unity i x = fs i x * ∏ᶠ j (hj : well_ordering_rel j i), (1 - fs j x) :=
@@ -555,9 +634,18 @@ lemma exists_finset_to_smooth_partition_of_unity_eventually_eq (i : fs.ι) (x : 
     fs i * ∏ j in t.filter (λ j, well_ordering_rel j i), (1 - fs j) :=
 fs.to_bump_covering.exists_finset_to_partition_of_unity_eventually_eq i x
 
+lemma to_smooth_partition_of_unity_zero_of_zero {i : fs.ι} {x : M} (h : fs i x = 0) :
+  fs.to_smooth_partition_of_unity i x = 0 :=
+fs.to_bump_covering.to_partition_of_unity_zero_of_zero h
+
 lemma support_to_smooth_partition_of_unity_subset (i : fs.ι) :
   support (fs.to_smooth_partition_of_unity i) ⊆ support (fs i) :=
 fs.to_bump_covering.support_to_partition_of_unity_subset i
+
+lemma is_subordinate.to_smooth_partition_of_unity {f : smooth_bump_covering I M s} {U : M → set M}
+  (h : f.is_subordinate U) :
+  f.to_smooth_partition_of_unity.is_subordinate (λ i, U (f.c i)) :=
+h.to_bump_covering.to_partition_of_unity
 
 lemma sum_to_smooth_partition_of_unity_eq (x : M) :
   ∑ᶠ i, fs.to_smooth_partition_of_unity i x = 1 - ∏ᶠ i, (1 - fs i x) :=
@@ -635,7 +723,7 @@ end embedding
 /-- Baby version of the Whitney weak embedding theorem: if `M` admits a finite covering by
 supports of bump functions, then for some `n` it can be immersed into the `n`-dimensional
 Euclidean space. -/
-lemma exists_immersion_findim [t2_space M] (f : smooth_bump_covering I M)
+lemma exists_immersion_findim (f : smooth_bump_covering I M)
   [fintype f.ι] :
   ∃ (n : ℕ) (e : M → euclidean_space ℝ (fin n)), smooth I (𝓡 n) e ∧
     injective e ∧ ∀ x : M, injective (mfderiv I (𝓡 n) e x) :=
@@ -666,27 +754,9 @@ begin
   exact ⟨n, e, hsmooth, hsmooth.continuous.closed_embedding hinj, hinj_mfderiv⟩
 end
 
-namespace smooth_partition_of_unity
-
-variables {I} {s : set M} (f : smooth_partition_of_unity ι I M s)
-
-protected lemma locally_finite : locally_finite (λ i, support (f i)) :=
-f.locally_finite'
-
-lemma nonneg (i : ι) (x : M) : 0 ≤ f i x := f.nonneg' i x
-
-lemma sum_eq_one {x} (hx : x ∈ s) : ∑ᶠ i, f i x = 1 := f.sum_eq_one' x hx
-
-lemma sum_le_one (x : M) : ∑ᶠ i, f i x ≤ 1 := f.sum_le_one' x
-
-lemma smooth_sum : smooth I 𝓘(ℝ) (λ x, ∑ᶠ i, f i x) :=
-smooth_finsum (λ i, (f i).smooth) f.locally_finite
-
-lemma sum_nonneg (x : M) : 0 ≤ ∑ᶠ i, f i x :=
-finprod_nonneg
-
-end smooth_partition_of_unity
-
+/-- Given two disjoint closed sets in a Hausdorff σ-compact finite dimensional manifold, there
+exists an infinitely smooth function that is equal to `0` on one of them and is equal to one on the
+other. -/
 lemma exists_smooth_zero_one_of_closed [t2_space M] [sigma_compact_space M] {s t : set M}
   (hs : is_closed s) (ht : is_closed t) (hd : disjoint s t) :
   ∃ f : C^∞⟮I, M; 𝓘(ℝ), ℝ⟯, eq_on f 0 s ∧ eq_on f 1 t ∧ ∀ x, f x ∈ Icc (0 : ℝ) 1 :=
@@ -694,7 +764,35 @@ begin
   have : ∀ x ∈ t, sᶜ ∈ 𝓝 x, from λ x hx, mem_nhds_sets hs.is_open_compl (disjoint_right.1 hd hx),
   rcases smooth_bump_covering.exists_is_subordinate I ht this with ⟨f, hf⟩,
   set g := f.to_smooth_partition_of_unity,
-  refine ⟨⟨_, g.smooth_sum⟩, _,
-    λ x, g.sum_eq_one, λ x, ⟨g.nonneg, _⟩⟩,
-
+  refine ⟨⟨_, g.smooth_sum⟩, λ x hx, _, λ x, g.sum_eq_one, λ x, ⟨g.sum_nonneg x, g.sum_le_one x⟩⟩,
+  suffices : ∀ i, g i x = 0,
+    by simp only [this, times_cont_mdiff_map.coe_fn_mk, finsum_zero, pi.zero_apply],
+  refine λ i, f.to_smooth_partition_of_unity_zero_of_zero _,
+  exact nmem_support.1 (subset_compl_comm.1 (hf.support_subset i) hx)
 end
+#lint
+namespace smooth_partition_of_unity
+
+/-- If `X` is a paracompact normal topological space and `U` is an open covering of a closed set
+`s`, then there exists a `bump_covering ι X s` that is subordinate to `U`. -/
+lemma exists_is_subordinate [t2_space M] [sigma_compact_space M] {s : set M}
+  (hs : is_closed s) (U : ι → set M) (ho : ∀ i, is_open (U i)) (hU : s ⊆ ⋃ i, U i) :
+  ∃ f : smooth_partition_of_unity ι I M s, f.is_subordinate U :=
+begin
+  haveI : locally_compact_space H := I.locally_compact,
+  haveI : locally_compact_space M := charted_space.locally_compact H,
+  haveI : normal_space M := normal_of_paracompact_t2,
+  rcases bump_covering.exists_is_subordinate_of_prop (smooth I 𝓘(ℝ)) _ hs U ho hU
+    with ⟨f, hf, hfU⟩,
+  { exact ⟨f.to_smooth_partition_of_unity hf, hfU.to_smooth_partition_of_unity hf⟩ },
+  { intros s t hs ht hd,
+    rcases exists_smooth_zero_one_of_closed hs ht hd with ⟨f, hf⟩,
+    exact ⟨f, f.smooth, hf⟩ }
+end
+
+lemma exists_is_subordinate {s : set M} {U : ι → set M} (hs : is_closed s) (ho : ∀ i, is_open (U i))
+  (hU : s ⊆ ⋃ i, U i) :
+  ∃ f : smooth_partition_of_unity ι I M s, f.is_subordinate U :=
+be
+
+end smooth_partition_of_unity
