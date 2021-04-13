@@ -485,6 +485,9 @@ noncomputable def class_number : ℕ := fintype.card (class_group (ring_of_integ
 
 end number_field
 
+theorem rat.class_number : number_field.class_number ℚ = 1 :=
+_
+
 namespace function_field_over
 
 variables {K L : Type*} [field K] [fintype K] [field L] (f : fraction_map (polynomial K) L)

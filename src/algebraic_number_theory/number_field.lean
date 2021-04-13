@@ -97,3 +97,19 @@ integral_closure.fraction_map_of_finite_extension K int.fraction_map
 end ring_of_integers
 
 end number_field
+
+namespace rat
+
+instance rat.finite_dimensional : finite_dimensional ℚ ℚ :=
+(infer_instance : is_noetherian ℚ ℚ)
+
+instance rat.is_number_field : is_number_field ℚ :=
+{ cz := infer_instance,
+  fd := by { convert rat.finite_dimensional,
+             -- The vector space structure of `ℚ` over itself can arise in multiple ways:
+             -- all fields are vector spaces over themselves (used in `rat.finite_dimensional`)
+             -- all fields have a canonical embedding of `ℚ` (used in `is_number_field`).
+             -- Show that these coincide:
+             ext, simp [algebra.smul_def] } }
+
+end rat
