@@ -503,7 +503,8 @@ namespace rat
 open number_field
 
 theorem class_number : number_field.class_number ℚ = 1 :=
-class_number_eq_one_iff.mpr _
+class_number_eq_one_iff.mpr $ is_principal_ideal_ring.of_surjective _
+  (rat.ring_of_integers_equiv.symm : ℤ ≃+* ring_of_integers ℚ).surjective
 
 end rat
 

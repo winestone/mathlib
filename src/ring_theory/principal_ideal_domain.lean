@@ -203,3 +203,33 @@ instance to_unique_factorization_monoid : unique_factorization_monoid R :=
 end
 
 end principal_ideal_ring
+
+open submodule
+
+@[simp] lemma ideal.span_image {R S : Type*}
+  [comm_ring R] [comm_ring S] (f : R →+* S) (s : set R) :
+  ideal.span (f '' s) = ideal.map f (ideal.span s) :=
+span_eq_of_le _
+  (λ y ⟨x, hy, x_eq⟩, x_eq ▸ ideal.mem_map_of_mem (subset_span hy))
+  (ideal.map_le_iff_le_comap.2 $ span_le.2 $ image_subset_iff.1 subset_span)
+
+@[simp] lemma ideal.span_image' {R S : Type*}
+  [comm_ring R] [comm_ring S] (f : R →+* S) (s : set R) :
+  submodule.span S (f '' s) = ideal.map f (submodule.span R s) :=
+ideal.span_image f s
+
+lemma ideal.is_principal.of_comap {R S : Type*}
+  [comm_ring R] [comm_ring S]
+  (f : R →+* S) (hf : function.surjective f)
+  (I : ideal S) [hI : is_principal (I.comap f)] :
+  is_principal I :=
+⟨⟨f (is_principal.generator (I.comap f)),
+  by rw [← set.image_singleton, ideal.span_image',
+         is_principal.span_singleton_generator, ideal.map_comap_of_surjective f hf]⟩⟩
+
+/-- The surjective image of a principal ideal ring is again a principal ideal ring. -/
+lemma is_principal_ideal_ring.of_surjective {R S : Type*}
+  [comm_ring R] [comm_ring S] [is_principal_ideal_ring R]
+  (f : R →+* S) (hf : function.surjective f) :
+  is_principal_ideal_ring S :=
+⟨λ I, ideal.is_principal.of_comap f hf I⟩
