@@ -351,7 +351,7 @@ lemma class_group.mk0_eq_one_iff [is_dedekind_domain R]
   class_group.mk0 f ⟨I, hI⟩ = 1 ↔ I.is_principal :=
 (class_group.mk_eq_one_iff _).trans f.coe_submodule_is_principal
 
-/-- The class number is `1` iff the ring of integers is a UFD. -/
+/-- The class number is `1` iff the ring of integers is a principal ideal domain. -/
 lemma card_class_group_eq_one_iff [is_dedekind_domain R] [fintype (class_group f)] :
   fintype.card (class_group f) = 1 ↔ is_principal_ideal_ring R :=
 begin

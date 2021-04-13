@@ -489,6 +489,8 @@ end ring_of_integers
 /-- The class number of a number field is the (finite) cardinality of the class group. -/
 noncomputable def class_number : ℕ := fintype.card (class_group (ring_of_integers.fraction_map K))
 
+variables {K}
+
 /-- The class number of a number field is `1` iff the ring of integers is a PID. -/
 theorem class_number_eq_one_iff :
   class_number K = 1 ↔ is_principal_ideal_ring (ring_of_integers K) :=
@@ -496,8 +498,14 @@ card_class_group_eq_one_iff _
 
 end number_field
 
-theorem rat.class_number : number_field.class_number ℚ = 1 :=
-_
+namespace rat
+
+open number_field
+
+theorem class_number : number_field.class_number ℚ = 1 :=
+class_number_eq_one_iff.mpr _
+
+end rat
 
 namespace function_field_over
 
