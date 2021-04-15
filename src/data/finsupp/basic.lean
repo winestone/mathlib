@@ -173,7 +173,7 @@ by simp only [set.subset_def, mem_coe, mem_support_iff];
 
 /-- Given `fintype α`, `equiv_fun_on_fintype` is the `equiv` between `α →₀ β` and `α → β`.
   (All functions on a finite type are finitely supported.) -/
-def equiv_fun_on_fintype [fintype α] : (α →₀ M) ≃ (α → M) :=
+@[simps apply] def equiv_fun_on_fintype [fintype α] : (α →₀ M) ≃ (α → M) :=
 ⟨λf a, f a, λf, mk (finset.univ.filter $ λa, f a ≠ 0) f (by simp only [true_and, finset.mem_univ,
   iff_self, finset.mem_filter, finset.filter_congr_decidable, forall_true_iff]),
   begin intro f, ext a, refl end,
@@ -858,6 +858,9 @@ instance : add_monoid (α →₀ M) :=
   zero      := 0,
   add       := (+),
   add_assoc := assume ⟨s, f, hf⟩ ⟨t, g, hg⟩ ⟨u, h, hh⟩, ext $ assume a, add_assoc _ _ _,
+  nsmul := λ n v, v.map_range ((•) n) (nsmul_zero _),
+  nsmul_zero' := λ v, by { ext i, simp },
+  nsmul_succ' := λ n v, by { ext i, simp [nat.succ_eq_one_add, add_nsmul] },
   .. finsupp.add_zero_class }
 
 end add_monoid
@@ -1639,7 +1642,7 @@ section multiset
 /-- Given `f : α →₀ ℕ`, `f.to_multiset` is the multiset with multiplicities given by the values of
 `f` on the elements of `α`. We define this function as an `add_equiv`. -/
 def to_multiset : (α →₀ ℕ) ≃+ multiset α :=
-{ to_fun := λ f, f.sum (λa n, n •ℕ {a}),
+{ to_fun := λ f, f.sum (λa n, n • {a}),
   inv_fun := λ s, ⟨s.to_finset, λ a, s.count a, λ a, by simp⟩,
   left_inv := λ f, ext $ λ a,
     suffices (if f a = 0 then 0 else f a) = f a,
@@ -1655,9 +1658,9 @@ lemma to_multiset_add (m n : α →₀ ℕ) :
   (m + n).to_multiset = m.to_multiset + n.to_multiset :=
 to_multiset.map_add m n
 
-lemma to_multiset_apply (f : α →₀ ℕ) : f.to_multiset = f.sum (λ a n, n •ℕ {a}) := rfl
+lemma to_multiset_apply (f : α →₀ ℕ) : f.to_multiset = f.sum (λ a n, n • {a}) := rfl
 
-@[simp] lemma to_multiset_single (a : α) (n : ℕ) : to_multiset (single a n) = n •ℕ {a} :=
+@[simp] lemma to_multiset_single (a : α) (n : ℕ) : to_multiset (single a n) = n • {a} :=
 by rw [to_multiset_apply, sum_single_index]; apply zero_nsmul
 
 lemma to_multiset_sum {ι : Type*} {f : ι → α →₀ ℕ} (s : finset ι) :
@@ -1670,7 +1673,7 @@ begin
 end
 
 lemma to_multiset_sum_single {ι : Type*} (s : finset ι) (n : ℕ) :
-  finsupp.to_multiset (∑ i in s, single i n) = n •ℕ s.val :=
+  finsupp.to_multiset (∑ i in s, single i n) = n • s.val :=
 by simp_rw [to_multiset_sum, finsupp.to_multiset_single, multiset.singleton_eq_singleton,
             sum_nsmul, sum_multiset_singleton]
 
@@ -1719,7 +1722,7 @@ end
 
 @[simp] lemma count_to_multiset [decidable_eq α] (f : α →₀ ℕ) (a : α) :
   f.to_multiset.count a = f a :=
-calc f.to_multiset.count a = f.sum (λx n, (n •ℕ {x} : multiset α).count a) :
+calc f.to_multiset.count a = f.sum (λx n, (n • {x} : multiset α).count a) :
     (f.support.sum_hom $ multiset.count a).symm
   ... = f.sum (λx n, n * ({x} : multiset α).count a) : by simp only [multiset.count_nsmul]
   ... = f.sum (λx n, n * (x ::ₘ 0 : multiset α).count a) : rfl
@@ -1817,6 +1820,96 @@ begin
 end
 
 end curry_uncurry
+
+section sum
+
+/-- `finsupp.sum_elim f g` maps `inl x` to `f x` and `inr y` to `g y`. -/
+def sum_elim {α β γ : Type*} [has_zero γ]
+  (f : α →₀ γ) (g : β →₀ γ) : α ⊕ β →₀ γ :=
+on_finset
+  ((f.support.map ⟨_, sum.inl_injective⟩) ∪ g.support.map ⟨_, sum.inr_injective⟩)
+  (sum.elim f g)
+  (λ ab h, by { cases ab with a b; simp only [sum.elim_inl, sum.elim_inr] at h; simpa })
+
+@[simp] lemma coe_sum_elim {α β γ : Type*} [has_zero γ]
+  (f : α →₀ γ) (g : β →₀ γ) : ⇑(sum_elim f g) = sum.elim f g := rfl
+
+lemma sum_elim_apply {α β γ : Type*} [has_zero γ]
+  (f : α →₀ γ) (g : β →₀ γ) (x : α ⊕ β) : sum_elim f g x = sum.elim f g x := rfl
+
+lemma sum_elim_inl {α β γ : Type*} [has_zero γ]
+  (f : α →₀ γ) (g : β →₀ γ) (x : α) : sum_elim f g (sum.inl x) = f x := rfl
+
+lemma sum_elim_inr {α β γ : Type*} [has_zero γ]
+  (f : α →₀ γ) (g : β →₀ γ) (x : β) : sum_elim f g (sum.inr x) = g x := rfl
+
+/-- The equivalence between `(α ⊕ β) →₀ γ` and `(α →₀ γ) × (β →₀ γ)`.
+
+This is the `finsupp` version of `equiv.sum_arrow_equiv_prod_arrow`. -/
+@[simps apply symm_apply]
+def sum_finsupp_equiv_prod_finsupp {α β γ : Type*} [has_zero γ] :
+  ((α ⊕ β) →₀ γ) ≃ (α →₀ γ) × (β →₀ γ) :=
+{ to_fun := λ f,
+    ⟨f.comap_domain sum.inl (sum.inl_injective.inj_on _),
+     f.comap_domain sum.inr (sum.inr_injective.inj_on _)⟩,
+  inv_fun := λ fg, sum_elim fg.1 fg.2,
+  left_inv := λ f, by { ext ab, cases ab with a b; simp },
+  right_inv := λ fg, by { ext; simp } }
+
+lemma fst_sum_finsupp_equiv_prod_finsupp {α β γ : Type*} [has_zero γ]
+  (f : (α ⊕ β) →₀ γ) (x : α) :
+  (sum_finsupp_equiv_prod_finsupp f).1 x = f (sum.inl x) :=
+rfl
+
+lemma snd_sum_finsupp_equiv_prod_finsupp {α β γ : Type*} [has_zero γ]
+  (f : (α ⊕ β) →₀ γ) (y : β) :
+  (sum_finsupp_equiv_prod_finsupp f).2 y = f (sum.inr y) :=
+rfl
+
+lemma sum_finsupp_equiv_prod_finsupp_symm_inl {α β γ : Type*} [has_zero γ]
+  (fg : (α →₀ γ) × (β →₀ γ)) (x : α) :
+  (sum_finsupp_equiv_prod_finsupp.symm fg) (sum.inl x) = fg.1 x :=
+rfl
+
+lemma sum_finsupp_equiv_prod_finsupp_symm_inr {α β γ : Type*} [has_zero γ]
+  (fg : (α →₀ γ) × (β →₀ γ)) (y : β) :
+  (sum_finsupp_equiv_prod_finsupp.symm fg) (sum.inr y) = fg.2 y :=
+rfl
+
+variables [add_monoid M]
+
+/-- The additive equivalence between `(α ⊕ β) →₀ M` and `(α →₀ M) × (β →₀ M)`.
+
+This is the `finsupp` version of `equiv.sum_arrow_equiv_prod_arrow`. -/
+@[simps apply symm_apply] def sum_finsupp_add_equiv_prod_finsupp {α β : Type*} :
+  ((α ⊕ β) →₀ M) ≃+ (α →₀ M) × (β →₀ M) :=
+{ map_add' :=
+    by { intros, ext;
+          simp only [equiv.to_fun_as_coe, prod.fst_add, prod.snd_add, add_apply,
+              snd_sum_finsupp_equiv_prod_finsupp, fst_sum_finsupp_equiv_prod_finsupp] },
+  .. sum_finsupp_equiv_prod_finsupp }
+
+lemma fst_sum_finsupp_add_equiv_prod_finsupp {α β : Type*}
+  (f : (α ⊕ β) →₀ M) (x : α) :
+  (sum_finsupp_add_equiv_prod_finsupp f).1 x = f (sum.inl x) :=
+rfl
+
+lemma snd_sum_finsupp_add_equiv_prod_finsupp {α β : Type*}
+  (f : (α ⊕ β) →₀ M) (y : β) :
+  (sum_finsupp_add_equiv_prod_finsupp f).2 y = f (sum.inr y) :=
+rfl
+
+lemma sum_finsupp_add_equiv_prod_finsupp_symm_inl {α β : Type*}
+  (fg : (α →₀ M) × (β →₀ M)) (x : α) :
+  (sum_finsupp_add_equiv_prod_finsupp.symm fg) (sum.inl x) = fg.1 x :=
+rfl
+
+lemma sum_finsupp_add_equiv_prod_finsupp_symm_inr {α β : Type*}
+  (fg : (α →₀ M) × (β →₀ M)) (y : β) :
+  (sum_finsupp_add_equiv_prod_finsupp.symm fg) (sum.inr y) = fg.2 y :=
+rfl
+
+end sum
 
 section
 variables [group G] [mul_action G α] [add_comm_monoid M]
@@ -2172,21 +2265,11 @@ instance [partial_order M] [has_zero M] : partial_order (α →₀ M) :=
 { le_antisymm := λ f g hfg hgf, ext $ λ s, le_antisymm (hfg s) (hgf s),
   .. finsupp.preorder }
 
-instance [ordered_cancel_add_comm_monoid M] : add_left_cancel_semigroup (α →₀ M) :=
-{ add_left_cancel := λ a b c h, ext $ λ s,
-  by { rw ext_iff at h, exact add_left_cancel (h s) },
-  .. finsupp.add_monoid }
-
-instance [ordered_cancel_add_comm_monoid M] : add_right_cancel_semigroup (α →₀ M) :=
-{ add_right_cancel := λ a b c h, ext $ λ s,
-  by { rw ext_iff at h, exact add_right_cancel (h s) },
-  .. finsupp.add_monoid }
-
 instance [ordered_cancel_add_comm_monoid M] : ordered_cancel_add_comm_monoid (α →₀ M) :=
 { add_le_add_left := λ a b h c s, add_le_add_left (h s) (c s),
   le_of_add_le_add_left := λ a b c h s, le_of_add_le_add_left (h s),
-  .. finsupp.add_comm_monoid, .. finsupp.partial_order,
-  .. finsupp.add_left_cancel_semigroup, .. finsupp.add_right_cancel_semigroup }
+  add_left_cancel := λ a b c h, ext $ λ s, add_left_cancel (ext_iff.1 h s),
+  .. finsupp.add_comm_monoid, .. finsupp.partial_order }
 
 lemma le_def [preorder M] [has_zero M] {f g : α →₀ M} : f ≤ g ↔ ∀ x, f x ≤ g x := iff.rfl
 
