@@ -484,10 +484,15 @@ end comm_semiring
 multiplicative monoid (`monoid`), and distributive laws (`distrib`).  Equivalently, a ring is a
 `semiring` with a negation operation making it an additive group.  -/
 @[protect_proj, ancestor add_comm_group monoid distrib]
-class ring (α : Type u) extends add_comm_group α, monoid α, distrib α
+class ring (α : Type u) extends add_comm_group α, monoid α :=
+(left_distrib : ∀ a b c : α, a * (b + c) = (a * b) + (a * c))
+(right_distrib : ∀ a b c : α, (a + b) * c = (a * c) + (b * c))
 
 section ring
 variables [ring α] {a b c d e : α}
+
+@[priority 910]
+instance ring.to_distrib : distrib α := { .. ‹ring α› }
 
 /- The instance from `ring` to `semiring` happens often in linear algebra, for which all the basic
 definitions are given in terms of semirings, but many applications use rings or fields. We increase

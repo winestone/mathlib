@@ -127,9 +127,7 @@ end defs
 
 section shorthands
 
-universe u
-
-variables {R : Type u}
+variables {R : Type*}
 
 /-! #### From `add_submonoid`s -/
 
