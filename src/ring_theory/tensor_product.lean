@@ -115,10 +115,10 @@ instance : semiring (A ⊗[R] B) :=
   one_mul := one_mul,
   mul_one := mul_one,
   mul_assoc := mul_assoc,
-  zero_mul := by simp,
-  mul_zero := by simp,
-  left_distrib := by simp,
-  right_distrib := by simp,
+  zero_mul := by simp [(*), mul_one_class.mul],
+  mul_zero := by simp [(*), mul_one_class.mul],
+  left_distrib := by simp [(*), mul_one_class.mul],
+  right_distrib := by simp [(*), mul_one_class.mul],
   .. (by apply_instance : add_comm_monoid (A ⊗[R] B)) }.
 
 lemma one_def : (1 : A ⊗[R] B) = (1 : A) ⊗ₜ (1 : B) := rfl

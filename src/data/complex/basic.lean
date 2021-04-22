@@ -581,32 +581,8 @@ def complex_ordered_comm_ring : ordered_comm_ring ℂ :=
     norm_cast,
     simp only [mul_pos, lz, lw, zero_add],
   end,
-  le_of_add_le_add_left := λ u v z h,
-  begin
-    obtain ⟨x, l, e⟩ := h,
-    rw add_assoc at e,
-    exact ⟨x, l, add_left_cancel e⟩,
-  end,
-  mul_lt_mul_of_pos_left := λ u v z h₁ h₂,
-  begin
-    obtain ⟨x₁, l₁, rfl⟩ := lt_def.mp h₁,
-    obtain ⟨x₂, l₂, rfl⟩ := lt_def.mp h₂,
-    simp only [mul_add, zero_add],
-    exact lt_def.mpr ⟨x₂ * x₁, mul_pos l₂ l₁, (by norm_cast)⟩,
-  end,
-  mul_lt_mul_of_pos_right := λ u v z h₁ h₂,
-  begin
-    obtain ⟨x₁, l₁, rfl⟩ := lt_def.mp h₁,
-    obtain ⟨x₂, l₂, rfl⟩ := lt_def.mp h₂,
-    simp only [add_mul, zero_add],
-    exact lt_def.mpr ⟨x₁ * x₂, mul_pos l₁ l₂, (by norm_cast)⟩,
-  end,
--- we need more instances here because comm_ring doesn't have zero_add et al as fields,
--- they are derived as lemmas
   ..(by apply_instance : partial_order ℂ),
-  ..(by apply_instance : comm_ring ℂ),
-  ..(by apply_instance : comm_semiring ℂ),
-  ..(by apply_instance : add_cancel_monoid ℂ) }
+  ..(by apply_instance : comm_ring ℂ) }
 
 localized "attribute [instance] complex_ordered_comm_ring" in complex_order
 

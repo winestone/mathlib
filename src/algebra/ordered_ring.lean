@@ -14,7 +14,7 @@ variable {α : Type u}
 
 /-- An `ordered_semiring α` is a semiring `α` with a partial order such that
 multiplication with a positive number and addition are monotone. -/
-@[protect_proj]
+@[protect_proj, ancestor semiring ordered_cancel_add_comm_monoid]
 class ordered_semiring (α : Type u) extends semiring α, ordered_cancel_add_comm_monoid α :=
 (zero_le_one : 0 ≤ (1 : α))
 (mul_lt_mul_of_pos_left :  ∀ a b c : α, a < b → 0 < c → c * a < c * b)
@@ -248,7 +248,7 @@ section ordered_comm_semiring
 
 /-- An `ordered_comm_semiring α` is a commutative semiring `α` with a partial order such that
 multiplication with a positive number and addition are monotone. -/
-@[protect_proj]
+@[protect_proj, ancestor ordered_semiring comm_semiring]
 class ordered_comm_semiring (α : Type u) extends ordered_semiring α, comm_semiring α
 
 /-- Pullback an `ordered_comm_semiring` under an injective map. -/
@@ -270,7 +270,7 @@ such that multiplication with a positive number and addition are monotone.
 -- it would be reasonable to explore changing this,
 -- but be warned that the instances involving `domain` may cause
 -- typeclass search loops.
-@[protect_proj]
+@[protect_proj, ancestor ordered_semiring linear_order nontrivial]
 class linear_ordered_semiring (α : Type u) extends ordered_semiring α, linear_order α, nontrivial α
 
 section linear_ordered_semiring
@@ -595,7 +595,7 @@ end linear_ordered_semiring
 
 /-- An `ordered_ring α` is a ring `α` with a partial order such that
 multiplication with a positive number and addition are monotone. -/
-@[protect_proj]
+@[protect_proj, ancestor ring ordered_add_comm_group]
 class ordered_ring (α : Type u) extends ring α, ordered_add_comm_group α :=
 (zero_le_one : 0 ≤ (1 : α))
 (mul_pos     : ∀ a b : α, 0 < a → 0 < b → 0 < a * b)
@@ -693,8 +693,20 @@ section ordered_comm_ring
 
 /-- An `ordered_comm_ring α` is a commutative ring `α` with a partial order such that
 multiplication with a positive number and addition are monotone. -/
-@[protect_proj]
-class ordered_comm_ring (α : Type u) extends ordered_ring α, ordered_comm_semiring α, comm_ring α
+@[protect_proj, ancestor ordered_ring comm_ring]
+class ordered_comm_ring (α : Type u) extends ordered_ring α, comm_ring α
+
+@[priority 120] -- see Note [lower instance priority]
+instance ordered_comm_ring.to_ordered_comm_semiring [h : ordered_comm_ring α] :
+  ordered_comm_semiring α :=
+{ zero_mul := zero_mul,
+  mul_zero := mul_zero,
+  add_left_cancel := λ a b c h', add_left_cancel h',
+  le_of_add_le_add_left := λ a b c h', (add_le_add_iff_left a).mp h',
+  mul_lt_mul_of_pos_left := λ a b c h', mul_lt_mul_of_pos_left h',
+  mul_lt_mul_of_pos_right := λ a b c h', mul_lt_mul_of_pos_right h',
+  .. h}
+
 
 /-- Pullback an `ordered_comm_ring` under an injective map. -/
 def function.injective.ordered_comm_ring [ordered_comm_ring α] {β : Type*}
@@ -703,8 +715,7 @@ def function.injective.ordered_comm_ring [ordered_comm_ring α] {β : Type*}
   (add : ∀ x y, f (x + y) = f x + f y) (mul : ∀ x y, f (x * y) = f x * f y)
   (neg : ∀ x, f (- x) = - f x) (sub : ∀ x y, f (x - y) = f x - f y) :
   ordered_comm_ring β :=
-{ ..hf.ordered_comm_semiring f zero one add mul,
-  ..hf.ordered_ring f zero one add mul neg sub,
+{ ..hf.ordered_ring f zero one add mul neg sub,
   ..hf.comm_ring f zero one add mul neg sub }
 
 end ordered_comm_ring
@@ -923,14 +934,7 @@ instance linear_ordered_comm_ring.to_ordered_comm_ring [d : linear_ordered_comm_
 -- One might hope that `{ ..linear_ordered_ring.to_linear_ordered_semiring, ..d }`
 -- achieved the same result here.
 -- Unfortunately with that definition we see mismatched instances in `algebra.star.chsh`.
-let s : linear_ordered_semiring α := @linear_ordered_ring.to_linear_ordered_semiring α _ in
-{ zero_mul                   := @linear_ordered_semiring.zero_mul α s,
-  mul_zero                   := @linear_ordered_semiring.mul_zero α s,
-  add_left_cancel            := @linear_ordered_semiring.add_left_cancel α s,
-  le_of_add_le_add_left      := @linear_ordered_semiring.le_of_add_le_add_left α s,
-  mul_lt_mul_of_pos_left     := @linear_ordered_semiring.mul_lt_mul_of_pos_left α s,
-  mul_lt_mul_of_pos_right    := @linear_ordered_semiring.mul_lt_mul_of_pos_right α s,
-  ..d }
+{ ..d }
 
 @[priority 100] -- see Note [lower instance priority]
 instance linear_ordered_comm_ring.to_integral_domain [s : linear_ordered_comm_ring α] :

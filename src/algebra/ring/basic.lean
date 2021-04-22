@@ -95,8 +95,20 @@ protected def function.surjective.distrib {S} [distrib R] [has_add S] [has_mul S
 (`add_comm_monoid`), multiplicative monoid (`monoid`), distributive laws (`distrib`), and
 multiplication by zero law (`mul_zero_class`). The actual definition extends `monoid_with_zero`
 instead of `monoid` and `mul_zero_class`. -/
-@[protect_proj, ancestor add_comm_monoid monoid_with_zero distrib]
-class semiring (α : Type u) extends add_comm_monoid α, monoid_with_zero α, distrib α
+@[protect_proj, ancestor add_comm_monoid monoid, priority 200]
+class semiring (α : Type u) extends add_comm_monoid α, monoid α :=
+(zero_mul : ∀ a : α, 0 * a = 0)
+(mul_zero : ∀ a : α, a * 0 = 0)
+(left_distrib : ∀ a b c : α, a * (b + c) = (a * b) + (a * c))
+(right_distrib : ∀ a b c : α, (a + b) * c = (a * c) + (b * c))
+
+@[priority 150] -- see Note [lower instance priority]
+instance semiring.to_monoid_with_zero [h : semiring α] : monoid_with_zero α :=
+{ .. h }
+
+@[priority 900] -- see Note [lower instance priority]
+instance semiring.to_distrib [h : semiring α] : distrib α :=
+{ .. h}
 
 section semiring
 variables [semiring α]
@@ -429,12 +441,13 @@ end ring_hom
 type with the following structures: additive commutative monoid (`add_comm_monoid`), multiplicative
 commutative monoid (`comm_monoid`), distributive laws (`distrib`), and multiplication by zero law
 (`mul_zero_class`). -/
-@[protect_proj, ancestor semiring comm_monoid]
-class comm_semiring (α : Type u) extends semiring α, comm_monoid α
+@[protect_proj, ancestor semiring]
+class comm_semiring (α : Type u) extends semiring α :=
+(mul_comm : ∀ a b : α, a * b = b * a)
 
 @[priority 100] -- see Note [lower instance priority]
-instance comm_semiring.to_comm_monoid_with_zero [comm_semiring α] : comm_monoid_with_zero α :=
-{ .. comm_semiring.to_comm_monoid α, .. comm_semiring.to_semiring α }
+instance comm_semiring.to_comm_monoid_with_zero [h : comm_semiring α] : comm_monoid_with_zero α :=
+{ .. h }
 
 section comm_semiring
 variables [comm_semiring α] [comm_semiring β] {a b c : α}
@@ -633,7 +646,7 @@ def mk' {γ} [semiring α] [ring γ] (f : α →* γ) (map_add : ∀ a b : α, f
 end ring_hom
 
 /-- A commutative ring is a `ring` with commutative multiplication. -/
-@[protect_proj, ancestor ring comm_semigroup]
+@[protect_proj, ancestor ring comm_monoid]
 class comm_ring (α : Type u) extends ring α, comm_monoid α
 
 @[priority 100] -- see Note [lower instance priority]
