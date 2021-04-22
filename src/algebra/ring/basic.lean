@@ -113,6 +113,11 @@ instance semiring.to_distrib [h : semiring α] : distrib α :=
 section semiring
 variables [semiring α]
 
+@[priority 310] instance semiring.to_has_one : has_one α := by apply_instance
+@[priority 310] instance semiring.to_has_zero : has_zero α := by apply_instance
+@[priority 310] instance semiring.to_has_add : has_add α := by apply_instance
+@[priority 310] instance semiring.to_has_mul : has_mul α := by apply_instance
+
 /-- Pullback a `semiring` instance along an injective function. -/
 protected def function.injective.semiring [has_zero β] [has_one β] [has_add β] [has_mul β]
   (f : β → α) (hf : injective f) (zero : f 0 = 0) (one : f 1 = 1)
@@ -494,11 +499,17 @@ variables [ring α] {a b c d e : α}
 @[priority 910]
 instance ring.to_distrib : distrib α := { .. ‹ring α› }
 
+@[priority 320] instance ring.to_has_one : has_one α := by apply_instance
+@[priority 320] instance ring.to_has_zero : has_zero α := by apply_instance
+@[priority 320] instance ring.to_has_add : has_add α := by apply_instance
+@[priority 320] instance ring.to_has_mul : has_mul α := by apply_instance
+@[priority 320] instance ring.to_has_neg : has_neg α := by apply_instance
+
 /- The instance from `ring` to `semiring` happens often in linear algebra, for which all the basic
 definitions are given in terms of semirings, but many applications use rings or fields. We increase
 a little bit its priority above 100 to try it quickly, but remaining below the default 1000 so that
 more specific instances are tried first. -/
-@[priority 200]
+@[priority 400]
 instance ring.to_semiring : semiring α :=
 { zero_mul := λ a, add_left_cancel $ show 0 * a + 0 * a = 0 * a + 0,
     by rw [← add_mul, zero_add, add_zero],
@@ -660,6 +671,12 @@ instance comm_ring.to_comm_semiring [s : comm_ring α] : comm_semiring α :=
 
 section comm_ring
 variables [comm_ring α] {a b c : α}
+
+@[priority 330] instance comm_ring.to_has_one : has_one α := by apply_instance
+@[priority 330] instance comm_ring.to_has_zero : has_zero α := by apply_instance
+@[priority 330] instance comm_ring.to_has_add : has_add α := by apply_instance
+@[priority 330] instance comm_ring.to_has_mul : has_mul α := by apply_instance
+@[priority 330] instance comm_ring.to_has_neg : has_neg α := by apply_instance
 
 /-- Pullback a `comm_ring` instance along an injective function. -/
 protected def function.injective.comm_ring

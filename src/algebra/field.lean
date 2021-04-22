@@ -177,6 +177,13 @@ section field
 
 variable [field K]
 
+@[priority 350] instance field.to_has_one : has_one K := by apply_instance
+@[priority 350] instance field.to_has_zero : has_zero K := by apply_instance
+@[priority 350] instance field.to_has_add : has_add K := by apply_instance
+@[priority 350] instance field.to_has_mul : has_mul K := by apply_instance
+@[priority 350] instance field.to_has_neg : has_neg K := by apply_instance
+@[priority 350] instance field.to_has_inv : has_inv K := by apply_instance
+
 @[priority 100] -- see Note [lower instance priority]
 instance field.to_division_ring : division_ring K :=
 { ..show field K, by apply_instance }
