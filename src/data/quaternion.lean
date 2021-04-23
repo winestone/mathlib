@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yury Kudryashov
 -/
 import tactic.ring_exp
+import tactic.ring
 import algebra.algebra.basic
 import algebra.opposites
 import data.equiv.ring
@@ -135,7 +136,7 @@ instance : ring ℍ[R, c₁, c₂] :=
   nsmul := @nsmul_rec _ ⟨0⟩ ⟨(+)⟩,
   npow := @npow_rec _ ⟨1⟩ ⟨(*)⟩,
   add_assoc := by { intros, ext;
-    simp only [has_add_add_re, has_add_add_im_i, has_add_add_im_j, has_add_add_im_k]; ring_exp },
+    simp only [has_add_add_re, has_add_add_im_i, has_add_add_im_j, has_add_add_im_k]; ring },
   zero_add := by { intros, ext; simp only [has_add_add_re, has_add_add_im_i, has_add_add_im_j,
     has_add_add_im_k, has_zero_zero_re, has_zero_zero_im_i, has_zero_zero_im_j, has_zero_zero_im_k,
     zero_add] },
@@ -144,18 +145,24 @@ instance : ring ℍ[R, c₁, c₂] :=
     add_zero] },
   add_left_neg := by { intros, ext; simp },
   add_comm := by { intros, ext; simp only [has_add_add_re, has_add_add_im_i, has_add_add_im_j,
-    has_add_add_im_k]; ring_exp },
+    has_add_add_im_k]; ring },
   one_mul := by { intros, ext; simp only [add_zero, one_mul, zero_mul, has_mul_mul_im_i,
     has_mul_mul_im_j, has_mul_mul_im_k, has_mul_mul_re,
     has_one_one_im_j, sub_zero, has_one_one_im_k, mul_zero, has_one_one_re, has_one_one_im_i] },
   mul_one := by { intros, ext; simp only [add_zero, mul_one, has_mul_mul_re, has_mul_mul_im_i,
     has_mul_mul_im_j, has_mul_mul_im_k, has_one_one_im_i, zero_add,
     has_one_one_im_j, sub_zero, has_one_one_im_k, mul_zero, has_one_one_re], },
-  left_distrib := by { intros, ext; simp; ring_exp },
-  right_distrib := by { intros, ext; simp; ring_exp },
-  sub_eq_add_neg := by { intros, ext; simp; ring_exp },
+  left_distrib := by { intros, ext; simp only [has_add_add_re, has_add_add_im_i, has_add_add_im_j,
+    has_add_add_im_k, has_mul_mul_re, has_mul_mul_im_i, has_mul_mul_im_j, has_mul_mul_im_k];
+    ring },
+  right_distrib := by { intros, ext; simp only [has_add_add_re, has_add_add_im_i, has_add_add_im_j,
+    has_add_add_im_k, has_mul_mul_re, has_mul_mul_im_i, has_mul_mul_im_j, has_mul_mul_im_k];
+    ring },
+  sub_eq_add_neg := by { intros, ext; simp only [has_add_add_im_i, has_add_add_im_j, has_add_add_im_k,
+    has_neg_neg_im_i, has_neg_neg_im_j, has_neg_neg_im_k, has_sub_sub_im_i, has_sub_sub_im_j,
+    has_sub_sub_im_k, has_add_add_re, has_sub_sub_re, has_neg_neg_re]; ring },
   mul_assoc := by { intros, ext; simp only [has_mul_mul_im_j, has_mul_mul_re, has_mul_mul_im_i,
-    has_mul_mul_im_k]; ring_exp } }
+    has_mul_mul_im_k]; ring } }
 
 instance : algebra R ℍ[R, c₁, c₂] :=
 { smul := λ r a, ⟨r * a.1, r * a.2, r * a.3, r * a.4⟩,
