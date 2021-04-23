@@ -363,8 +363,8 @@ instance (I : ideal α) : comm_ring I.quotient :=
     λ a, congr_arg submodule.quotient.mk (one_mul a),
   mul_one := λ a, quotient.induction_on' a $
     λ a, congr_arg submodule.quotient.mk (mul_one a),
-  left_distrib := λ a b c, quotient.induction_on₃' a b c $
-    λ a b c, congr_arg submodule.quotient.mk (left_distrib a b c),
+  left_distrib := λ a b c, by exact quotient.induction_on₃' a b c
+    (λ a b c, congr_arg submodule.quotient.mk (left_distrib a b c)),
   right_distrib := λ a b c, quotient.induction_on₃' a b c $
     λ a b c, congr_arg submodule.quotient.mk (right_distrib a b c),
   ..submodule.quotient.add_comm_group I }
