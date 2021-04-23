@@ -69,7 +69,7 @@ instance : ring (completion α) :=
       (continuous.mul continuous_fst
         (continuous.mul (continuous_fst.comp continuous_snd) (continuous_snd.comp continuous_snd))))
     (assume a b c, by rw [← coe_mul, ← coe_mul, ← coe_mul, ← coe_mul, mul_assoc]),
-  left_distrib  := assume a b c, completion.induction_on₃ a b c
+  left_distrib  := assume a b c, by exact completion.induction_on₃ a b c
     (is_closed_eq
       (continuous.mul continuous_fst (continuous.add
         (continuous_fst.comp continuous_snd)
