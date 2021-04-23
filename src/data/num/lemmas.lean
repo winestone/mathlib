@@ -297,16 +297,24 @@ example (n : num) (m : num) : n ≤ n + m := by num.transfer
 meta def transfer : tactic unit := `[intros, transfer_rw, try {simp}]
 
 instance : comm_semiring num :=
-by refine_struct {
-  add      := (+),
+{ add      := (+),
   zero     := 0,
   zero_add := zero_add,
   add_zero := add_zero,
+  add_assoc := by { intros, transfer_rw, simp },
+  add_comm := by { intros, transfer_rw, simp only [add_comm] },
+  mul_assoc := by { intros, transfer_rw, simp only [mul_assoc] },
+  one_mul   := by { intros, transfer_rw, simp only [one_mul] },
+  mul_one   := by { intros, transfer_rw, simp only [mul_one] },
+  zero_mul  := by { intros, transfer_rw, simp only [zero_mul] },
+  mul_zero  := by { intros, transfer_rw, simp only [mul_zero] },
+  left_distrib  := by { intros, transfer_rw, simp only [left_distrib] },
+  right_distrib := by { intros, transfer_rw, simp only [right_distrib] },
+  mul_comm  := by { intros, transfer_rw, simp only [mul_comm] },
   mul      := (*),
   one      := 1,
   nsmul    := @nsmul_rec _ ⟨0⟩ ⟨(+)⟩,
-  npow     := @npow_rec _ ⟨1⟩ ⟨(*)⟩ };
-try { intros, refl }; try { transfer }; simp [mul_add, mul_left_comm, mul_comm, add_comm]
+  npow     := @npow_rec _ ⟨1⟩ ⟨(*)⟩ }
 
 instance : ordered_cancel_add_comm_monoid num :=
 { add_left_cancel            := by {intros a b c, transfer_rw, apply add_left_cancel},
