@@ -204,9 +204,12 @@ variables {P : Type u₃} [comm_semiring P] [char_p P p] [perfect_ring P p]
 
 variables (p R P)
 
+set_option profiler true
+
 /-- The canonical perfection map from the perfection of a ring. -/
 lemma of : perfection_map p (perfection.coeff R p 0) :=
-mk' (ring_equiv.refl _) $ (equiv.apply_eq_iff_eq_symm_apply _).2 rfl
+by apply mk' (ring_equiv.refl (ring.perfection R p))
+  ((equiv.apply_eq_iff_eq_symm_apply _).2 (by refl))
 
 /-- For a perfect ring, it itself is the perfection. -/
 lemma id [perfect_ring R p] : perfection_map p (ring_hom.id R) :=
