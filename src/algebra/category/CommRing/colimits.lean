@@ -158,7 +158,6 @@ instance : comm_ring (colimit_type F) :=
     { intros x x' r,
       funext y,
       induction y,
-      dsimp,
       apply quot.sound,
       { exact relation.add_1 _ _ _ r },
       { refl } },
@@ -181,114 +180,72 @@ instance : comm_ring (colimit_type F) :=
       { exact relation.mul_1 _ _ _ r },
       { refl } },
   end,
-  zero_add := λ x,
+  zero_add :=
   begin
-    induction x,
-    dsimp,
+    rintros ⟨⟩,
     apply quot.sound,
     apply relation.zero_add,
-    refl,
   end,
-  add_zero := λ x,
+  add_zero :=
   begin
-    induction x,
-    dsimp,
+    rintros ⟨⟩,
     apply quot.sound,
     apply relation.add_zero,
-    refl,
   end,
-  one_mul := λ x,
+  one_mul :=
   begin
-    induction x,
-    dsimp,
+    rintros ⟨⟩,
     apply quot.sound,
     apply relation.one_mul,
-    refl,
   end,
-  mul_one := λ x,
+  mul_one :=
   begin
-    induction x,
-    dsimp,
+    rintros ⟨⟩,
     apply quot.sound,
     apply relation.mul_one,
-    refl,
   end,
-  add_left_neg := λ x,
+  add_left_neg :=
   begin
-    induction x,
-    dsimp,
+    rintros ⟨⟩,
     apply quot.sound,
     apply relation.add_left_neg,
-    refl,
   end,
-  add_comm := λ x y,
+  add_comm :=
   begin
-    induction x,
-    induction y,
-    dsimp,
+    rintros ⟨⟩ ⟨⟩,
     apply quot.sound,
     apply relation.add_comm,
-    refl,
-    refl,
   end,
-  mul_comm := λ x y,
+  mul_comm :=
   begin
-    induction x,
-    induction y,
-    dsimp,
+    rintros ⟨⟩ ⟨⟩,
     apply quot.sound,
     apply relation.mul_comm,
-    refl,
-    refl,
   end,
-  add_assoc := λ x y z,
+  add_assoc :=
   begin
-    induction x,
-    induction y,
-    induction z,
-    dsimp,
+    rintros ⟨⟩ ⟨⟩ ⟨⟩,
     apply quot.sound,
     apply relation.add_assoc,
-    refl,
-    refl,
-    refl,
   end,
-  mul_assoc := λ x y z,
+  mul_assoc :=
   begin
-    induction x,
-    induction y,
-    induction z,
-    dsimp,
+    rintros ⟨⟩ ⟨⟩ ⟨⟩,
     apply quot.sound,
     apply relation.mul_assoc,
-    refl,
-    refl,
-    refl,
   end,
-  left_distrib := λ x y z,
+  left_distrib :=
   begin
-    induction x,
-    induction y,
-    induction z,
-    dsimp,
+    rintros ⟨⟩ ⟨⟩ ⟨⟩,
     apply quot.sound,
     apply relation.left_distrib,
-    refl,
-    refl,
-    refl,
   end,
-  right_distrib := λ x y z,
+  right_distrib :=
   begin
-    induction x,
-    induction y,
-    induction z,
-    dsimp,
+    rintros ⟨⟩ ⟨⟩ ⟨⟩,
     apply quot.sound,
     apply relation.right_distrib,
-    refl,
-    refl,
-    refl,
-  end, }
+  end }
 
 @[simp] lemma quot_zero : quot.mk setoid.r zero = (0 : colimit_type F) := rfl
 @[simp] lemma quot_one : quot.mk setoid.r one = (1 : colimit_type F) := rfl

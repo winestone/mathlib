@@ -379,10 +379,10 @@ instance : ring (free_abelian_group α) :=
   end,
   left_distrib := λ x y z, (lift _).map_add _ _,
   right_distrib := λ x y z, begin
-    unfold has_mul.mul semigroup.mul,
+    unfold has_mul.mul semigroup.mul mul_one_class.mul monoid.mul,
     refine free_abelian_group.induction_on z rfl _ _ _,
-    { intros L, iterate 3 { rw lift.of }, rw (lift _).map_add, refl },
-    { intros L ih, iterate 3 { rw (lift _).map_neg }, rw [ih, neg_add], refl },
+    { intros L, iterate 3 { rw lift.of }, rw (lift _).map_add },
+    { intros L ih, iterate 3 { rw (lift _).map_neg }, rw [ih, neg_add] },
     { intros z1 z2 ih1 ih2, iterate 3 { rw (lift _).map_add }, rw [ih1, ih2],
       rw [add_assoc, add_assoc], congr' 1, apply add_left_comm }
   end,
