@@ -305,8 +305,10 @@ have h₄ : x * (x ^ n)⁻¹ = (x ^ n)⁻¹ * x :=
 begin
   rw [geom_sum_eq h₁, div_eq_iff_mul_eq h₂, ← mul_right_inj' h₃,
     ← mul_assoc, ← mul_assoc, mul_inv_cancel h₃],
-  simp [mul_add, add_mul, mul_inv_cancel hx0, mul_assoc, h₄, sub_eq_add_neg, add_comm,
-    add_left_comm],
+  simp only [mul_add, add_mul, mul_inv_cancel hx0, mul_assoc, h₄, sub_eq_add_neg, add_comm,
+    add_left_comm, neg_mul_eq_neg_mul_symm, mul_one, one_mul, mul_inv_cancel,
+    mul_neg_eq_neg_mul_symm, inv_pow', neg_neg],
+  abel,
 end
 
 variables {β : Type*}
