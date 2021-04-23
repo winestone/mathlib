@@ -155,9 +155,9 @@ instance : ring ℍ[R, c₁, c₂] :=
   right_distrib := by { intros, ext; simp only [has_add_add_re, has_add_add_im_i, has_add_add_im_j,
     has_add_add_im_k, has_mul_mul_re, has_mul_mul_im_i, has_mul_mul_im_j, has_mul_mul_im_k];
     ring },
-  sub_eq_add_neg := by { intros, ext; simp only [has_add_add_im_i, has_add_add_im_j, has_add_add_im_k,
-    has_neg_neg_im_i, has_neg_neg_im_j, has_neg_neg_im_k, has_sub_sub_im_i, has_sub_sub_im_j,
-    has_sub_sub_im_k, has_add_add_re, has_sub_sub_re, has_neg_neg_re]; ring },
+  sub_eq_add_neg := by { intros, ext; simp only [has_add_add_im_i, has_add_add_im_j,
+    has_add_add_im_k, has_neg_neg_im_i, has_neg_neg_im_j, has_neg_neg_im_k, has_sub_sub_im_i,
+    has_sub_sub_im_j, has_sub_sub_im_k, has_add_add_re, has_sub_sub_re, has_neg_neg_re]; ring },
   mul_assoc := by { intros, ext; simp only [has_mul_mul_im_j, has_mul_mul_re, has_mul_mul_im_i,
     has_mul_mul_im_k]; ring } }
 
@@ -218,7 +218,7 @@ linear_equiv.of_involutive
 
 lemma conj_add : (a + b).conj = a.conj + b.conj := conj.map_add a b
 
-@[simp] lemma conj_mul : (a * b).conj = b.conj * a.conj := by ext; simp; ring_exp
+@[simp] lemma conj_mul : (a * b).conj = b.conj * a.conj := by ext; simp; ring
 
 lemma conj_conj_mul : (a.conj * b).conj = b.conj * a :=
 by rw [conj_mul, conj_conj]
@@ -272,7 +272,7 @@ by simp [ext_iff, neg_eq_iff_add_eq_zero, add_self_eq_zero]
 
 -- Can't use `rw ← conj_fixed` in the proof without additional assumptions
 
-lemma conj_mul_eq_coe : conj a * a = (conj a * a).re := by ext; simp; ring_exp
+lemma conj_mul_eq_coe : conj a * a = (conj a * a).re := by ext; simp; ring
 
 lemma mul_conj_eq_coe : a * conj a = (a * conj a).re :=
 by { rw a.commute_self_conj.eq, exact a.conj_mul_eq_coe }
