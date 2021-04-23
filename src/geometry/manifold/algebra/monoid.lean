@@ -5,7 +5,6 @@ Authors: Nicolò Cavalleri
 -/
 
 import geometry.manifold.times_cont_mdiff
-import algebra.big_operators.finprod
 
 /-!
 # Smooth monoid
