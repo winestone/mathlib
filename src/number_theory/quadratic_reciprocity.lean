@@ -220,6 +220,11 @@ private lemma gauss_lemma_aux₂ (p : ℕ) [hp : fact p.prime] [fact (p % 2 = 1)
           exact nat.div_lt_self hp.1.pos dec_trivial)).1 $
   by simpa using gauss_lemma_aux₁ p hap
 
+
+-- set_option trace.simplify.rewrite_failure true
+-- set_option trace.simplify true
+
+
 private lemma eisenstein_lemma_aux₁ (p : ℕ) [fact p.prime] [hp2 : fact (p % 2 = 1)]
   {a : ℕ} (hap : (a : zmod p) ≠ 0) :
   ((∑ x in Ico 1 (p / 2).succ, a * x : ℕ) : zmod 2) =
@@ -233,8 +238,8 @@ calc ((∑ x in Ico 1 (p / 2).succ, a * x : ℕ) : zmod 2)
   by simp only [mod_add_div]
 ... = (∑ x in Ico 1 (p / 2).succ, ((a * x : ℕ) : zmod p).val : ℕ) +
     (∑ x in Ico 1 (p / 2).succ, (a * x) / p : ℕ) :
-  by simp only [val_nat_cast];
-    simp [sum_add_distrib, mul_sum.symm, nat.cast_add, nat.cast_mul, sum_nat_cast, hp2]
+  by { simp only [val_nat_cast, sum_add_distrib, nat.cast_add, sum_nat_cast],
+       simp only [nat.cast_mul, hp2, nat.cast_one, fin.one_mul] }
 ... = _ : congr_arg2 (+)
   (calc ((∑ x in Ico 1 (p / 2).succ, ((a * x : ℕ) : zmod p).val : ℕ) : zmod 2)
       = ∑ x in Ico 1 (p / 2).succ,
@@ -257,9 +262,10 @@ private lemma eisenstein_lemma_aux₂ (p : ℕ) [fact p.prime] [fact (p % 2 = 1)
   ≡ ∑ x in Ico 1 (p / 2).succ, (x * a) / p [MOD 2] :=
 have ha2 : (a : zmod 2) = (1 : ℕ), from (eq_iff_modeq_nat _).2 ha2,
 (eq_iff_modeq_nat 2).1 $ sub_eq_zero.1 $
-  by simpa [add_left_comm, sub_eq_add_neg, finset.mul_sum.symm, mul_comm, ha2, sum_nat_cast,
-            add_neg_eq_iff_eq_add.symm, neg_eq_self_mod_two, add_assoc]
-    using eq.symm (eisenstein_lemma_aux₁ p hap)
+by simpa only [add_left_comm, sub_eq_add_neg, finset.mul_sum.symm, mul_comm, ha2, sum_nat_cast,
+               add_neg_eq_iff_eq_add.symm, neg_eq_self_mod_two, add_assoc, finset.Ico.mem, and_imp,
+               nat.cast_mul, nat.cast_one, one_mul, add_right_eq_self]
+  using eq.symm (eisenstein_lemma_aux₁ p hap)
 
 lemma div_eq_filter_card {a b c : ℕ} (hb0 : 0 < b) (hc : a / b ≤ c) : a / b =
   ((Ico 1 c.succ).filter (λ x, x * b ≤ a)).card :=
@@ -446,7 +452,11 @@ have hx2 : ∀ x ∈ Ico 1 (p / 2).succ, (2 * x : zmod p).val = 2 * x,
 have hdisj : disjoint
     ((Ico 1 (p / 2).succ).filter (λ x, p / 2 < ((2 : ℕ) * x : zmod p).val))
     ((Ico 1 (p / 2).succ).filter (λ x, x * 2 ≤ p / 2)),
-  from disjoint_filter.2 (λ x hx, by simp [hx2 _ hx, mul_comm]),
+  begin
+    apply disjoint_filter.2 (λ x hx, _),
+    simp only [hx2 x hx, cast_bit0, not_le, nat.cast_one],
+    simp only [mul_comm, imp_self],
+  end,
 have hunion :
     ((Ico 1 (p / 2).succ).filter (λ x, p / 2 < ((2 : ℕ) * x : zmod p).val)) ∪
     ((Ico 1 (p / 2).succ).filter (λ x, x * 2 ≤ p / 2)) =
@@ -454,7 +464,9 @@ have hunion :
   begin
     rw [filter_union_right],
     conv_rhs {rw [← @filter_true _ (Ico 1 (p / 2).succ)]},
-    exact filter_congr (λ x hx, by simp [hx2 _ hx, lt_or_le, mul_comm])
+    apply filter_congr (λ x hx, _),
+    simp only [hx2 x hx, cast_bit0, iff_true, nat.cast_one],
+    simp only [lt_or_le, mul_comm]
   end,
 begin
   rw [gauss_lemma p (prime_ne_zero p 2 hp2),
