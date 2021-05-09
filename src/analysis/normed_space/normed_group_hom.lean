@@ -150,6 +150,12 @@ let ⟨C, C_pos, hC⟩ := f.bound in (lipschitz_of_bound_by f C hC).uniform_cont
 protected lemma continuous (f : normed_group_hom V₁ V₂) : continuous f :=
 f.uniform_continuous.continuous
 
+/-- If a normed group hom `f` vanishes a subgroup `A` and its target is separated then `f` vanishes
+on the topological closure of `A`. -/
+lemma zero_of_closure {N : Type*} [normed_group N] (A : add_subgroup V) (f : normed_group_hom V N)
+  (hf : ∀ a ∈ A, f a = 0) : ∀ m ∈ A.topological_closure, f m = 0 :=
+show closure (A : set V) ≤ f ⁻¹' {0}, from Inf_le ⟨(t1_space.t1 0).preimage f.continuous, hf⟩
+
 /-! ### The operator norm -/
 
 /-- The operator norm of a seminormed group homomorphism is the inf of all its bounds. -/
