@@ -79,7 +79,7 @@ begin
   change Inf _ = _,
   congr' 1,
   ext r,
-  simp_rw quotient_add_group.mk'_eq_mk'_iff_sub',
+  simp_rw [coe_mk', quotient_add_group.eq_iff_sub_mem],
   split,
   { rintros ⟨y, h, rfl⟩,
     use [y - m, h],
@@ -273,7 +273,7 @@ instance normed_group_quotient (S : add_subgroup M) [hS : is_closed (S : set M)]
   begin
     rintros ⟨m⟩ ⟨m'⟩ (h : ∥mk' S m - mk' S m'∥ = 0),
     erw [← (mk' S).map_sub, quotient_norm_eq_zero_iff, hS.closure_eq,
-         ← quotient_add_group.mk'_eq_mk'_iff_sub'] at h,
+         ← coe_eq_coe_iff_sub] at h,
     exact h
   end }
 
