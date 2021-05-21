@@ -56,9 +56,6 @@ namespace probability_theory
 class probability_space (α: Type*) extends measure_theory.measure_space α :=
   (univ_one : volume (set.univ) = 1)
 
-class probability_space2 (α: Type*) extends measure_theory.measure_space α :=
-  (univ_one : volume (set.univ) = 1)
-
 instance probability_space.to_measurable_space (α:Type*) [probability_space α]:measurable_space α :=
   measure_theory.measure_space.to_measurable_space
 
