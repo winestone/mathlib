@@ -253,8 +253,8 @@ begin
     rw [(list.perm_cons_erase hσ'l).prod_eq' (hl2.imp (λ _ _, disjoint.mul_comm)), list.prod_cons],
     refine hστ.is_conj_mul (h1 _) (h2 _) _,
     { simp only [hσ.cycle_type, (hl1 _ hσ'l).cycle_type, ←hσ'] },
-    { rw [← coe_map, coe_eq_coe.2 (list.perm_cons_erase hσ'l), singleton_add, ← cons_coe,
-        multiset.map_cons, hσ', cons_inj_right, coe_map] at hπ,
+    { rw [← coe_map, coe_eq_coe.2 (list.perm_cons_erase hσ'l), ←singleton_coe, singleton_add,
+        ←cons_coe, multiset.map_cons, hσ', cons_inj_right, coe_map] at hπ,
       rw [hπ, cycle_type_eq (l.erase σ') rfl (λ f hf, hl1 f (list.erase_subset _ _ hf))
         (list.pairwise_of_sublist (list.erase_sublist _ _) hl2)] },
     { refine disjoint_prod_right _ (λ g hg, list.rel_of_pairwise_cons _ hg),
