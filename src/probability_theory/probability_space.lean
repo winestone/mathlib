@@ -37,7 +37,8 @@ noncomputable theory
        or Pr[X ∈ᵣ S] if S is not measurable, or Pr[∀ᵣ a in S, E a] if S is not countable.
        It is always possible to write Pr[⟨S, ...proof S is an event...⟩].
     3. Embed measurability into the objects and operations themselves. An event is measurable by
-       definition. When we take the and, or, not, for all, exists, measurability should be automatic.
+       definition. When we take the and, or, not, for all, exists, measurability should be
+       automatic.
     4. Don't expect the reader to know measure theory, but at times it may be required by the
        author.
     Several concepts are defined in this module :
@@ -136,7 +137,8 @@ begin
   apply prob_nnreal,
 end
 
-lemma to_nnreal_almost_monotonic (a b : ennreal) : (a ≠ ⊤)→(b ≠ ⊤)→(a ≤ b)→ (a.to_nnreal ≤ b.to_nnreal) :=
+lemma to_nnreal_almost_monotonic (a b : ennreal) : (a ≠ ⊤)→(b ≠ ⊤)→(a ≤ b)  →
+  (a.to_nnreal ≤ b.to_nnreal) :=
 begin
   exact λ (ha : a ≠ ⊤) (hb : b ≠ ⊤), (ennreal.to_real_le_to_real ha hb).mpr
 end
@@ -499,8 +501,8 @@ instance has_sdiff.event {α : Type*} [measurable_space α] :
 lemma has_sdiff_event_val {α : Type*} [measurable_space α] (E F : event α) :
   (E \ F).val = E.val \ F.val := rfl
 
-instance event_subtype_has_neg {α : Type*} [M : measurable_space α] : has_neg (subtype (@measurable_set α M)) :=
-  { neg := λ E, ⟨ E.valᶜ, measurable_set.compl E.property⟩,}
+instance event_subtype_has_neg {α : Type*} [M : measurable_space α] : has_neg (subtype
+  (@measurable_set α M)) := { neg := λ E, ⟨ E.valᶜ, measurable_set.compl E.property⟩,}
 
 lemma event_neg_def {α : Type*} [M : measurable_space α] {E : event α} :
     Eᶜ = ⟨ E.valᶜ, measurable_set.compl E.property⟩ :=rfl
@@ -649,27 +651,32 @@ end
 /- TODO remove duplicate definition of measurable_set as subtype -/
 def measurable_setB {α:Type*} (M:measurable_space α):Type* := subtype (M.measurable_set')
 
-def measurable_setB.mk {α:Type*} {M:measurable_space α} {S:set α} (H:measurable_set S):measurable_setB M := ⟨S, H⟩
+def measurable_setB.mk {α:Type*} {M:measurable_space α} {S:set α}
+  (H:measurable_set S):measurable_setB M := ⟨S, H⟩
 
-def measurable_setB.sdiff {Ω:Type*} {M:measurable_space Ω} (A B:measurable_setB M):measurable_setB M :=
-  @measurable_setB.mk _ _ (A.val \ B.val) begin
+def measurable_setB.sdiff {Ω:Type*} {M:measurable_space Ω} (A B:measurable_setB M) :
+  measurable_setB M := @measurable_setB.mk _ _ (A.val \ B.val)
+begin
   apply measurable_set.diff,
   apply A.property,
   apply B.property
 end
 
-instance measurable_setB.has_sdiff {Ω:Type*} {M:measurable_space Ω} :has_sdiff (measurable_setB M) := ⟨measurable_setB.sdiff⟩
+instance measurable_setB.has_sdiff {Ω:Type*} {M:measurable_space Ω} :has_sdiff
+  (measurable_setB M) := ⟨measurable_setB.sdiff⟩
 
 @[simp]
 lemma measurable_setB.sdiff_val_def {Ω:Type*} {M:measurable_space Ω} (A B:measurable_setB M):
   (A \ B).val = A.val \ B.val := rfl
 
-instance measurable_setB_has_union {Ω:Type*} {p:measurable_space Ω}:has_union (measurable_setB p) :=
-  { union := @measurable_union Ω p,}
+instance measurable_setB_has_union {Ω:Type*} {p:measurable_space Ω}:has_union
+  (measurable_setB p) := { union := @measurable_union Ω p,}
 
-def measurable_setB.symm_diff {Ω:Type*} {M:measurable_space Ω} (A B:measurable_setB M):measurable_setB M := (A \ B) ∪ (B \ A)
+def measurable_setB.symm_diff {Ω:Type*} {M:measurable_space Ω} (A B:measurable_setB M) :
+  measurable_setB M := (A \ B) ∪ (B \ A)
 
-instance measurable_setB.has_symm_diff {Ω:Type*} {M:measurable_space Ω}:has_symm_diff (measurable_setB M) := ⟨measurable_setB.symm_diff⟩
+instance measurable_setB.has_symm_diff {Ω:Type*} {M:measurable_space Ω}:has_symm_diff
+  (measurable_setB M) := ⟨measurable_setB.symm_diff⟩
 
 lemma measurable_setB.has_symm_diff.def {Ω : Type*} {M:measurable_space Ω}
 {A B:measurable_setB M}:A ∆ B = (A \ B) ∪ (B \ A) := rfl
@@ -752,8 +759,8 @@ begin
   linarith,
 end
 
-def measurable_setB.Inter {Ω β:Type*} {M:measurable_space Ω} [encodable β] (A:β → measurable_setB M):measurable_setB M :=
-  { val:=(⋂ b:β, (A b).val),
+def measurable_setB.Inter {Ω β:Type*} {M:measurable_space Ω} [encodable β]
+  (A:β → measurable_setB M):measurable_setB M := { val:=(⋂ b:β, (A b).val),
   property := measurable_set.Inter (λ b:β, (A b).property),}
 
 def eall_encodable {Ω β:Type*} {p:probability_space Ω} [encodable β] (A:β → event Ω):event Ω :=
@@ -925,8 +932,10 @@ lemma Pr_measurable_Union_sum_dummy {Ω β:Type*} [M:probability_space Ω]
     (A:β → set Ω):(∀ (i j:β), i ≠ j →
     (A i ∩ A j = ∅))→
     (∀ i, measurable_set (A i)) →
-    ((@measure_theory.measure_space.volume Ω (probability_space.to_measure_space)) (⋃ (n:β), A n)) =
-    (∑' (i:β), (@measure_theory.measure_space.volume Ω (probability_space.to_measure_space)) (A i)) :=
+    ((@measure_theory.measure_space.volume Ω (probability_space.to_measure_space))
+      (⋃ (n:β), A n)) =
+    (∑' (i:β), (@measure_theory.measure_space.volume Ω (probability_space.to_measure_space))
+      (A i)) :=
 begin
   intros A1 A3,
   rw measure_theory.measure_Union,
@@ -1253,8 +1262,8 @@ begin
 end
 
 @[simp]
-lemma distrib_exists_and {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω) {S:finset α} {A:event Ω}:
-  (∃ᵣ a in S, A ∧ (f a))  =   (A ∧ (∃ᵣ a in S, f a)) :=
+lemma distrib_exists_and {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω) {S:finset α}
+  {A:event Ω}: (∃ᵣ a in S, A ∧ (f a))  =   (A ∧ (∃ᵣ a in S, f a)) :=
 begin
   apply event.eq,
   simp,
@@ -1265,7 +1274,8 @@ begin
   simp [A1],
 end
 
-lemma finset.pair_erase {α:Type*} {x y:α} [decidable_eq α]:x ≠ y → ({x, y}:finset α).erase x  = {y} :=
+lemma finset.pair_erase {α:Type*} {x y:α} [decidable_eq α]:x ≠ y → ({x, y}:finset α).erase
+  x  = {y} :=
 begin
   intros A1,
   rw finset.erase_insert,
@@ -1289,8 +1299,9 @@ begin
   {cases A1;simp [A1]},
 end
 
-lemma finset.image_sum {α β:Type*} [add_comm_monoid β] [decidable_eq α] {S:finset α} {f:α → β} {g:α → α}:
-  (∀ (s t:α),s∈ S → t∈ S→ s ≠ t → g s ≠ g t) →  (finset.image g S).sum f = S.sum (f ∘ g) :=
+lemma finset.image_sum {α β:Type*} [add_comm_monoid β] [decidable_eq α] {S:finset α} {f:α → β}
+  {g:α → α} : (∀ (s t:α),s∈ S → t∈ S→ s ≠ t → g s ≠ g t) →  (finset.image g S).sum f =
+  S.sum (f ∘ g) :=
 begin
   apply finset.induction_on S,
   { intros A1,
@@ -1319,8 +1330,8 @@ begin
     {simp [B4]},},
 end
 
-lemma finset.powerset_sum {α β:Type*} [add_comm_monoid β][decidable_eq α] {x:α} {S:finset α} (f:finset α → β):
-  (x ∉ S) → ((insert x S).powerset.erase ∅).sum f = (S.powerset.erase ∅).sum f
+lemma finset.powerset_sum {α β:Type*} [add_comm_monoid β][decidable_eq α] {x:α} {S:finset α}
+  (f:finset α → β) : (x ∉ S) → ((insert x S).powerset.erase ∅).sum f = (S.powerset.erase ∅).sum f
   + (S.powerset).sum (f ∘ (insert x)) :=
 begin
   intros A0,
@@ -1390,8 +1401,8 @@ begin
   simp,
 end
 
-lemma distrib_forall_eand {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω) [decidable_eq α] {S:finset α} (A:event Ω):S.nonempty →
-  (∀ᵣ a in S, A ∧ f a) = (A ∧ (∀ᵣ a in S, f a)) :=
+lemma distrib_forall_eand {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω) [decidable_eq α]
+  {S:finset α} (A:event Ω):S.nonempty → (∀ᵣ a in S, A ∧ f a) = (A ∧ (∀ᵣ a in S, f a)) :=
 begin
   intros A1,
   apply event.eq,
@@ -1406,8 +1417,9 @@ begin
 end
 
 /- TODO uncomment
-lemma Pr_exists_eq_powerset {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω) [decidable_eq α] {S:finset α}:  (Pr[(∃ᵣ a in S, (f a))]:real) =
-  -(S.powerset.erase ∅).sum  (λ T:finset α, (Pr[∀ᵣ a in T, f a]:real) *  (-1)^(T.card)) :=
+lemma Pr_exists_eq_powerset {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω) [decidable_eq α]
+  {S:finset α}:  (Pr[(∃ᵣ a in S, (f a))]:real) = -(S.powerset.erase ∅).sum  (λ T:finset α,
+  (Pr[∀ᵣ a in T, f a]:real) *  (-1)^(T.card)) :=
 begin
   revert f,
   apply finset.case_strong_induction_on S,
@@ -1424,16 +1436,19 @@ begin
   rw A8,
   have A9:
 -s.powerset.sum
-          (λ (x_1 : finset α), (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^ (insert x x_1).card) =
+    (λ (x_1 : finset α), (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^
+    (insert x x_1).card) =
 (Pr[f x]:real) + (s.powerset.erase ∅).sum
           (λ (T : finset α), (Pr[∀ᵣ (a : α) in T,f x∧ f a]:real) * (-1) ^ T.card),
   { have A9A:insert ∅ (s.powerset.erase ∅) = (s).powerset,
     {rw finset.insert_erase, simp},
      have A9B:
      -(s).powerset.sum
-            (λ (x_1 : finset α), (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^ (insert x x_1).card) =
+        (λ (x_1 : finset α), (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^
+        (insert x x_1).card) =
      -(insert ∅ (s.powerset.erase ∅)).sum
-            (λ (x_1 : finset α), (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^ (insert x x_1).card),
+        (λ (x_1 : finset α), (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^
+        (insert x x_1).card),
      {rw A9A},
      rw A9B,
      clear A9A A9B,
@@ -1441,9 +1456,11 @@ begin
      --rw finset.sum_insert,
      simp,
      have A9C:-((s).powerset.erase ∅).sum
-            (λ (x_1 : finset α), (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^ (insert x x_1).card) =
+        (λ (x_1 : finset α), (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^
+        (insert x x_1).card) =
 ((s).powerset.erase ∅).sum
-            ((λ (x_1 : finset α),- (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^ (insert x x_1).card)),
+        ((λ (x_1 : finset α),- (Pr[has_eall_in.eall_in (insert x x_1) f]:real) * (-1) ^
+        (insert x x_1).card)),
      {simp},
      rw A9C,
      clear A9C,
@@ -1469,12 +1486,14 @@ begin
   apply A3,
 end
 
-lemma Pr_all_not_eq_powerset {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω) [decidable_eq α] {S:finset α}:  (Pr[(∀ᵣ a in S, ¬ₑ (f a))]:real) =
-  (S.powerset).sum  (λ T:finset α, (Pr[∀ᵣ a in T, f a]:real) *  (-1)^(T.card)) :=
+lemma Pr_all_not_eq_powerset {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω) [decidable_eq α]
+  {S:finset α}:  (Pr[(∀ᵣ a in S, ¬ₑ (f a))]:real) = (S.powerset).sum  (λ T:finset α,
+  (Pr[∀ᵣ a in T, f a]:real) *  (-1)^(T.card)) :=
 begin
   --rw Pr_exists_eq_powerset,
-  have A1:(insert ∅ ((S.powerset).erase ∅)).sum (λ T:finset α, (Pr[∀ᵣ a in T, f a]:real) *  (-1)^(T.card))
-      =     S.powerset.sum (λ (T : finset α), ↑Pr[∀ᵣ (a : α) in T,f a] * (-1) ^ T.card),
+  have A1:(insert ∅ ((S.powerset).erase ∅)).sum (λ T:finset α, (Pr[∀ᵣ a in T, f a]:real) *
+    (-1)^(T.card))
+    = S.powerset.sum (λ (T : finset α), ↑Pr[∀ᵣ (a : α) in T,f a] * (-1) ^ T.card),
   { rw finset.insert_erase,
     simp,},
   have A1:∅ ∈ S.powerset,
@@ -1490,7 +1509,8 @@ end
 -/
 
 /- TODO uncomment
-lemma independent_events_not_of_independent_events {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω):independent_events f → independent_events (enot ∘ f) :=
+lemma independent_events_not_of_independent_events {α Ω:Type*} {P:probability_space Ω}
+  (f:α → event Ω):independent_events f → independent_events (enot ∘ f) :=
 begin
   intros A1,
   unfold independent_events,
@@ -1533,8 +1553,10 @@ begin
   },
   have A5:s.powerset = s.powerset := rfl,
   rw finset.sum_congr A5 A4,
-  have A6:s.powerset.sum (λ (x : finset α), -(Pr[f a]:real) * (↑Pr[has_eall_in.eall_in x f] * (-1) ^ x.card))
-    = -((Pr[f a]:real)) * s.powerset.sum (λ (x : finset α), (↑Pr[has_eall_in.eall_in x f] * (-1) ^ x.card)),
+  have A6:s.powerset.sum (λ (x : finset α), -(Pr[f a]:real) * (↑Pr[has_eall_in.eall_in x f] *
+    (-1) ^ x.card))
+    = -((Pr[f a]:real)) * s.powerset.sum (λ (x : finset α), (↑Pr[has_eall_in.eall_in x f] *
+      (-1) ^ x.card)),
   {simp,rw finset.sum_distrib_left},
   rw A6,
   rw ← Pr_all_not_eq_powerset,
@@ -1545,7 +1567,8 @@ begin
   repeat {exact B1},
 end
 
-lemma events_IID_not_of_events_IID {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω):events_IID f → events_IID (enot ∘ f) :=
+lemma events_IID_not_of_events_IID {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω) :
+  events_IID f → events_IID (enot ∘ f) :=
 begin
   intros A1,
   unfold events_IID,
@@ -1562,7 +1585,8 @@ begin
     rw C2,},
 end
 
-lemma events_IID_iff_events_IID_enot {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω):events_IID f ↔ events_IID (enot ∘ f) :=
+lemma events_IID_iff_events_IID_enot {α Ω:Type*} {P:probability_space Ω} (f:α → event Ω):events_IID
+  f ↔ events_IID (enot ∘ f) :=
 begin
   split,
   { apply events_IID_not_of_events_IID,},
@@ -1749,8 +1773,8 @@ begin
 end
 
 /- Definition of identical random variables. -/
-def random_variable_identical {α α':Type*} {p:probability_space α} {p':probability_space α'} {β:Type*}
-  {Mβ:measurable_space β} (X:random_variable p Mβ) (Y:random_variable p' Mβ):Prop :=
+def random_variable_identical {α α':Type*} {p:probability_space α} {p':probability_space α'}
+  {β:Type*} {Mβ:measurable_space β} (X:random_variable p Mβ) (Y:random_variable p' Mβ):Prop :=
   ∀ (S:measurable_setB Mβ), Pr[X ∈ᵣ S] = Pr[Y ∈ᵣ S]
 
 /- Definition of indepedent random variables. -/
@@ -1875,8 +1899,8 @@ end
 /- Define the composition of two random variables. -/
 def rv_compose {α : Type*} {β : Type*} {γ : Type*}
   {p : probability_space α} {Mβ : measurable_space β}
-  {Mγ : measurable_space γ} (X:measurable_fun Mβ Mγ) (Y:random_variable p Mβ):random_variable p Mγ :=
-  compose_measurable_fun X Y
+  {Mγ : measurable_space γ} (X:measurable_fun Mβ Mγ) (Y:random_variable p Mβ):random_variable p Mγ
+  := compose_measurable_fun X Y
 
 infixr  ` ∘r `:80 := rv_compose
 
@@ -1887,19 +1911,23 @@ lemma rv_compose_val_def {Ω : Type*} {β : Type*} {γ : Type*}
   (Y ∘r X).val = (λ ω:Ω, Y.val (X.val ω)) := by refl
 
 /- Define the product space. -/
-def prod_space {α β:Type*} (Mα:measurable_space α) (Mβ:measurable_space β):=(@prod.measurable_space α β Mα Mβ)
+def prod_space {α β:Type*} (Mα:measurable_space α) (Mβ:measurable_space β):=(@prod.measurable_space
+  α β Mα Mβ)
 
 infixr  ` ×ₘ `:80 := prod_space
 
-def measurable_setB.prod {α β:Type*} {Mα:measurable_space α} {Mβ:measurable_space β} (A:measurable_setB Mα) (B:measurable_setB Mβ):measurable_setB (Mα ×ₘ Mβ) :=
- @measurable_setB.mk (α × β) (Mα ×ₘ Mβ) (A.val.prod B.val) begin
+def measurable_setB.prod {α β:Type*} {Mα:measurable_space α} {Mβ:measurable_space β}
+  (A:measurable_setB Mα) (B:measurable_setB Mβ):measurable_setB (Mα ×ₘ Mβ) :=
+  @measurable_setB.mk (α × β) (Mα ×ₘ Mβ) (A.val.prod B.val)
+begin
   apply measurable_set.prod,
   apply A.property,
   apply B.property,
 end
 
 @[simp]
-lemma measurable_setB.prod_val {α β:Type*} {Mα:measurable_space α} {Mβ:measurable_space β} (A:measurable_setB Mα) (B:measurable_setB Mβ):(A.prod B).val = (A.val).prod (B.val) := rfl
+lemma measurable_setB.prod_val {α β:Type*} {Mα:measurable_space α} {Mβ:measurable_space β}
+  (A:measurable_setB Mα) (B:measurable_setB Mβ):(A.prod B).val = (A.val).prod (B.val) := rfl
 
 lemma comap_elim {α β:Type*} [M2:measurable_space β] (f:α → β) (B:set β):
   (measurable_set B) →
@@ -2094,8 +2122,10 @@ begin
   intros B1 B2,
   have A1:@measurable _ _ _ (@prod.measurable_space β γ M2 M3) (λ a:α, prod.mk (X a) (Y a)),
   { have A1A:(@prod.measurable_space β  γ  M2 M3)=measurable_space.generate_from (
-      {s : set (β × γ) | ∃ (s' : set β), measurable_space.measurable_set' M2 s' ∧ prod.fst ⁻¹' s' = s} ∪
-      {s : set (β  × γ) | ∃ (s' : set γ), measurable_space.measurable_set' M3 s' ∧ prod.snd ⁻¹' s' = s}),
+      {s : set (β × γ) | ∃ (s' : set β), measurable_space.measurable_set' M2 s' ∧
+        prod.fst ⁻¹' s' = s} ∪
+      {s : set (β  × γ) | ∃ (s' : set γ), measurable_space.measurable_set' M3 s' ∧
+        prod.snd ⁻¹' s' = s}),
     { rw measurable_fun_product_measurableh,
       rw measurable_fun_comap_def,
       rw measurable_fun_comap_def,
@@ -2284,7 +2314,8 @@ lemma prod_measurable_setB_val_def {β : Type*} {γ : Type*}
   (prod_measurable_setB X Y).val = set.prod X.val Y.val := rfl
 
 
-class has_measurable_equality {α:Type*} (M:measurable_space α):Prop := (measurable_set_eq:measurable_set {p:α × α|p.fst = p.snd})
+class has_measurable_equality {α:Type*} (M:measurable_space α):Prop :=
+  (measurable_set_eq:measurable_set {p:α × α|p.fst = p.snd})
 
 def measurable_setB_eq {α:Type*} {M:measurable_space α} [E:has_measurable_equality M]
   :measurable_setB (M ×ₘ M) := measurable_setB.mk E.measurable_set_eq
@@ -2464,8 +2495,8 @@ def if_random_variable
   if_measurable_fun E D X Y
 
 @[simp]
-lemma measurable_setB_preimage_val_def {α:Type*}  {β:Type*} [Mα:measurable_space α] [Mβ:measurable_space β]
-  (f:measurable_fun Mα Mβ) (S:measurable_setB Mβ):
+lemma measurable_setB_preimage_val_def {α:Type*}  {β:Type*} [Mα:measurable_space α]
+  [Mβ:measurable_space β] (f:measurable_fun Mα Mβ) (S:measurable_setB Mβ):
   (measurable_setB_preimage f S).val = (set.preimage (f.val) (S.val)) := rfl
 
 lemma compose_measurable_fun_measurable_setB {Ω : Type*} {β : Type*} {γ : Type*}
@@ -2483,8 +2514,8 @@ end
 
 lemma rv_compose_measurable_setB  {α : Type*} {β : Type*} {γ : Type*}
   {p : probability_space α} {Mβ : measurable_space β}
-  {Mγ : measurable_space γ} (X:measurable_fun Mβ Mγ) (Y:random_variable p Mβ) (S:measurable_setB Mγ):
-  (X ∘r Y) ∈ᵣ S = (Y ∈ᵣ (measurable_setB_preimage X S)) :=
+  {Mγ : measurable_space γ} (X:measurable_fun Mβ Mγ) (Y:random_variable p Mβ)
+  (S:measurable_setB Mγ):(X ∘r Y) ∈ᵣ S = (Y ∈ᵣ (measurable_setB_preimage X S)) :=
 begin
   apply compose_measurable_fun_measurable_setB,
 end
@@ -2917,8 +2948,9 @@ begin
   refl
 end
 
-lemma joint_measurable.pi {Ω β:Type*} {γ:β → Type*} [measurable_space Ω] [Π (b:β), measurable_space (γ b)] (f:Π (b:β), Ω → (γ b))
-(h:∀ b:β, measurable (f b)):measurable (λ (ω:Ω) (b:β), f b ω) :=
+lemma joint_measurable.pi {Ω β:Type*} {γ:β → Type*} [measurable_space Ω] [Π (b:β),
+  measurable_space (γ b)] (f:Π (b:β), Ω → (γ b))
+  (h:∀ b:β, measurable (f b)):measurable (λ (ω:Ω) (b:β), f b ω) :=
 begin
   apply measurable_pi_lambda,
   apply h,
@@ -2983,19 +3015,16 @@ lemma const_random_variable.has_coe.val {α:Type*} [M:measurable_space α]
  ((↑a):(p →ᵣ M)).val = (λ ω:Ω, a) := by refl
 
 @[simp]
-lemma const_measurable_fun.has_coe.val {α:Type*} [M:measurable_space α] {Ω:Type*} {MΩ:measurable_space Ω}
-{a:α}:
- ((↑a):(MΩ →ₘ M)).val = (λ ω:Ω, a) := by refl
+lemma const_measurable_fun.has_coe.val {α:Type*} [M:measurable_space α] {Ω:Type*}
+  {MΩ:measurable_space Ω} {a:α}: ((↑a):(MΩ →ₘ M)).val = (λ ω:Ω, a) := by refl
 
 @[simp]
-lemma const_random_variable.has_coe.val_apply {α:Type*} [M:measurable_space α] {Ω:Type*} {p:probability_space Ω}
-{a:α} {ω:Ω}:
- ((↑a):(p →ᵣ M)).val ω = a := by refl
+lemma const_random_variable.has_coe.val_apply {α:Type*} [M:measurable_space α] {Ω:Type*}
+  {p:probability_space Ω} {a:α} {ω:Ω}: ((↑a):(p →ᵣ M)).val ω = a := by refl
 
 @[simp]
-lemma const_measurable_fun.has_coe.val_apply {α:Type*} [M:measurable_space α] {Ω:Type*} {MΩ:measurable_space Ω}
-{a:α} {ω:Ω}:
- ((↑a):(MΩ →ₘ M)).val ω = a := by refl
+lemma const_measurable_fun.has_coe.val_apply {α:Type*} [M:measurable_space α] {Ω:Type*}
+  {MΩ:measurable_space Ω} {a:α} {ω:Ω}: ((↑a):(MΩ →ₘ M)).val ω = a := by refl
 
 lemma random_variable_identical.symm {Ω₁ Ω₂ α:Type*} {P₁:probability_space Ω₁}
 {P₂:probability_space Ω₂} {M:measurable_space α} {X₁:P₁ →ᵣ M} {X₂:P₂ →ᵣ M}:
@@ -3123,7 +3152,8 @@ end
 /- TODO move to nnreal -/
 lemma ennreal.coe_supr {α:Sort*} [nonempty α] {f:α → nnreal}:
   (bdd_above (set.range f)) →
-  @coe nnreal ennreal _ (⨆ i, f i) = (⨆ i,  @coe nnreal ennreal _ (f i)) := begin
+  @coe nnreal ennreal _ (⨆ i, f i) = (⨆ i,  @coe nnreal ennreal _ (f i)) :=
+begin
   intros h1,
   simp only [supr],
   rw ennreal.coe_Sup,
@@ -3340,8 +3370,8 @@ def set.pi_measurable {α:Type*} [F:fintype α] {β:α → Type*} {M:Π a, measu
   end}
 
 lemma set.pi_measurable_univ {α:Type*} [F:fintype α] {β:α → Type*} {M:Π a, measurable_space (β a)}
-(S:Π a, measurable_setB (M a)) (T:set α) [decidable_pred T]:set.pi_measurable T S = set.pi_measurable
-(@set.univ α) (λ (a:α), if (a∈ T) then (S a) else (measurable_setB_univ)) :=
+  (S:Π a, measurable_setB (M a)) (T:set α) [decidable_pred T]:set.pi_measurable T S =
+  set.pi_measurable (@set.univ α) (λ (a:α), if (a∈ T) then (S a) else (measurable_setB_univ)) :=
 begin
   ext x,
   split;intros A1;
@@ -3577,7 +3607,7 @@ random_variable_independent_pair (Z ∘r X) Y := begin
 end
 
 /- TODO uncomment
-lemma compose_independent_pair_right {α β γ Ω:Type*} {P:probability_space Ω}  {Mα:measurable_space α}
+lemma compose_independent_pair_right {α β γ Ω:Type*} {P:probability_space Ω} {Mα:measurable_space α}
   {Mβ:measurable_space β} {Mγ:measurable_space γ}
 {X:P →ᵣ Mα} {Y:P →ᵣ Mβ} {Z:Mβ →ₘ Mγ}:random_variable_independent_pair X Y →
 random_variable_independent_pair X (Z ∘r Y) := begin
