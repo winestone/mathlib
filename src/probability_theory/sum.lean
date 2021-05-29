@@ -1,3 +1,17 @@
+/-
+Copyright 2021 Google LLC
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+      http : //www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+Author: Martin Zinkevich (modified for mathlib by Hunter Monroe)
+ -/
+
 import data.real.nnreal
 import data.finset
 import topology.algebra.infinite_sum
@@ -7,9 +21,8 @@ import probability_theory.filter
 
 
 /- This is a combination of finset.sum_congr and finset.sum_const_zero.-/
-lemma finite_sum_zero_eq_zero {α β:Type*} [add_comm_monoid α] [decidable_eq β] (f:β → α) (S:finset β):
-  (∀ s∈ S, f s = 0) →
-  S.sum f = 0 :=
+lemma finite_sum_zero_eq_zero {α β:Type*} [add_comm_monoid α] [decidable_eq β] (f:β → α)
+  (S:finset β): (∀ s∈ S, f s = 0) → S.sum f = 0 :=
 begin
   intro A1,
   let g:β → α := λ a:β, (0:α),
@@ -58,8 +71,8 @@ begin
   apply zero_le,
 end
 
-lemma finset.sum_monotone {α β:Type*} [decidable_eq α] [canonically_ordered_add_monoid β] {S T:finset α}
-  {f:α → β}:S ⊆ T → S.sum f ≤ T.sum f  :=
+lemma finset.sum_monotone {α β:Type*} [decidable_eq α] [canonically_ordered_add_monoid β]
+  {S T:finset α} {f:α → β}:S ⊆ T → S.sum f ≤ T.sum f  :=
 begin
   intros A2,
   rw ← finset.sum_sdiff A2,
@@ -90,7 +103,8 @@ begin
   { apply A1,},
 end
 
-lemma has_sum_nnreal_bounds {α:Type*} {f:α → nnreal} [D:decidable_eq α] {x:nnreal}:(x≠ 0) → (has_sum f x) → (∀ S:finset α, S.sum f ≤ x) :=
+lemma has_sum_nnreal_bounds {α:Type*} {f:α → nnreal} [D:decidable_eq α] {x:nnreal}:(x≠ 0) →
+  (has_sum f x) → (∀ S:finset α, S.sum f ≤ x) :=
 begin
   intros A1 A2,
   intro S,

@@ -322,7 +322,8 @@ lemma mem_nhds_elim_real {b:set real} {x:real}: b∈ nhds x →
   :=
 begin
   intros a,
-  have A1:(∃ prat qrat:ℚ, (prat < qrat) ∧ ((set.Ioo prat qrat:set ℝ) ⊆ b) ∧ ((prat:ℝ) < x) ∧ (x < (qrat:ℝ))),
+  have A1:(∃ prat qrat:ℚ, (prat < qrat) ∧ ((set.Ioo prat qrat:set ℝ) ⊆ b) ∧ ((prat:ℝ) < x) ∧
+    (x < (qrat:ℝ))),
   {
     apply mem_nhds_elim_real_rat,
     apply a,
@@ -419,7 +420,8 @@ begin
 end
 
 lemma preimage_coe_Ioo2 {p q:ℝ}:(0 ≤ p) → (p < q) →
-    set.preimage (@coe nnreal real _) (set.Ioo p q) = set.Ioo (nnreal.of_real p) (nnreal.of_real q) :=
+    set.preimage (@coe nnreal real _) (set.Ioo p q) = set.Ioo (nnreal.of_real p)
+     (nnreal.of_real q) :=
 begin
   intro A1,
   intro A2,
@@ -648,9 +650,10 @@ begin
   ext,
   unfold lower_bounds,
   split;intros a;
-  simp only [true_and, set.mem_insert_iff, forall_eq_or_imp, le_top, set.mem_set_of_eq, set.union_singleton];
   simp only [true_and, set.mem_insert_iff, forall_eq_or_imp, le_top, set.mem_set_of_eq,
-             set.union_singleton] at a;intros;
+    set.union_singleton];
+  simp only [true_and, set.mem_insert_iff, forall_eq_or_imp, le_top, set.mem_set_of_eq,
+    set.union_singleton] at a;intros;
   { apply a,
     assumption,},
 end
@@ -729,7 +732,8 @@ begin
 end
 
 --Remove dependency on not equal to zero.
-lemma set_Ioo_in_nhds_of_ne_zero {x:nnreal} {ε:nnreal}:x ≠ 0 → ε >0 → set.Ioo (x - ε) (x + ε) ∈ nhds x :=
+lemma set_Ioo_in_nhds_of_ne_zero {x:nnreal} {ε:nnreal}:x ≠ 0 → ε >0 →
+  set.Ioo (x - ε) (x + ε) ∈ nhds x :=
 begin
   intros A1 A2,
   rw @mem_nhds_sets_iff,
