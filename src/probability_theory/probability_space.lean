@@ -2590,7 +2590,7 @@ begin
   apply A1,
 end
 
-/- TODO move to core -/
+/- TODO can this be dropped -/
 lemma eq_or_ne2 {α:Type*} [D:decidable_eq α] {x y:α}:(x=y)∨ (x≠ y) :=
 begin
   have A1:decidable (x=y) := D x y,
@@ -2628,7 +2628,7 @@ lemma has_sum_of_bounded_nnreal {β:Type*} [D:decidable_eq β] (f:β → nnreal)
  has_sum f v :=
 begin
   intros A1 A2,
-  have A3:v = 0 ∨ v ≠ 0 := @eq_or_ne nnreal _ v 0,
+  have A3:v = 0 ∨ v ≠ 0 := @eq_or_ne2 nnreal _ v 0,
   cases A3,
   { subst v,
     have A4:f = 0,
