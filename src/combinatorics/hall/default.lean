@@ -119,7 +119,7 @@ end hall_marriage_theorem
 open hall_marriage_theorem
 
 /--
-This the version of Hall's Marriage Theorem in terms of indexed
+This is the version of Hall's Marriage Theorem in terms of indexed
 families of finite sets `t : ι → finset α`.  It states that there is a
 set of distinct representatives if and only if every union of `k` of the
 sets has at least `k` elements.
