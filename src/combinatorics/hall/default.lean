@@ -73,7 +73,7 @@ end
 
 /-- When the Hall condition is satisfied, the set of matchings on a finite set is nonempty.
 This is where `finset.all_card_le_bUnion_card_iff_exists_injective'` comes into the argument. -/
-def hall_matchings_on.nonempty {ι α : Type*} [decidable_eq α] (t : ι → finset α)
+lemma hall_matchings_on.nonempty {ι α : Type*} [decidable_eq α] (t : ι → finset α)
   (h : (∀ (s : finset ι), s.card ≤ (s.bUnion t).card))
   (ι' : finset ι) : nonempty (hall_matchings_on t ι') :=
 begin
@@ -96,7 +96,7 @@ def hall_matchings_functor {ι α : Type*} (t : ι → finset α) : (finset ι)�
 { obj := λ ι', hall_matchings_on t ι'.unop,
   map := λ ι' ι'' g f, hall_matchings_on.restrict t (category_theory.le_of_hom g.unop) f }
 
-noncomputable instance hall_matchings_on.fintype {ι α : Type*} [decidable_eq α]
+noncomputable instance hall_matchings_on.fintype {ι α : Type*}
   (t : ι → finset α) (ι' : finset ι) :
   fintype (hall_matchings_on t ι') :=
 begin
