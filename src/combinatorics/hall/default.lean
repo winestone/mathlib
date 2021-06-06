@@ -57,7 +57,7 @@ instance finset.directed_order (α : Type*) : directed_order (finset α) :=
 
 /-- The set of matchings for `t` when restricted to a `finset` of `ι`. -/
 def hall_matchings_on {ι α : Type*} (t : ι → finset α) (ι' : finset ι) :=
-  {f : ι' → α | function.injective f ∧ ∀ x, f x ∈ t x}
+{f : ι' → α | function.injective f ∧ ∀ x, f x ∈ t x}
 
 /-- Given a matching on a finset, construct the restriction of that matching to a subset. -/
 def hall_matchings_on.restrict {ι α : Type*} (t : ι → finset α) {ι' ι'' : finset ι} (h : ι' ⊆ ι'')
