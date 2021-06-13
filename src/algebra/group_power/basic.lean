@@ -81,6 +81,8 @@ begin
     exact ih.mul_right h }
 end
 
+run_cmd tactic.failed
+
 end semiconj_by
 
 namespace commute
