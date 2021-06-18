@@ -1,22 +1,32 @@
 import number_theory.L_functions
 
-variables (A : Type*) [normed_comm_ring A] (p : ℕ) [fact p.prime] (d : ℕ) (hd : gcd d p = 1)
-
 def zmod.topological_space (d : ℕ) : topological_space (zmod d) := ⊥
 
 local attribute [instance] zmod.topological_space
 
 --instance is_this_needed : topological_space (units (zmod d) × units ℤ_[p]) := infer_instance
 
+#check continuous_map
+
 set_option old_structure_cmd true
 /-- A-valued points of weight space -/ --shouldn't this be a category theory statement?
 @[ancestor continuous_map monoid_hom]
-structure weight_space (A : Type*) [topological_space A] [mul_one_class A]
+structure weight_space (p : ℕ) [fact p.prime] (d : ℕ) (A : Type*) [topological_space A] [mul_one_class A]
   extends monoid_hom ((units (zmod d)) × (units ℤ_[p])) A, C((units (zmod d)) × (units ℤ_[p]), A)
 --generalize domain to a compact space?
 
 attribute [nolint doc_blame] weight_space.to_continuous_map
 attribute [nolint doc_blame] weight_space.to_monoid_hom
+
+namespace weight_space
+
+variables (A : Type*) [topological_space A] [mul_one_class A] (p : ℕ) [fact p.prime] (d : ℕ) (hd : gcd d p = 1)
+
+instance : has_coe_to_fun (weight_space p d A) :=
+{ F := _,
+  coe := λ w, w.to_fun }
+
+example (w : weight_space p d A) (t : units (zmod d) × units (ℤ_[p])) : A := w t
 
 /-lemma weight_space_continuous_to_fun {A : Type*} [topological_space A] [mul_one_class A]
   (f : weight_space p d A) : continuous f.to_fun :=
@@ -28,8 +38,7 @@ begin
   refine mul_assoc f g h,
 end
 
-@[ext]
-lemma ext (A : Type*) [topological_space A] [mul_one_class A]
+lemma ext_iff (A : Type*) [topological_space A] [mul_one_class A]
   (a b : (units (zmod d)) × (units ℤ_[p]) →* A) [ha : continuous a] [hb : continuous b] :
   (⟨a.to_fun, monoid_hom.map_one' a, monoid_hom.map_mul' a, ha⟩ : weight_space p d A) =
   (⟨b.to_fun, monoid_hom.map_one' b, monoid_hom.map_mul' b, hb⟩ : weight_space p d A) ↔
@@ -38,6 +47,18 @@ begin
   split,
   { rintros h, simp only [monoid_hom.to_fun_eq_coe] at h, simp [h], },
   { rintros h, simp only [monoid_hom.to_fun_eq_coe], simp at h, simp [h], },
+end
+
+variables {A} {p} {d}
+
+@[ext] lemma ext (w₁ w₂ : weight_space p d A)
+  (h : ∀ u : (units (zmod d)) × (units ℤ_[p]), w₁ u = w₂ u) : w₁ = w₂ :=
+begin
+  cases w₁,
+  cases w₂,
+  simp only [prod.forall],
+  ext u,
+  apply h,
 end
 
 noncomputable instance (A : Type*) [topological_space A] [comm_group A] [topological_group A] :
@@ -56,8 +77,10 @@ instance (A : Type*) [topological_space A] [comm_group A] [topological_group A] 
 noncomputable instance (A : Type*) [topological_space A] [comm_group A] [topological_group A] :
   monoid (weight_space p d A) := --is group really needed
 {
-  mul := has_mul.mul,
-  mul_assoc := λ f g h, begin sorry, --simp, refine mul_assoc f.to_fun g.to_fun h.to_fun,
+  mul := (*),
+  mul_assoc := λ f g h, begin
+    ext,
+    apply mul_assoc,
   end,
   --what is simp only doing
   one := has_one.one,
