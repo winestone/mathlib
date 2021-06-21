@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Johannes Hölzl
 -/
 
+import algebra.big_operators.order
+import data.nat.totient
 import group_theory.order_of_element
 
 /-!
@@ -192,8 +194,8 @@ calc (univ.filter (λ a : α, a ^ n = 1)).card
       end⟩)
 ... ≤ n :
   let ⟨m, hm⟩ := gcd_dvd_right n (fintype.card α) in
-  have hm0 : 0 < m, from nat.pos_of_ne_zero
-    (λ hm0, (by rw [hm0, mul_zero, fintype.card_eq_zero_iff] at hm; exact hm 1)),
+  have hm0 : 0 < m, from nat.pos_of_ne_zero $
+    λ hm0, by { rw [hm0, mul_zero, fintype.card_eq_zero_iff] at hm, exact hm.elim' 1 },
   begin
     rw [← fintype.card_of_finset' _ (λ _, set.mem_to_finset), ← order_eq_card_gpowers,
         order_of_pow g, order_of_eq_card_of_forall_mem_gpowers hg],

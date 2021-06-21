@@ -35,18 +35,6 @@ add_monoid_hom.eq_nat_cast
   ⟨λ n, n • (1 : A), zero_nsmul _, λ _ _, add_nsmul _ _ _⟩
   (one_nsmul _)
 
-@[simp, priority 500]
-theorem list.prod_repeat (a : M) (n : ℕ) : (list.repeat a n).prod = a ^ n :=
-begin
-  induction n with n ih,
-  { rw pow_zero, refl },
-  { rw [list.repeat_succ, list.prod_cons, ih, pow_succ] }
-end
-
-@[simp, priority 500]
-theorem list.sum_repeat : ∀ (a : A) (n : ℕ), (list.repeat a n).sum = n • a :=
-@list.prod_repeat (multiplicative A) _
-
 @[simp, norm_cast] lemma units.coe_pow (u : units M) (n : ℕ) : ((u ^ n : units M) : M) = u ^ n :=
 (units.coe_hom M).map_pow u n
 
@@ -84,10 +72,6 @@ begin
 end
 
 end monoid
-
-theorem nat.nsmul_eq_mul (m n : ℕ) : m • n = m * n :=
-by induction m with m ih; [rw [zero_nsmul, zero_mul],
-  rw [succ_nsmul', ih, nat.succ_mul]]
 
 section group
 variables [group G] [group H] [add_group A] [add_group B]
@@ -187,7 +171,7 @@ end group
 section ordered_add_comm_group
 
 variables [ordered_add_comm_group A]
-/-! Lemmas about `gsmul` under ordering,  placed here (rather than in `algebra.group_power.basic`
+/-! Lemmas about `gsmul` under ordering,  placed here (rather than in `algebra.group_power.order`
 with their friends) because they require facts from `data.int.basic`-/
 open int
 
@@ -365,28 +349,28 @@ begin
 end
 
 lemma neg_one_pow_eq_pow_mod_two [ring R] {n : ℕ} : (-1 : R) ^ n = (-1) ^ (n % 2) :=
-by rw [← nat.mod_add_div n 2, pow_add, pow_mul]; simp [pow_two]
+by rw [← nat.mod_add_div n 2, pow_add, pow_mul]; simp [sq]
 
 section ordered_semiring
 variable [ordered_semiring R]
 
 /-- Bernoulli's inequality. This version works for semirings but requires
 additional hypotheses `0 ≤ a * a` and `0 ≤ (1 + a) * (1 + a)`. -/
-theorem one_add_mul_le_pow' {a : R} (Hsqr : 0 ≤ a * a) (Hsqr' : 0 ≤ (1 + a) * (1 + a))
+theorem one_add_mul_le_pow' {a : R} (Hsq : 0 ≤ a * a) (Hsq' : 0 ≤ (1 + a) * (1 + a))
   (H : 0 ≤ 2 + a) :
   ∀ (n : ℕ), 1 + (n : R) * a ≤ (1 + a) ^ n
 | 0     := by simp
 | 1     := by simp
 | (n+2) :=
 have 0 ≤ (n : R) * (a * a * (2 + a)) + a * a,
-  from add_nonneg (mul_nonneg n.cast_nonneg (mul_nonneg Hsqr H)) Hsqr,
+  from add_nonneg (mul_nonneg n.cast_nonneg (mul_nonneg Hsq H)) Hsq,
 calc 1 + (↑(n + 2) : R) * a ≤ 1 + ↑(n + 2) * a + (n * (a * a * (2 + a)) + a * a) :
   (le_add_iff_nonneg_right _).2 this
 ... = (1 + a) * (1 + a) * (1 + n * a) :
   by { simp [add_mul, mul_add, bit0, mul_assoc, (n.cast_commute (_ : R)).left_comm],
        ac_refl }
 ... ≤ (1 + a) * (1 + a) * (1 + a)^n :
-  mul_le_mul_of_nonneg_left (one_add_mul_le_pow' n) Hsqr'
+  mul_le_mul_of_nonneg_left (one_add_mul_le_pow' n) Hsq'
 ... = (1 + a)^(n + 2) : by simp only [pow_succ, mul_assoc]
 
 private lemma pow_lt_pow_of_lt_one_aux {a : R} (h : 0 < a) (ha : a < 1) (i : ℕ) :
@@ -535,19 +519,27 @@ theorem nat.cast_le_pow_div_sub {K : Type*} [linear_ordered_field K] {a : K} (H 
 
 namespace int
 
-lemma units_pow_two (u : units ℤ) : u ^ 2 = 1 :=
-(pow_two u).symm ▸ units_mul_self u
+lemma units_sq (u : units ℤ) : u ^ 2 = 1 :=
+(sq u).symm ▸ units_mul_self u
+
+alias int.units_sq ← int.units_pow_two
 
 lemma units_pow_eq_pow_mod_two (u : units ℤ) (n : ℕ) : u ^ n = u ^ (n % 2) :=
-by conv {to_lhs, rw ← nat.mod_add_div n 2}; rw [pow_add, pow_mul, units_pow_two, one_pow, mul_one]
+by conv {to_lhs, rw ← nat.mod_add_div n 2}; rw [pow_add, pow_mul, units_sq, one_pow, mul_one]
 
-@[simp] lemma nat_abs_pow_two (x : ℤ) : (x.nat_abs ^ 2 : ℤ) = x ^ 2 :=
-by rw [pow_two, int.nat_abs_mul_self', pow_two]
+@[simp] lemma nat_abs_sq (x : ℤ) : (x.nat_abs ^ 2 : ℤ) = x ^ 2 :=
+by rw [sq, int.nat_abs_mul_self', sq]
 
-lemma abs_le_self_pow_two (a : ℤ) : (int.nat_abs a : ℤ) ≤ a ^ 2 :=
-by { rw [← int.nat_abs_pow_two a, pow_two], norm_cast, apply nat.le_mul_self }
+alias int.nat_abs_sq ← int.nat_abs_pow_two
 
-lemma le_self_pow_two (b : ℤ) : b ≤ b ^ 2 := le_trans (le_nat_abs) (abs_le_self_pow_two _)
+lemma abs_le_self_sq (a : ℤ) : (int.nat_abs a : ℤ) ≤ a ^ 2 :=
+by { rw [← int.nat_abs_sq a, sq], norm_cast, apply nat.le_mul_self }
+
+alias int.abs_le_self_sq ← int.abs_le_self_pow_two
+
+lemma le_self_sq (b : ℤ) : b ≤ b ^ 2 := le_trans (le_nat_abs) (abs_le_self_sq _)
+
+alias int.le_self_sq ← int.le_self_pow_two
 
 end int
 
