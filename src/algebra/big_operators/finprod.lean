@@ -692,21 +692,6 @@ begin
   simp [hx]
 end
 
-lemma finprod_cond_nonneg {R : Type*} [ordered_comm_semiring R] {p : α → Prop} {f : α → R}
-  (hf : ∀ x, p x → 0 ≤ f x) :
-  0 ≤ ∏ᶠ x (h : p x), f x :=
-finprod_nonneg $ λ x, finprod_nonneg $ hf x
-
-lemma finprod_eq_zero {M₀ : Type*} [comm_monoid_with_zero M₀] (f : α → M₀) (x : α)
-  (hx : f x = 0) (hf : finite (mul_support f)) :
-  ∏ᶠ x, f x = 0 :=
-begin
-  nontriviality,
-  rw [finprod_eq_prod f hf],
-  refine finset.prod_eq_zero (hf.mem_to_finset.2 _) hx,
-  simp [hx]
-end
-
 @[to_additive] lemma finprod_prod_comm (s : finset β) (f : α → β → M)
   (h : ∀ b ∈ s, (mul_support (λ a, f a b)).finite) :
   ∏ᶠ a : α, ∏ b in s, f a b = ∏ b in s, ∏ᶠ a : α, f a b :=
